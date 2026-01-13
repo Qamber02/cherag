@@ -1,0 +1,454 @@
+import { useState, useEffect, useRef } from 'react';
+import { GitBranch, Sparkles, Loader2, Download, RefreshCw, AlertCircle, ImageIcon } from 'lucide-react';
+import mermaid from 'mermaid';
+import { saveDiagram, getLastDiagram } from '../lib/activityService';
+
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+interface DiagramsTabProps {
+    userId: string;
+    context: string;
+    hasContext: boolean;
+}
+
+export default function DiagramsTab({ userId, context, hasContext }: DiagramsTabProps) {
+    const [diagramCode, setDiagramCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [loadingStatus, setLoadingStatus] = useState('');
+    const diagramRef = useRef<HTMLDivElement>(null);
+    const [diagramKey, setDiagramKey] = useState(0);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // Load saved diagram on mount
+    useEffect(() => {
+        async function loadSaved() {
+            if (userId) {
+                const saved = await getLastDiagram(userId);
+                if (saved) {
+                    setDiagramCode(saved);
+                }
+            }
+            setIsInitialLoad(false);
+        }
+        loadSaved();
+    }, [userId]);
+
+    useEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#6366f1',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#4f46e5',
+                lineColor: '#64748b',
+                secondaryColor: '#e0e7ff',
+                tertiaryColor: '#f1f5f9',
+                fontSize: '13px',
+                fontFamily: 'Inter, system-ui, sans-serif'
+            },
+            flowchart: {
+                curve: 'basis',
+                padding: 25,
+                htmlLabels: true,
+                nodeSpacing: 50,
+                rankSpacing: 60
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        if (diagramCode && diagramRef.current) {
+            renderDiagram();
+        }
+    }, [diagramCode, diagramKey]);
+
+    const renderDiagram = async () => {
+        if (!diagramRef.current || !diagramCode) return;
+
+        try {
+            // Clear previous content
+            diagramRef.current.innerHTML = '';
+
+            // Generate unique ID for this render
+            const id = `diagram-${Date.now()}`;
+
+            const { svg } = await mermaid.render(id, diagramCode);
+            diagramRef.current.innerHTML = svg;
+
+            // Style the SVG
+            const svgElement = diagramRef.current.querySelector('svg');
+            if (svgElement) {
+                svgElement.style.maxWidth = '100%';
+                svgElement.style.height = 'auto';
+                svgElement.style.minHeight = '400px';
+
+                // Add padding to prevent cutoff
+                const viewBox = svgElement.getAttribute('viewBox');
+                if (viewBox) {
+                    const [x, y, w, h] = viewBox.split(' ').map(Number);
+                    // Add extra space at top and bottom
+                    svgElement.setAttribute('viewBox', `${x - 20} ${y - 40} ${w + 40} ${h + 80}`);
+                }
+            }
+        } catch (err: any) {
+            console.error('Mermaid render error:', err);
+            setError('Diagram syntax error. Generating simpler version...');
+            // Generate fallback
+            setTimeout(() => generateSimpleDiagram(), 500);
+        }
+    };
+
+    const handleGenerateDiagram = async () => {
+        if (!context) {
+            alert('Please upload a document first!');
+            return;
+        }
+        setIsLoading(true);
+        setError('');
+        setDiagramCode('');
+        setDiagramKey(prev => prev + 1);
+
+        try {
+            setLoadingStatus('Analyzing content...');
+            const code = await generateProfessionalDiagram();
+            setDiagramCode(code);
+            // Save to database
+            if (userId && code) {
+                await saveDiagram(userId, code);
+            }
+        } catch (err: any) {
+            console.error('Diagram generation error:', err);
+            setError(err.message || 'Failed to generate diagram');
+        } finally {
+            setIsLoading(false);
+            setLoadingStatus('');
+        }
+    };
+
+    const generateProfessionalDiagram = async (): Promise<string> => {
+        setLoadingStatus('Creating professional flowchart...');
+
+        const prompt = `Create a clean Mermaid.js flowchart for this educational content.
+
+CONTENT:
+${context.slice(0, 2500)}
+
+STRICT RULES:
+1. Start with: flowchart TD
+2. Use ONLY these node formats:
+   - A[Text] for rectangles
+   - B(Text) for rounded
+   - C{Text} for diamonds
+   - D((Text)) for circles
+3. Keep ALL labels SHORT (2-4 words max)
+4. Use simple connections: A --> B or A -->|label| B
+5. Maximum 8-10 nodes
+6. NO special characters in labels (no quotes, colons, parentheses inside)
+7. NO subgraphs
+
+OUTPUT ONLY valid Mermaid code. Nothing else.
+
+Example:
+flowchart TD
+    A((Start)) --> B[Main Topic]
+    B --> C[Concept One]
+    B --> D[Concept Two]
+    C --> E{Decision}
+    D --> E
+    E --> F[Result]`;
+
+        let mermaidCode = '';
+
+        // Try OpenRouter first
+        if (OPENROUTER_API_KEY) {
+            try {
+                console.log('[Diagram] Trying OpenRouter...');
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': window.location.origin,
+                    },
+                    body: JSON.stringify({
+                        model: 'allenai/molmo-2-8b:free',
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 800,
+                        temperature: 0.2
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    mermaidCode = data.choices?.[0]?.message?.content || '';
+                    console.log('[Diagram] OpenRouter success');
+                }
+            } catch (e) {
+                console.warn('[Diagram] OpenRouter failed:', e);
+            }
+        }
+
+        // Fallback to Gemini
+        if (!mermaidCode && GEMINI_API_KEY) {
+            try {
+                console.log('[Diagram] Trying Gemini...');
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    mermaidCode = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    console.log('[Diagram] Gemini success');
+                }
+            } catch (e) {
+                console.warn('[Diagram] Gemini failed:', e);
+            }
+        }
+
+        if (!mermaidCode) {
+            throw new Error('Failed to generate diagram. Please try again.');
+        }
+
+        // Clean up the code
+        mermaidCode = cleanMermaidCode(mermaidCode);
+
+        console.log('[Diagram] Final code:', mermaidCode);
+        return mermaidCode;
+    };
+
+    const cleanMermaidCode = (code: string): string => {
+        // Remove markdown code blocks
+        let cleaned = code
+            .replace(/```mermaid\s*/gi, '')
+            .replace(/```\s*/g, '')
+            .trim();
+
+        // Find the flowchart/graph part
+        const match = cleaned.match(/(flowchart|graph)\s+(TD|TB|LR|RL|BT)[\s\S]*/i);
+        if (match) {
+            cleaned = match[0];
+        }
+
+        // Fix common issues
+        cleaned = cleaned
+            // Remove any lines that don't look like valid mermaid
+            .split('\n')
+            .filter(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return false;
+                if (trimmed.startsWith('flowchart') || trimmed.startsWith('graph')) return true;
+                if (trimmed.match(/^[A-Za-z0-9_]+[\[\(\{]/) || trimmed.match(/-->|---/)) return true;
+                if (trimmed.match(/^\s+[A-Za-z0-9_]+/)) return true;
+                return false;
+            })
+            .join('\n');
+
+        // Ensure it starts with flowchart
+        if (!cleaned.startsWith('flowchart') && !cleaned.startsWith('graph')) {
+            cleaned = 'flowchart TD\n' + cleaned;
+        }
+
+        return cleaned;
+    };
+
+    const generateSimpleDiagram = () => {
+        // Extract key terms from context for a basic diagram
+        const words = context.slice(0, 500).split(/\s+/).filter(w => w.length > 4);
+        const uniqueWords = [...new Set(words)].slice(0, 5);
+
+        const simpleDiagram = `flowchart TD
+    A((Start)) --> B[${uniqueWords[0] || 'Topic'}]
+    B --> C[${uniqueWords[1] || 'Concept 1'}]
+    B --> D[${uniqueWords[2] || 'Concept 2'}]
+    C --> E[${uniqueWords[3] || 'Detail'}]
+    D --> E
+    E --> F((End))`;
+
+        setDiagramCode(simpleDiagram);
+        setError('');
+    };
+
+    const downloadSVG = () => {
+        const svg = diagramRef.current?.querySelector('svg');
+        if (!svg) return;
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cherag-diagram.svg';
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const downloadPNG = async () => {
+        const svg = diagramRef.current?.querySelector('svg');
+        if (!svg) return;
+
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new window.Image();
+
+        img.onload = () => {
+            canvas.width = img.width * 2;
+            canvas.height = img.height * 2;
+            if (ctx) {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            }
+
+            const pngUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = 'cherag-diagram.png';
+            a.click();
+        };
+
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    };
+
+    // Initial loading state
+    if (isInitialLoad) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            </div>
+        );
+    }
+
+    // Empty State
+    if (!diagramCode && !isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/25">
+                    <GitBranch className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Flowchart Generator</h2>
+                <p className="text-gray-500 mb-8 max-w-md">
+                    Transform your study materials into beautiful, easy-to-understand flowcharts.
+                </p>
+
+                <button
+                    onClick={handleGenerateDiagram}
+                    disabled={!hasContext || isLoading}
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                >
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-5 h-5" />
+                        <span>Generate Flowchart</span>
+                    </div>
+                </button>
+
+                {!hasContext && <p className="mt-4 text-sm text-red-400">Upload a document first!</p>}
+
+                {error && (
+                    <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl flex items-start gap-2 max-w-md">
+                        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm">{error}</p>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Loading State
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full">
+                <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                <p className="text-gray-600 font-medium">{loadingStatus || 'Processing...'}</p>
+                <p className="text-gray-400 text-sm mt-2">Creating professional flowchart</p>
+            </div>
+        );
+    }
+
+    // Diagram View
+    return (
+        <div className="flex flex-col h-full p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Professional Flowchart</h2>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleGenerateDiagram}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Regenerate"
+                    >
+                        <RefreshCw className="w-5 h-5 text-gray-500" />
+                    </button>
+                    <button
+                        onClick={downloadSVG}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Download SVG"
+                    >
+                        <Download className="w-5 h-5 text-gray-500" />
+                    </button>
+                    <button
+                        onClick={downloadPNG}
+                        className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-1"
+                        title="Download PNG"
+                    >
+                        <ImageIcon className="w-4 h-4" />
+                        PNG
+                    </button>
+                </div>
+            </div>
+
+            {error && (
+                <div className="p-3 bg-amber-50 text-amber-700 rounded-xl mb-4 text-sm flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {/* Diagram Display - Fixed container with proper padding */}
+            <div className="flex-1 bg-white rounded-2xl border border-gray-200 overflow-auto">
+                <div className="min-h-full p-8 flex items-center justify-center">
+                    <div
+                        ref={diagramRef}
+                        key={diagramKey}
+                        className="w-full flex items-center justify-center"
+                        style={{ minHeight: '400px', padding: '40px 20px' }}
+                    />
+                </div>
+            </div>
+
+            {/* Info */}
+            <div className="mt-4 p-4 bg-indigo-50 rounded-xl">
+                <p className="text-sm text-indigo-900 font-medium mb-1">
+                    ✨ AI-Generated Flowchart
+                </p>
+                <p className="text-xs text-indigo-600">
+                    Professional visualization of your study content
+                </p>
+            </div>
+
+            {/* Code Preview */}
+            {diagramCode && (
+                <details className="mt-4">
+                    <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                        View Mermaid Code
+                    </summary>
+                    <pre className="mt-2 p-4 bg-gray-900 text-green-400 rounded-xl text-xs overflow-auto max-h-40">
+                        {diagramCode}
+                    </pre>
+                </details>
+            )}
+        </div>
+    );
+}
