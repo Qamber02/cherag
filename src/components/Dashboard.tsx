@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { Search, User } from 'lucide-react';
+import { Search, User, Menu } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { saveSummary, getLastSummary } from '../lib/activityService';
 
@@ -30,6 +30,7 @@ type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'diagra
 export default function Dashboard({ session }: DashboardProps) {
     const [activeTab, setActiveTab] = useState<Tab>('dashboard');
     const [searchQuery, setSearchQuery] = useState('');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Hooks
     const { files, isParsing, uploadFile, removeFile } = useFiles(session.user);
@@ -52,12 +53,12 @@ export default function Dashboard({ session }: DashboardProps) {
         loadSaved();
     }, [session.user.id]);
 
-    const handleGenerateSummary = async () => {
+    const handleGenerateSummary = async (options?: { length?: string; style?: string; focus?: string }) => {
         if (!context) return;
         setIsSummaryLoading(true);
         try {
             const { generateSummary } = await import('../lib/aiService');
-            const result = await generateSummary(context);
+            const result = await generateSummary(context, options);
             setSummary(result);
             // Save to activity history
             await saveSummary(session.user.id, result);
@@ -66,6 +67,12 @@ export default function Dashboard({ session }: DashboardProps) {
         } finally {
             setIsSummaryLoading(false);
         }
+    };
+
+    const handleUpdateSummary = async (newSummary: string) => {
+        setSummary(newSummary);
+        // Save to activity history
+        await saveSummary(session.user.id, newSummary);
     };
 
     const handleSignOut = () => supabase.auth.signOut();
@@ -83,49 +90,71 @@ export default function Dashboard({ session }: DashboardProps) {
     };
 
     return (
-        <div className="flex h-screen bg-scholar overflow-hidden font-sans">
+        <div className="flex h-screen bg-scholar overflow-hidden font-sans text-foreground">
+            {/* Mobile Sidebar Overlay */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-sm"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Icon Sidebar */}
-            <Sidebar
-                files={files}
-                isParsing={isParsing}
-                onUpload={uploadFile}
-                onRemove={removeFile}
-                onSignOut={handleSignOut}
-                userEmail={session.user.email}
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-            />
+            <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-50 transition-transform duration-300 h-full`}>
+                <Sidebar
+                    files={files}
+                    isParsing={isParsing}
+                    onUpload={uploadFile}
+                    onRemove={removeFile}
+                    onSignOut={handleSignOut}
+                    userEmail={session.user.email}
+                    activeTab={activeTab}
+                    onTabChange={(tab) => {
+                        handleTabChange(tab);
+                        setSidebarOpen(false);
+                    }}
+                />
+            </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
                 {/* Top Bar with Search */}
-                <header className="h-16 flex items-center px-6 gap-4 shrink-0">
+                <header className="h-14 md:h-16 flex items-center px-4 md:px-6 gap-3 md:gap-4 shrink-0 transition-all duration-300">
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg md:hidden text-foreground"
+                    >
+                        <Menu className="w-5 h-5" />
+                    </button>
+
                     {/* Search Bar */}
                     <div className="flex-1 max-w-2xl">
-                        <div className="search-bar flex items-center gap-3 px-4 py-3 rounded-xl">
-                            <Search className="w-5 h-5 text-gray-400" />
+                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/50 dark:bg-black/20 border border-white/20 dark:border-white/5 shadow-sm focus-within:ring-2 ring-primary/20 transition-all">
+                            <Search className="w-4 h-4 text-muted-foreground" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search past papers, notes, and concepts..."
-                                className="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-400"
+                                placeholder="Search..."
+                                className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
                             />
                         </div>
                     </div>
 
                     {/* User Avatar */}
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-medium shadow-lg">
+                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center text-primary-foreground font-semibold shadow-lg text-sm">
                             {session.user.email ? session.user.email[0].toUpperCase() : <User className="w-4 h-4" />}
                         </div>
                     </div>
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-hidden p-6 pt-0">
-                    <div className="w-full h-full overflow-hidden">
-                        {activeTab === 'dashboard' && (
+                <main className="flex-1 overflow-hidden p-3 md:p-6 pt-0">
+                    <div className="w-full h-full overflow-hidden relative">
+                        {/* Dashboard Tab */}
+                        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'dashboard' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                             <DashboardHome
                                 files={files}
                                 flashcards={flashcards}
@@ -134,65 +163,68 @@ export default function Dashboard({ session }: DashboardProps) {
                                 onUpload={uploadFile}
                                 isParsing={isParsing}
                             />
-                        )}
-                        {activeTab === 'chat' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <ChatTab
-                                    messages={messages}
-                                    onSendMessage={(msg) => sendMessage(msg, context)}
-                                    isLoading={isChatLoading}
-                                />
-                            </div>
-                        )}
-                        {activeTab === 'flashcards' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <FlashcardsTab
-                                    flashcards={flashcards}
-                                    isLoading={isFlashcardsLoading}
-                                    onGenerate={generateFlashcards}
-                                    onClear={clearFlashcards}
-                                    hasUnknownContext={files.length > 0}
-                                />
-                            </div>
-                        )}
-                        {activeTab === 'summary' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <SummaryTab
-                                    summary={summary}
-                                    isLoading={isSummaryLoading}
-                                    onGenerate={handleGenerateSummary}
-                                    hasUnknownContext={files.length > 0}
-                                />
-                            </div>
-                        )}
-                        {activeTab === 'quizzes' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <QuizzesTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        )}
-                        {activeTab === 'diagrams' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <DiagramsTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        )}
-                        {activeTab === 'mindmap' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <MindMapTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        )}
-                        {activeTab === 'videos' && (
+                        </div>
+
+                        {/* Chat Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'chat' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <ChatTab
+                                messages={messages}
+                                onSendMessage={(msg) => sendMessage(msg, context)}
+                                isLoading={isChatLoading}
+                            />
+                        </div>
+
+                        {/* Flashcards Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'flashcards' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <FlashcardsTab
+                                flashcards={flashcards}
+                                isLoading={isFlashcardsLoading}
+                                onGenerate={generateFlashcards}
+                                onClear={clearFlashcards}
+                                hasUnknownContext={files.length > 0}
+                            />
+                        </div>
+
+                        {/* Summary Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'summary' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <SummaryTab
+                                summary={summary}
+                                isLoading={isSummaryLoading}
+                                onGenerate={handleGenerateSummary}
+                                onUpdateSummary={handleUpdateSummary}
+                                hasUnknownContext={files.length > 0}
+                            />
+                        </div>
+
+                        {/* Quizzes Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'quizzes' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <QuizzesTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+
+                        {/* Diagrams Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'diagrams' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <DiagramsTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+
+                        {/* Mind Map Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'mindmap' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <MindMapTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+
+                        {/* Study Shorts Tab */}
+                        <div className={`h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'videos' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                             <StudyShortsTab
                                 videos={videos}
                                 isLoading={isVideosLoading}
@@ -202,19 +234,21 @@ export default function Dashboard({ session }: DashboardProps) {
                                 onLoadMore={loadMore}
                                 hasUnknownContext={files.length > 0}
                             />
-                        )}
-                        {activeTab === 'history' && (
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <HistoryTab userId={session.user.id} />
-                            </div>
-                        )}
-                        {activeTab === 'settings' && (
+                        </div>
+
+                        {/* History Tab */}
+                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                            <HistoryTab userId={session.user.id} />
+                        </div>
+
+                        {/* Settings Tab */}
+                        <div className={`h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'settings' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                             <SettingsTab
                                 userEmail={session.user.email}
                                 onSignOut={handleSignOut}
                                 onClearData={handleClearAllData}
                             />
-                        )}
+                        </div>
                     </div>
                 </main>
             </div>

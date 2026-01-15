@@ -1,7 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { parseFile } from '../lib/fileParser';
+import type { User } from '@supabase/supabase-js';
 
 export interface Document {
     id: string;
@@ -11,26 +12,41 @@ export interface Document {
     created_at: string;
 }
 
-export function useFiles(user: any) {
+export function useFiles(user: User | null) {
     const [files, setFiles] = useState<Document[]>([]);
     const [isParsing, setIsParsing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        if (user) fetchFiles();
+    const fetchFiles = useCallback(async () => {
+        if (!user) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { data, error: fetchError } = await supabase
+                .from('documents')
+                .select('*')
+                .eq('user_id', user.id) // Ensure we only get current user's files
+                .order('created_at', { ascending: false });
+
+            if (fetchError) throw fetchError;
+            setFiles(data || []);
+        } catch (err: any) {
+            console.error('Error fetching files:', err);
+            setError(err.message || 'Failed to fetch files');
+        } finally {
+            setIsLoading(false);
+        }
     }, [user]);
 
-    const fetchFiles = async () => {
-        const { data, error } = await supabase
-            .from('documents')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) console.error('Error fetching files:', error);
-        else setFiles(data || []);
-    };
+    useEffect(() => {
+        fetchFiles();
+    }, [fetchFiles]);
 
     const uploadFile = async (file: File) => {
+        if (!user) return;
         setIsParsing(true);
+        setError(null);
         try {
             // 1. Parse content locally
             const content = await parseFile(file);
@@ -40,8 +56,7 @@ export function useFiles(user: any) {
             const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file);
             if (uploadError) {
                 console.warn('Storage upload failed:', uploadError);
-                // We might choose to continue or throw. Let's throw for now to see the error.
-                throw uploadError;
+                // Continue even if storage fails, as we store content in DB
             }
 
             // 3. Insert into DB
@@ -61,16 +76,18 @@ export function useFiles(user: any) {
             if (dbError) throw dbError;
 
             // 4. Trigger RAG Processing (Async)
-            const { error: invokeError } = await supabase.functions.invoke('process-document', {
+            // Fire and forget to avoid blocking UI, or await if critical
+            supabase.functions.invoke('process-document', {
                 body: { document_id: doc.id, content: content }
+            }).then(({ error: invokeError }) => {
+                if (invokeError) console.error('RAG processing error:', invokeError);
             });
 
-            if (invokeError) throw invokeError;
-
             setFiles(prev => [doc, ...prev]);
-        } catch (error: any) {
-            console.error('Upload error:', error);
-            alert(`Failed to upload file: ${error.message || JSON.stringify(error)}`);
+        } catch (err: any) {
+            console.error('Upload error:', err);
+            setError(err.message || 'Failed to upload file');
+            alert(`Failed to upload file: ${err.message || 'Unknown error'}`);
         } finally {
             setIsParsing(false);
         }
@@ -78,14 +95,18 @@ export function useFiles(user: any) {
 
     const removeFile = async (id: string) => {
         // Optimistic update
+        const previousFiles = [...files];
         setFiles(prev => prev.filter(f => f.id !== id));
 
-        const { error } = await supabase.from('documents').delete().eq('id', id);
-        if (error) {
-            console.error('Delete error', error);
-            fetchFiles(); // Revert on error
+        try {
+            const { error: deleteError } = await supabase.from('documents').delete().eq('id', id);
+            if (deleteError) throw deleteError;
+        } catch (err: any) {
+            console.error('Delete error', err);
+            setError(err.message || 'Failed to delete file');
+            setFiles(previousFiles); // Revert on error
         }
     };
 
-    return { files, isParsing, uploadFile, removeFile };
+    return { files, isParsing, error, isLoading, uploadFile, removeFile, refreshFiles: fetchFiles };
 }

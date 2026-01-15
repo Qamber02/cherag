@@ -1,6 +1,6 @@
 
-import { useRef, useState, useEffect } from 'react';
-import { Play, RefreshCw, Share2, Sparkles, Loader2, Search } from 'lucide-react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Play, RefreshCw, Share2, Sparkles, Loader2, Search, Volume2 } from 'lucide-react';
 import type { Video } from '../hooks/useStudyShorts';
 
 interface StudyShortsTabProps {
@@ -24,8 +24,26 @@ export default function StudyShortsTab({
 }: StudyShortsTabProps) {
     const [searchTopic, setSearchTopic] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+    const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
+    const videoRefs = useRef<Map<string, HTMLIFrameElement>>(new Map());
+
+    // Pause a video using YouTube iframe API
+    const pauseVideo = useCallback((iframe: HTMLIFrameElement | null) => {
+        if (iframe) {
+            iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        }
+    }, []);
+
+    // Pause all videos except active
+    const pauseAllExcept = useCallback((exceptId: string | null) => {
+        videoRefs.current.forEach((iframe, id) => {
+            if (id !== exceptId) {
+                pauseVideo(iframe);
+            }
+        });
+    }, [pauseVideo]);
 
     // Intersection Observer for infinite scroll
     useEffect(() => {
@@ -48,12 +66,57 @@ export default function StudyShortsTab({
         return () => observer.disconnect();
     }, [onLoadMore, hasMore, isLoadingMore]);
 
+    // Intersection Observer to track visible video and pause others
+    useEffect(() => {
+        const observers: IntersectionObserver[] = [];
+
+        videos.forEach((video) => {
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting && entry.intersectionRatio > 0.7) {
+                            // This video is now mostly visible
+                            setActiveVideoId(video.youtube_id);
+                            pauseAllExcept(video.youtube_id);
+                        }
+                    });
+                },
+                { threshold: 0.7 }
+            );
+
+            const element = document.getElementById(`video-container-${video.youtube_id}`);
+            if (element) {
+                observer.observe(element);
+                observers.push(observer);
+            }
+        });
+
+        return () => {
+            observers.forEach(obs => obs.disconnect());
+        };
+    }, [videos, pauseAllExcept]);
+
+    // Pause all videos when switching away from this tab
+    useEffect(() => {
+        return () => {
+            pauseAllExcept(null);
+        };
+    }, [pauseAllExcept]);
+
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchTopic.trim()) {
             onGenerate(searchTopic.trim());
             setSearchTopic('');
             setShowSearch(false);
+        }
+    };
+
+    const registerVideoRef = (id: string, iframe: HTMLIFrameElement | null) => {
+        if (iframe) {
+            videoRefs.current.set(id, iframe);
+        } else {
+            videoRefs.current.delete(id);
         }
     };
 
@@ -71,37 +134,38 @@ export default function StudyShortsTab({
                         AI-verified short videos. Only strictly educational content passes our filters.
                     </p>
 
-                    <button
-                        onClick={() => onGenerate()}
-                        disabled={isLoading || !hasUnknownContext}
-                        className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] disabled:opacity-50 disabled:hover:scale-100"
-                    >
-                        <div className="flex items-center space-x-2">
-                            <Sparkles className="w-5 h-5" />
-                            <span>Generate Verified Feed</span>
-                        </div>
-                    </button>
-
-                    {/* Search Option */}
-                    <form onSubmit={handleSearch} className="mt-8 w-full max-w-xs">
+                    {/* Topic Search - Always available */}
+                    <form onSubmit={handleSearch} className="w-full max-w-sm mb-6">
                         <div className="relative">
                             <input
                                 type="text"
                                 value={searchTopic}
                                 onChange={(e) => setSearchTopic(e.target.value)}
-                                placeholder="Or search a specific topic..."
-                                className="w-full bg-white/10 border border-white/20 rounded-full px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500 pr-12"
+                                placeholder="Enter any topic to study..."
+                                className="w-full bg-white/10 border border-white/20 rounded-full px-5 py-4 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500 pr-14"
                             />
                             <button
                                 type="submit"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/20 rounded-full hover:bg-white/30 text-white"
+                                disabled={!searchTopic.trim()}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-amber-500 rounded-full hover:bg-amber-400 text-white disabled:opacity-50 disabled:hover:bg-amber-500"
                             >
-                                <Search className="w-4 h-4" />
+                                <Search className="w-5 h-5" />
                             </button>
                         </div>
                     </form>
 
-                    {!hasUnknownContext && <p className="mt-4 text-xs text-red-400">Upload a document first!</p>}
+                    {hasUnknownContext && (
+                        <button
+                            onClick={() => onGenerate()}
+                            disabled={isLoading}
+                            className="group relative px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.5)] disabled:opacity-50 disabled:hover:scale-100"
+                        >
+                            <div className="flex items-center space-x-2">
+                                <Sparkles className="w-5 h-5" />
+                                <span>Generate from Document</span>
+                            </div>
+                        </button>
+                    )}
                 </div>
             </div>
         );
@@ -124,7 +188,7 @@ export default function StudyShortsTab({
             className="h-full w-full bg-black overflow-y-scroll snap-y snap-mandatory scroll-smooth"
         >
             {/* Floating Controls */}
-            <div className="fixed top-24 right-12 z-50 flex flex-col gap-3">
+            <div className="fixed top-24 right-4 md:right-12 z-50 flex flex-col gap-3">
                 <button
                     onClick={() => onGenerate()}
                     disabled={isLoading}
@@ -145,7 +209,7 @@ export default function StudyShortsTab({
 
             {/* Search Popup */}
             {showSearch && (
-                <div className="fixed top-24 right-28 z-50 animate-in slide-in-from-right-2 fade-in duration-200">
+                <div className="fixed top-24 right-16 md:right-28 z-50 animate-in slide-in-from-right-2 fade-in duration-200">
                     <form onSubmit={handleSearch} className="flex gap-2 bg-black/80 backdrop-blur-xl p-3 rounded-xl border border-white/10">
                         <input
                             type="text"
@@ -165,30 +229,33 @@ export default function StudyShortsTab({
                 </div>
             )}
 
-            {/* Video Feed */}
+            {/* Video Feed - Professional 9:16 Format */}
             {videos.map((video, index) => (
                 <div
                     key={video.id}
+                    id={`video-container-${video.youtube_id}`}
                     className="h-full w-full snap-center relative flex items-center justify-center bg-black"
                 >
-                    <div className="h-full w-full md:max-w-[400px] relative bg-zinc-900 border-x border-zinc-800">
+                    {/* 9:16 Aspect Ratio Container */}
+                    <div className="h-full w-full max-w-[calc(100vh*9/16)] relative bg-zinc-900 mx-auto">
                         <iframe
+                            ref={(el) => registerVideoRef(video.youtube_id, el)}
                             className="w-full h-full"
-                            src={`https://www.youtube.com/embed/${video.youtube_id}?autoplay=0&controls=1&rel=0&modestbranding=1`}
+                            src={`https://www.youtube.com/embed/${video.youtube_id}?enablejsapi=1&autoplay=0&controls=1&rel=0&modestbranding=1&playsinline=1`}
                             title={video.title}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                         ></iframe>
 
                         {/* Bottom Gradient */}
-                        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/90 to-transparent pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/90 to-transparent pointer-events-none"></div>
 
                         {/* Content Overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none">
-                            <h3 className="text-lg font-bold line-clamp-2 leading-tight drop-shadow-md mb-2">{video.title}</h3>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white pointer-events-none">
+                            <h3 className="text-base md:text-lg font-bold line-clamp-2 leading-tight drop-shadow-md mb-2">{video.title}</h3>
                             <div className="flex items-center space-x-2 opacity-80 text-sm">
                                 {video.channel && (
-                                    <span className="text-white/70">@{video.channel}</span>
+                                    <span className="text-white/70 text-xs md:text-sm">@{video.channel}</span>
                                 )}
                                 <span className="bg-green-500/30 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-green-300">
                                     ✓ Verified
@@ -197,19 +264,27 @@ export default function StudyShortsTab({
                         </div>
 
                         {/* Side Actions */}
-                        <div className="absolute bottom-20 right-4 flex flex-col space-y-4 items-center z-20">
+                        <div className="absolute bottom-24 right-3 md:right-4 flex flex-col space-y-4 items-center z-20">
                             <div className="group flex flex-col items-center">
-                                <button className="p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-all">
-                                    <Share2 className="w-6 h-6 text-white" />
+                                <button className="p-2.5 md:p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 transition-all">
+                                    <Share2 className="w-5 h-5 md:w-6 md:h-6 text-white" />
                                 </button>
                                 <span className="text-xs text-white mt-1">Share</span>
                             </div>
                         </div>
 
                         {/* Video Counter */}
-                        <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full text-white text-sm">
+                        <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs md:text-sm">
                             {index + 1} / {videos.length}
                         </div>
+
+                        {/* Playing Indicator */}
+                        {activeVideoId === video.youtube_id && (
+                            <div className="absolute top-3 right-3 md:top-4 md:right-4 bg-amber-500/80 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs flex items-center gap-1">
+                                <Volume2 className="w-3 h-3" />
+                                Active
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}

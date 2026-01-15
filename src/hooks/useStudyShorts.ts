@@ -1,144 +1,87 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 
 export interface Video {
     id: string;
     youtube_id: string;
     title: string;
-    thumbnail_url: string;
-    channel?: string;
-    relevanceScore?: number;
-}
-
-interface VideoResponse {
-    id: string;
-    title: string;
     thumbnail: string;
     channel?: string;
     relevanceScore?: number;
+    duration?: string;
 }
 
-export function useStudyShorts(user: any, context: string) {
+export function useStudyShorts(user: User | null, context: string) {
     const [videos, setVideos] = useState<Video[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [nextPageToken, setNextPageToken] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
-    const [currentTopic, setCurrentTopic] = useState<string>('');
+    const [lastQuery, setLastQuery] = useState('');
+    const [nextPageToken, setNextPageToken] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (user) fetchVideos();
-    }, [user]);
-
-    const fetchVideos = async () => {
-        const { data } = await supabase
-            .from('videos')
-            .select('*')
-            .order('created_at', { ascending: false });
-        setVideos(data as Video[] || []);
-    };
-
-    const mapResponseToVideo = (v: VideoResponse): Video => ({
-        id: v.id,
-        youtube_id: v.id,
-        title: v.title,
-        thumbnail_url: v.thumbnail,
-        channel: v.channel,
-        relevanceScore: v.relevanceScore
-    });
-
-    const generateShorts = async (customTopic?: string) => {
-        if (!context && !customTopic) return;
+    const generateShorts = async (topic?: string) => {
+        if (!user) return;
         setIsLoading(true);
-        setVideos([]); // Clear for fresh feel
-        setNextPageToken(null);
         setHasMore(true);
+        setNextPageToken(null);
 
         try {
-            // Clear old videos from user's DB
-            await supabase.from('videos').delete().eq('user_id', user.id);
-
-            const topic = customTopic || context.slice(0, 200);
-            setCurrentTopic(topic);
-
-            // Use client-side video generation
             const { generateVideos } = await import('../lib/aiService');
-            const data = await generateVideos(topic, null);
+            // Use context as topic if no explicit topic
+            const query = topic || context.slice(0, 200) || 'educational';
+            setLastQuery(query);
 
-            const ytVideos: VideoResponse[] = data.result || [];
-            setNextPageToken(data.nextPageToken || null);
-            setHasMore(!!data.nextPageToken);
+            const { result, nextPageToken: token } = await generateVideos(query);
+            setNextPageToken(token);
 
-            if (ytVideos.length === 0) {
-                console.log('[useStudyShorts] No verified videos found');
-                setHasMore(false);
-                return;
-            }
-
-            // Map and set
-            const mapped = ytVideos.map(mapResponseToVideo);
-            setVideos(mapped);
-
-            // Save to DB
-            const videosToInsert = mapped.map((v) => ({
-                user_id: user.id,
-                youtube_id: v.youtube_id,
+            const mappedVideos: Video[] = result.map((v: any) => ({
+                id: v.id,
+                youtube_id: v.id,
                 title: v.title,
-                thumbnail_url: v.thumbnail_url
+                thumbnail: v.thumbnail,
+                channel: v.channel,
+                relevanceScore: v.relevanceScore,
+                duration: '1:00'
             }));
 
-            await supabase.from('videos').insert(videosToInsert);
-
-        } catch (err) {
-            console.error('[useStudyShorts] Error:', err);
+            setVideos(mappedVideos);
+        } catch (err: any) {
+            console.error('Error generating shorts:', err);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const loadMore = useCallback(async () => {
-        if (isLoadingMore || !hasMore || !nextPageToken) return;
-
+    const loadMore = async () => {
+        if (!user || isLoadingMore || !hasMore || !nextPageToken) return;
         setIsLoadingMore(true);
-
         try {
-            // Use client-side video generation
             const { generateVideos } = await import('../lib/aiService');
-            const data = await generateVideos(currentTopic, nextPageToken);
+            const { result, nextPageToken: token } = await generateVideos(lastQuery, nextPageToken);
 
-            const ytVideos: VideoResponse[] = data.result || [];
-            setNextPageToken(data.nextPageToken || null);
-            setHasMore(!!data.nextPageToken && ytVideos.length > 0);
+            setNextPageToken(token);
+            if (!token) setHasMore(false);
 
-            if (ytVideos.length > 0) {
-                const mapped = ytVideos.map(mapResponseToVideo);
-                setVideos(prev => [...prev, ...mapped]);
+            const mappedVideos: Video[] = result.map((v: any) => ({
+                id: v.id,
+                youtube_id: v.id,
+                title: v.title,
+                thumbnail: v.thumbnail,
+                channel: v.channel,
+                relevanceScore: v.relevanceScore,
+                duration: '1:00'
+            }));
 
-                // Save new videos to DB
-                const videosToInsert = mapped.map((v) => ({
-                    user_id: user.id,
-                    youtube_id: v.youtube_id,
-                    title: v.title,
-                    thumbnail_url: v.thumbnail_url
-                }));
+            setVideos(prev => [...prev, ...mappedVideos]);
 
-                await supabase.from('videos').insert(videosToInsert);
-            }
-
-        } catch (err) {
-            console.error('[useStudyShorts] LoadMore error:', err);
+        } catch (err: any) {
+            console.error('Error loading more shorts:', err);
+            setHasMore(false);
         } finally {
             setIsLoadingMore(false);
         }
-    }, [isLoadingMore, hasMore, nextPageToken, currentTopic, context, user]);
-
-    return {
-        videos,
-        generateShorts,
-        loadMore,
-        isLoading,
-        isLoadingMore,
-        hasMore
     };
+
+    return { videos, generateShorts, loadMore, isLoading, isLoadingMore, hasMore };
 }

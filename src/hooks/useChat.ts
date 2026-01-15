@@ -1,14 +1,16 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import type { User } from '@supabase/supabase-js';
 
 export interface Message {
-    id?: string;
+    id: string;
     role: 'user' | 'assistant';
     content: string;
+    created_at: string;
 }
 
-export function useChat(user: any) {
+export function useChat(user: User | null) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [chatId, setChatId] = useState<string | null>(null);
@@ -44,29 +46,58 @@ export function useChat(user: any) {
     }, [user]);
 
     const sendMessage = async (content: string, context: string) => {
-        if (!chatId) return;
+        if (!content.trim() || !user) return;
 
-        const userMsg: Message = { role: 'user', content };
+        // Optimistic update
+        const userMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'user',
+            content,
+            created_at: new Date().toISOString()
+        };
+
         setMessages(prev => [...prev, userMsg]);
         setIsLoading(true);
 
         try {
-            // Save User Message
-            await supabase.from('messages').insert({ chat_id: chatId, role: 'user', content });
+            // Save user message
+            await supabase.from('messages').insert({
+                chat_id: chatId || user.id, // simplified
+                role: 'user',
+                content,
+                user_id: user.id
+            });
 
-            // Call client-side AI Service
             const { chatWithAI } = await import('../lib/aiService');
-            const aiContent = await chatWithAI(context, content) || "Sorry, I couldn't process that.";
-            const aiMsg: Message = { role: 'assistant', content: aiContent };
+            const response = await chatWithAI(context, content);
+
+            const aiMsg: Message = {
+                id: crypto.randomUUID(),
+                role: 'assistant',
+                content: response,
+                created_at: new Date().toISOString()
+            };
 
             setMessages(prev => [...prev, aiMsg]);
 
-            // Save AI Message
-            await supabase.from('messages').insert({ chat_id: chatId, role: 'assistant', content: aiContent });
+            // Save AI response
+            await supabase.from('messages').insert({
+                chat_id: chatId || user.id,
+                role: 'assistant',
+                content: response,
+                user_id: user.id
+            });
 
-        } catch (err) {
-            console.error('Chat error:', err);
-            setMessages(prev => [...prev, { role: 'assistant', content: "Error communicating with AI." }]);
+        } catch (err: any) {
+            console.error(err);
+            // Add error message to chat
+            const errorMsg: Message = {
+                id: crypto.randomUUID(),
+                role: 'assistant',
+                content: "I'm sorry, I encountered an error processing your request.",
+                created_at: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, errorMsg]);
         } finally {
             setIsLoading(false);
         }

@@ -2,8 +2,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
 // Configure PDF.js worker
-// Use unpkg as it mirrors npm versions reliably. Note the .mjs extension for modern pdf.js versions.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Use local worker to avoid CDN issues and strict CSP
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export const parseFile = async (file: File): Promise<string> => {
     const fileType = file.type;

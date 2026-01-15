@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Moon, Sun, Trash2, LogOut, User, Database, Sparkles, Mail, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -10,7 +10,12 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ userEmail, onSignOut, onClearData }: SettingsTabProps) {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+    // Initialize from localStorage or system preference
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved) return saved === 'dark';
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    });
     const [isClearing, setIsClearing] = useState(false);
     const [showConfirmClear, setShowConfirmClear] = useState(false);
 
@@ -19,6 +24,17 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
     const [newEmail, setNewEmail] = useState('');
     const [emailLoading, setEmailLoading] = useState(false);
     const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // Sync theme with localStorage and document
+    useEffect(() => {
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDarkMode]);
 
     const handleClearData = async () => {
         setIsClearing(true);
@@ -32,7 +48,6 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
 
     const toggleDarkMode = () => {
         setIsDarkMode(!isDarkMode);
-        document.documentElement.classList.toggle('dark');
     };
 
     const handleEmailChange = async () => {
@@ -56,7 +71,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
     };
 
     return (
-        <div className="p-8 h-full overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="p-8 h-full overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
             <div className="max-w-2xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
@@ -64,15 +79,15 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                         <Settings className="w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-                        <p className="text-sm text-gray-500">Manage your account and preferences</p>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Manage your account and preferences</p>
                     </div>
                 </div>
 
                 {/* Account Section */}
-                <section className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg overflow-hidden">
-                    <div className="p-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                        <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Account
                         </h2>
@@ -81,8 +96,8 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                         {/* Current Email */}
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-700">Email</p>
-                                <p className="text-sm text-gray-500">{userEmail || 'Not signed in'}</p>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{userEmail || 'Not signed in'}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
@@ -145,9 +160,9 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* Appearance Section */}
-                <section className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg overflow-hidden">
-                    <div className="p-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                        <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Sparkles className="w-4 h-4" />
                             Appearance
                         </h2>
@@ -155,8 +170,8 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                     <div className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-700">Dark Mode</p>
-                                <p className="text-sm text-gray-500">Toggle dark theme</p>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Dark Mode</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Toggle dark theme</p>
                             </div>
                             <button
                                 onClick={toggleDarkMode}
@@ -173,17 +188,17 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* Data Management Section */}
-                <section className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg overflow-hidden">
-                    <div className="p-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                        <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Database className="w-4 h-4" />
                             Data Management
                         </h2>
                     </div>
                     <div className="p-4 space-y-4">
                         <div>
-                            <p className="text-sm font-medium text-gray-700">Clear All Data</p>
-                            <p className="text-sm text-gray-500">Remove all flashcards, quizzes, videos, and chat history</p>
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Clear All Data</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Remove all flashcards, quizzes, videos, and chat history</p>
                         </div>
 
                         {!showConfirmClear ? (

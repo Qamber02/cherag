@@ -403,17 +403,17 @@ Use proper formatting with headers and bullet points.`;
 
     // Roadmap View with Side Panel
     return (
-        <div className="flex h-full overflow-hidden">
+        <div className="flex flex-col md:flex-row h-full overflow-hidden relative">
             {/* Main Roadmap Area */}
-            <div className="flex-1 flex flex-col p-6 overflow-hidden">
+            <div className="flex-1 flex flex-col p-3 md:p-6 overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                    <h2 className="text-xl font-bold text-gray-900">Learning Roadmap</h2>
+                <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">
+                    <h2 className="text-lg md:text-xl font-bold text-gray-900">Learning Roadmap</h2>
                     <button
                         onClick={handleGenerateRoadmap}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-200"
+                        className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-amber-100 text-amber-700 text-xs md:text-sm font-medium rounded-lg hover:bg-amber-200"
                     >
-                        <RefreshCw className="w-4 h-4" />
+                        <RefreshCw className="w-3.5 md:w-4 h-3.5 md:h-4" />
                         Regenerate
                     </button>
                 </div>
@@ -516,72 +516,79 @@ Use proper formatting with headers and bullet points.`;
                 </div>
             </div>
 
-            {/* Side Panel */}
+            {/* Side Panel - Overlay on mobile, side panel on desktop */}
             {selectedNode && (
-                <div className="w-96 bg-white border-l border-gray-200 flex flex-col shadow-xl">
-                    {/* Panel Header */}
-                    <div className="p-4 border-b border-gray-100 flex items-start justify-between bg-gradient-to-r from-amber-50 to-orange-50">
-                        <div className="flex-1 pr-3">
-                            <h3 className="font-bold text-gray-900 text-lg">{selectedNode.title}</h3>
-                            {selectedNode.description && (
-                                <p className="text-sm text-gray-600 mt-1">{selectedNode.description}</p>
-                            )}
-                        </div>
-                        <button
-                            onClick={() => setSelectedNode(null)}
-                            className="p-1.5 hover:bg-white/70 rounded-lg"
-                        >
-                            <X className="w-5 h-5 text-gray-400" />
-                        </button>
-                    </div>
-
-                    {/* Panel Content */}
-                    <div className="flex-1 overflow-auto p-4">
-                        {isLoadingExplanation ? (
-                            <div className="flex flex-col items-center justify-center py-16">
-                                <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-                                <p className="text-sm text-gray-500">Generating explanation...</p>
+                <>
+                    {/* Mobile overlay backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/40 z-40 md:hidden"
+                        onClick={() => setSelectedNode(null)}
+                    />
+                    <div className="fixed inset-x-0 bottom-0 max-h-[80vh] md:relative md:inset-auto md:max-h-none md:w-96 bg-white border-t md:border-t-0 md:border-l border-gray-200 flex flex-col shadow-xl z-50 rounded-t-2xl md:rounded-none">
+                        {/* Panel Header */}
+                        <div className="p-4 border-b border-gray-100 flex items-start justify-between bg-gradient-to-r from-amber-50 to-orange-50">
+                            <div className="flex-1 pr-3">
+                                <h3 className="font-bold text-gray-900 text-lg">{selectedNode.title}</h3>
+                                {selectedNode.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{selectedNode.description}</p>
+                                )}
                             </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {/* Formatted Explanation */}
-                                <div className="text-sm">
-                                    {formatExplanation(nodeExplanation)}
-                                </div>
+                            <button
+                                onClick={() => setSelectedNode(null)}
+                                className="p-1.5 hover:bg-white/70 rounded-lg"
+                            >
+                                <X className="w-5 h-5 text-gray-400" />
+                            </button>
+                        </div>
 
-                                {/* Resources Section */}
-                                <div className="pt-4 mt-4 border-t border-gray-100">
-                                    <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                        <BookOpen className="w-4 h-4 text-amber-500" />
-                                        Learn More
-                                    </h4>
-                                    <div className="space-y-2">
-                                        <a
-                                            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedNode.title + ' explained tutorial')}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm"
-                                        >
-                                            <Video className="w-4 h-4" />
-                                            <span className="flex-1 font-medium">YouTube Tutorials</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                        </a>
-                                        <a
-                                            href={`https://www.google.com/search?q=${encodeURIComponent(selectedNode.title + ' guide')}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm"
-                                        >
-                                            <FileText className="w-4 h-4" />
-                                            <span className="flex-1 font-medium">Articles & Guides</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                        </a>
+                        {/* Panel Content */}
+                        <div className="flex-1 overflow-auto p-4">
+                            {isLoadingExplanation ? (
+                                <div className="flex flex-col items-center justify-center py-16">
+                                    <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+                                    <p className="text-sm text-gray-500">Generating explanation...</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {/* Formatted Explanation */}
+                                    <div className="text-sm">
+                                        {formatExplanation(nodeExplanation)}
+                                    </div>
+
+                                    {/* Resources Section */}
+                                    <div className="pt-4 mt-4 border-t border-gray-100">
+                                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            <BookOpen className="w-4 h-4 text-amber-500" />
+                                            Learn More
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <a
+                                                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedNode.title + ' explained tutorial')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm"
+                                            >
+                                                <Video className="w-4 h-4" />
+                                                <span className="flex-1 font-medium">YouTube Tutorials</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                            <a
+                                                href={`https://www.google.com/search?q=${encodeURIComponent(selectedNode.title + ' guide')}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm"
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                                <span className="flex-1 font-medium">Articles & Guides</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );

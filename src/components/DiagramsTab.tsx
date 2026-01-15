@@ -5,6 +5,15 @@ import { saveDiagram, getLastDiagram } from '../lib/activityService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
+
+// Gemini models to try in order
+const GEMINI_MODELS = [
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-2.5-pro',
+];
 
 interface DiagramsTabProps {
     userId: string;
@@ -166,6 +175,7 @@ flowchart TD
         if (OPENROUTER_API_KEY) {
             try {
                 console.log('[Diagram] Trying OpenRouter...');
+                setLoadingStatus('Trying OpenRouter...');
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -184,40 +194,107 @@ flowchart TD
                 if (response.ok) {
                     const data = await response.json();
                     mermaidCode = data.choices?.[0]?.message?.content || '';
-                    console.log('[Diagram] OpenRouter success');
+                    if (mermaidCode) {
+                        console.log('[Diagram] OpenRouter success');
+                    }
+                } else if (response.status === 429) {
+                    console.warn('[Diagram] OpenRouter rate limited');
                 }
             } catch (e) {
                 console.warn('[Diagram] OpenRouter failed:', e);
             }
         }
 
-        // Fallback to Gemini
+        // Fallback to Gemini - try multiple models
         if (!mermaidCode && GEMINI_API_KEY) {
+            for (const model of GEMINI_MODELS) {
+                try {
+                    console.log(`[Diagram] Trying Gemini ${model}...`);
+                    setLoadingStatus(`Trying ${model}...`);
+
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }]
+                            })
+                        }
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        mermaidCode = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                        if (mermaidCode) {
+                            console.log(`[Diagram] ✅ Success with ${model}`);
+                            break;
+                        }
+                    } else if (response.status === 429) {
+                        console.warn(`[Diagram] Rate limit on ${model}, trying next...`);
+                        continue;
+                    } else {
+                        const errData = await response.json();
+                        console.warn(`[Diagram] ${model} error:`, errData.error?.message);
+                        continue;
+                    }
+                } catch (e) {
+                    console.warn(`[Diagram] ${model} failed:`, e);
+                    continue;
+                }
+            }
+        }
+
+        // Ultimate fallback: HuggingFace
+        if (!mermaidCode && HUGGINGFACE_API_KEY) {
             try {
-                console.log('[Diagram] Trying Gemini...');
+                console.log('[Diagram] Trying HuggingFace fallback...');
+                setLoadingStatus('Trying HuggingFace...');
+
                 const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
+                    'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2',
                     {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+                            'Content-Type': 'application/json',
+                        },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }]
+                            inputs: prompt,
+                            parameters: {
+                                max_new_tokens: 500,
+                                temperature: 0.3,
+                            }
                         })
                     }
                 );
 
                 if (response.ok) {
                     const data = await response.json();
-                    mermaidCode = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                    console.log('[Diagram] Gemini success');
+                    if (Array.isArray(data) && data[0]?.generated_text) {
+                        mermaidCode = data[0].generated_text;
+                        console.log('[Diagram] ✅ HuggingFace success');
+                    }
                 }
             } catch (e) {
-                console.warn('[Diagram] Gemini failed:', e);
+                console.warn('[Diagram] HuggingFace failed:', e);
             }
         }
 
         if (!mermaidCode) {
-            throw new Error('Failed to generate diagram. Please try again.');
+            // Generate a simple fallback diagram from content
+            console.log('[Diagram] All APIs failed, using fallback diagram');
+            setLoadingStatus('Generating basic diagram...');
+            const words = context.slice(0, 300).split(/\s+/).filter(w => w.length > 4 && /^[a-zA-Z]+$/.test(w));
+            const uniqueWords = [...new Set(words)].slice(0, 5);
+
+            mermaidCode = `flowchart TD
+    A((Start)) --> B[${uniqueWords[0] || 'Main Topic'}]
+    B --> C[${uniqueWords[1] || 'Concept 1'}]
+    B --> D[${uniqueWords[2] || 'Concept 2'}]
+    C --> E[${uniqueWords[3] || 'Detail'}]
+    D --> E
+    E --> F((End))`;
         }
 
         // Clean up the code
@@ -338,8 +415,8 @@ flowchart TD
                 <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/25">
                     <GitBranch className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Flowchart Generator</h2>
-                <p className="text-gray-500 mb-8 max-w-md">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">AI Flowchart Generator</h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-md">
                     Transform your study materials into beautiful, easy-to-understand flowcharts.
                 </p>
 
@@ -371,7 +448,7 @@ flowchart TD
         return (
             <div className="flex flex-col items-center justify-center h-full">
                 <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
-                <p className="text-gray-600 font-medium">{loadingStatus || 'Processing...'}</p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium">{loadingStatus || 'Processing...'}</p>
                 <p className="text-gray-400 text-sm mt-2">Creating professional flowchart</p>
             </div>
         );
@@ -382,25 +459,25 @@ flowchart TD
         <div className="flex flex-col h-full p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Professional Flowchart</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Professional Flowchart</h2>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleGenerateDiagram}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         title="Regenerate"
                     >
-                        <RefreshCw className="w-5 h-5 text-gray-500" />
+                        <RefreshCw className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </button>
                     <button
                         onClick={downloadSVG}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         title="Download SVG"
                     >
-                        <Download className="w-5 h-5 text-gray-500" />
+                        <Download className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     </button>
                     <button
                         onClick={downloadPNG}
-                        className="px-3 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-1"
+                        className="px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-medium rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors flex items-center gap-1"
                         title="Download PNG"
                     >
                         <ImageIcon className="w-4 h-4" />
@@ -417,7 +494,7 @@ flowchart TD
             )}
 
             {/* Diagram Display - Fixed container with proper padding */}
-            <div className="flex-1 bg-white rounded-2xl border border-gray-200 overflow-auto">
+            <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-auto">
                 <div className="min-h-full p-8 flex items-center justify-center">
                     <div
                         ref={diagramRef}
@@ -429,11 +506,11 @@ flowchart TD
             </div>
 
             {/* Info */}
-            <div className="mt-4 p-4 bg-indigo-50 rounded-xl">
-                <p className="text-sm text-indigo-900 font-medium mb-1">
+            <div className="mt-4 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+                <p className="text-sm text-indigo-900 dark:text-indigo-200 font-medium mb-1">
                     ✨ AI-Generated Flowchart
                 </p>
-                <p className="text-xs text-indigo-600">
+                <p className="text-xs text-indigo-600 dark:text-indigo-400">
                     Professional visualization of your study content
                 </p>
             </div>
@@ -441,7 +518,7 @@ flowchart TD
             {/* Code Preview */}
             {diagramCode && (
                 <details className="mt-4">
-                    <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                    <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                         View Mermaid Code
                     </summary>
                     <pre className="mt-2 p-4 bg-gray-900 text-green-400 rounded-xl text-xs overflow-auto max-h-40">

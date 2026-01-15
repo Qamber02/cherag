@@ -34,13 +34,18 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
     const [activities, setActivities] = useState<ActivityItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     useEffect(() => {
         fetchActivities();
     }, [userId, filter]);
 
     const fetchActivities = async () => {
-        setIsLoading(true);
+        // Only show full loading on initial load, not on filter change
+        if (isInitialLoad) {
+            setIsLoading(true);
+        }
+
         let query = supabase
             .from('activity_history')
             .select('*')
@@ -55,6 +60,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
         const { data } = await query;
         setActivities(data || []);
         setIsLoading(false);
+        setIsInitialLoad(false);
     };
 
     const formatDate = (dateString: string) => {
@@ -81,8 +87,8 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                 <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-6">
                     <History className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Activity History</h2>
-                <p className="text-gray-500 max-w-sm">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Activity History</h2>
+                <p className="text-gray-500 dark:text-gray-400 max-w-sm">
                     Your study activity will appear here. Start by generating flashcards, quizzes, or summaries!
                 </p>
             </div>
@@ -94,8 +100,8 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Activity History</h2>
-                    <p className="text-sm text-gray-500">{activities.length} activities</p>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Activity History</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{activities.length} activities</p>
                 </div>
             </div>
 
@@ -106,8 +112,8 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                         key={f}
                         onClick={() => setFilter(f)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${filter === f
-                                ? 'bg-gray-900 text-white'
-                                : 'bg-white/50 text-gray-600 hover:bg-white'
+                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                            : 'bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700'
                             }`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -129,7 +135,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                         return (
                             <div
                                 key={activity.id}
-                                className="bg-white/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white transition-colors"
+                                className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white dark:hover:bg-gray-800 transition-colors"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>
@@ -137,7 +143,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-medium text-gray-900">
+                                            <span className="font-medium text-gray-900 dark:text-white">
                                                 {activity.title || activity.activity_type.charAt(0).toUpperCase() + activity.activity_type.slice(1)}
                                             </span>
                                             <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -146,7 +152,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                                             </span>
                                         </div>
                                         {activity.content_preview && (
-                                            <p className="text-sm text-gray-600 line-clamp-2">
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
                                                 {activity.content_preview}
                                             </p>
                                         )}

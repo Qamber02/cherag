@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import {
     Upload, LayoutDashboard, Layers, FileQuestion,
-    Play, History, Settings, Brain, User, FileText, X
+    Play, History, Settings, Brain, User, FileText, X, MessageCircle, FileCheck
 } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
 
@@ -18,6 +18,8 @@ interface SidebarProps {
 
 const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'chat', icon: MessageCircle, label: 'Chat' },
+    { id: 'summary', icon: FileCheck, label: 'Summary' },
     { id: 'flashcards', icon: Layers, label: 'Flashcards' },
     { id: 'quizzes', icon: FileQuestion, label: 'Quizzes' },
     { id: 'diagrams', icon: LayoutDashboard, label: 'Diagrams' },
@@ -69,8 +71,8 @@ export default function Sidebar({
     }, []);
 
     return (
-        <>
-            <aside className="w-20 glass-sidebar flex flex-col h-full py-6">
+        <div className="flex h-full">
+            <aside className="w-20 glass-sidebar flex flex-col h-full py-6 z-20 relative">
                 {/* Logo */}
                 <div className="flex justify-center mb-8">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
@@ -161,14 +163,14 @@ export default function Sidebar({
 
             {/* File Upload Panel */}
             {showFilePanel && (
-                <div className="w-72 glass-sidebar flex flex-col h-full py-6 px-4 border-l border-white/20">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-gray-900">Documents</h3>
+                <div className="w-80 glass-sidebar flex flex-col h-full py-6 px-4 border-l border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-xl z-10 animate-fade-in custom-scrollbar">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-semibold text-lg text-foreground">Documents</h3>
                         <button
                             onClick={() => setShowFilePanel(false)}
-                            className="p-1 hover:bg-gray-100 rounded-lg"
+                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
                         >
-                            <X className="w-4 h-4 text-gray-500" />
+                            <X className="w-4 h-4 text-muted-foreground" />
                         </button>
                     </div>
 
@@ -178,47 +180,84 @@ export default function Sidebar({
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`drop-zone rounded-xl p-6 text-center cursor-pointer mb-4 ${isDragging ? 'dragging' : ''}`}
+                        className={`
+                            drop-zone rounded-xl p-8 text-center cursor-pointer mb-6 transition-all duration-300
+                            ${isDragging ? 'dragging border-primary bg-primary/5' : 'border-dashed border-2 border-muted-foreground/30 hover:border-primary/50 hover:bg-white/30 dark:hover:bg-black/20'}
+                        `}
                     >
                         {isParsing ? (
                             <div className="flex flex-col items-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                                <span className="text-sm text-gray-600">Processing...</span>
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
+                                <span className="text-sm font-medium text-foreground">Processing...</span>
                             </div>
                         ) : (
-                            <>
-                                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                <p className="text-sm text-gray-600">
-                                    Drop files here or <span className="text-amber-600">browse</span>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="p-3 bg-white/50 dark:bg-white/5 rounded-full mb-1">
+                                    <Upload className="w-6 h-6 text-primary" />
+                                </div>
+                                <p className="text-sm font-medium text-foreground">
+                                    Click or drop files
                                 </p>
-                                <p className="text-xs text-gray-400 mt-1">PDF, DOCX, TXT</p>
-                            </>
+                                <p className="text-xs text-muted-foreground">
+                                    PDF, DOCX, TXT
+                                </p>
+                            </div>
                         )}
                     </div>
 
+                    {/* File List Header */}
+                    <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Uploaded Files
+                        </span>
+                        <span className="text-xs bg-black/5 dark:bg-white/10 px-2 py-0.5 rounded-full text-foreground font-medium">
+                            {files.length}
+                        </span>
+                    </div>
+
                     {/* File List */}
-                    <div className="flex-1 overflow-y-auto space-y-2">
-                        <p className="text-xs text-gray-500 font-medium">
-                            {files.length} file(s) uploaded
-                        </p>
-                        {files.map((file) => (
-                            <div
-                                key={file.id}
-                                className="flex items-center gap-2 p-2 bg-white/50 rounded-lg hover:bg-white transition-colors"
-                            >
-                                <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                                <span className="text-sm text-gray-700 truncate flex-1">{file.filename}</span>
-                                <button
-                                    onClick={() => onRemove(file.id)}
-                                    className="p-1 hover:bg-gray-100 rounded"
-                                >
-                                    <X className="w-3 h-3 text-gray-400" />
-                                </button>
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                        {files.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-center opacity-60">
+                                <FileText className="w-10 h-10 text-muted-foreground mb-3" />
+                                <p className="text-sm text-foreground">No files yet</p>
+                                <p className="text-xs text-muted-foreground mt-1 max-w-[150px]">
+                                    Upload documents to start chatting with them
+                                </p>
                             </div>
-                        ))}
+                        ) : (
+                            files.map((file) => (
+                                <div
+                                    key={file.id}
+                                    className="group flex items-center gap-3 p-3 bg-white/60 dark:bg-black/20 rounded-xl hover:bg-white/80 dark:hover:bg-black/30 transition-all border border-transparent hover:border-black/5 dark:hover:border-white/5 shadow-sm"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col items-start">
+                                        <span className="text-sm font-medium text-foreground truncate w-full" title={file.filename}>
+                                            {file.filename}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground uppercase">
+                                            {file.file_type}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemove(file.id);
+                                        }}
+                                        className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 rounded-lg transition-all"
+                                        title="Remove file"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }

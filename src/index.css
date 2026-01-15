@@ -154,6 +154,11 @@
     background-attachment: fixed;
   }
 
+  .dark .bg-scholar {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #1f2937 50%, #1a1a2e 75%, #0f172a 100%);
+    background-attachment: fixed;
+  }
+
   /* Glassmorphism Utilities */
   .glass {
     background: rgba(255, 255, 255, 0.7);
@@ -182,8 +187,9 @@
   }
 
   .dark .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(40, 40, 50, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   /* Glass Sidebar */
@@ -191,6 +197,12 @@
     background: rgba(255, 255, 255, 0.4);
     backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .dark .glass-sidebar {
+    background: rgba(30, 30, 40, 0.7);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   /* Icon Button */

@@ -245,14 +245,45 @@ export async function generateImageWithGemini(prompt: string): Promise<string | 
 
 // Task-specific functions with validation and rate limiting
 
-export async function generateSummary(context: string): Promise<string> {
+export async function generateSummary(context: string, options?: { length?: string; style?: string; focus?: string }): Promise<string> {
     await rateLimiter.waitForToken('summary');
 
     const sanitized = sanitizeInput(context);
-    const prompt = `Summarize this text concisely for a student. Use **bold** for key terms and important concepts. Include bullet points for key highlights.
+
+    // Build customized instructions based on options
+    let lengthInstruction = 'medium length';
+    let styleInstruction = 'Use a mix of bullet points and paragraphs';
+    let focusInstruction = '';
+
+    if (options?.length === 'short') {
+        lengthInstruction = 'brief and concise (2-3 paragraphs max)';
+    } else if (options?.length === 'detailed') {
+        lengthInstruction = 'comprehensive and detailed';
+    }
+
+    if (options?.style === 'bullet') {
+        styleInstruction = 'Use bullet points exclusively for easy scanning';
+    } else if (options?.style === 'paragraph') {
+        styleInstruction = 'Use flowing paragraphs for narrative structure';
+    }
+
+    if (options?.focus) {
+        focusInstruction = `Focus specifically on: ${options.focus}.`;
+    }
+
+    const prompt = `Create a ${lengthInstruction} summary of this text for a student studying for exams.
+
+**Formatting Requirements:**
+- Use **bold** for key terms and important concepts
+- ${styleInstruction}
+- Include section headers using ## for organization
+- Highlight definitions and core concepts
+
+${focusInstruction}
 
 Text:
 ${sanitized}`;
+
     return callGeminiWithFallback(prompt, 'summary');
 }
 
@@ -546,9 +577,10 @@ Keywords:`;
                 title: item.snippet.title,
                 thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
                 channel: item.snippet.channelTitle,
-                relevanceScore: calculateRelevance(item.snippet.title, topicWords)
+                relevanceScore: calculateRelevance(item.snippet.title, item.snippet.channelTitle, topicWords)
             }))
-            .filter((v: VideoResult) => (v.relevanceScore ?? 0) > 0.2) // Only keep relevant videos
+            .filter((v: VideoResult) => !isClickbaitOrEntertainment(v.title)) // Filter clickbait
+            .filter((v: VideoResult) => (v.relevanceScore ?? 0) > 0.35) // Stricter relevance threshold
             .sort((a: VideoResult, b: VideoResult) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))
             .slice(0, 10);
 
@@ -562,24 +594,57 @@ Keywords:`;
     }
 }
 
-// Calculate relevance score based on topic match
-function calculateRelevance(title: string, topicWords: string[]): number {
+// Check if video title suggests clickbait or entertainment (not educational)
+function isClickbaitOrEntertainment(title: string): boolean {
     const titleLower = title.toLowerCase();
+    const negativePatterns = [
+        'challenge', 'prank', 'vlog', 'reaction', 'mukbang', 'asmr',
+        'gameplay', 'gaming', 'live stream', 'giveaway', 'unboxing',
+        'you won\'t believe', 'shocking', 'gone wrong', 'try not to',
+        'tiktok', 'shorts compilation', 'memes', 'roast', 'drama',
+        'exposed', 'cancelled', 'dating', 'relationship', 'gossip'
+    ];
+
+    return negativePatterns.some(pattern => titleLower.includes(pattern));
+}
+
+// Calculate relevance score based on topic match
+function calculateRelevance(title: string, channel: string, topicWords: string[]): number {
+    const titleLower = title.toLowerCase();
+    const channelLower = channel?.toLowerCase() || '';
     let matches = 0;
 
+    // Check topic word matches in title
     for (const word of topicWords) {
         if (titleLower.includes(word)) {
             matches++;
         }
     }
 
-    // Also check for educational keywords
-    const eduKeywords = ['tutorial', 'explained', 'learn', 'course', 'lesson', 'guide', 'how to', 'introduction', 'basics'];
+    // Boost for educational keywords
+    const eduKeywords = ['tutorial', 'explained', 'learn', 'course', 'lesson', 'guide', 'how to', 'introduction', 'basics', 'beginner', 'complete', 'crash course', 'fundamentals'];
     for (const kw of eduKeywords) {
         if (titleLower.includes(kw)) {
             matches += 0.5;
         }
     }
 
-    return topicWords.length > 0 ? matches / topicWords.length : 0.5;
+    // Boost for educational channels
+    const eduChannelKeywords = ['academy', 'school', 'university', 'edu', 'learn', 'course', 'tutor', 'class', 'professor', 'khan', 'codecademy'];
+    for (const kw of eduChannelKeywords) {
+        if (channelLower.includes(kw)) {
+            matches += 0.3;
+            break;
+        }
+    }
+
+    // Slight penalty for entertainment indicators
+    const entertainmentIndicators = ['funny', 'crazy', 'insane', 'epic', 'amazing', 'incredible'];
+    for (const kw of entertainmentIndicators) {
+        if (titleLower.includes(kw)) {
+            matches -= 0.2;
+        }
+    }
+
+    return topicWords.length > 0 ? Math.max(0, matches / topicWords.length) : 0.5;
 }
