@@ -318,8 +318,14 @@ export async function generateQuizzes(context: string): Promise<Array<{ question
 
     const sanitized = sanitizeInput(context);
     const prompt = `Generate 5 multiple choice questions as a JSON array. 
-Format: [{"question": "...", "options": ["A text", "B text", "C text", "D text"], "correct_answer": "A", "explanation": "..."}]
-IMPORTANT: correct_answer must be just the letter (A, B, C, or D). No markdown, ONLY valid JSON.
+Format: [{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}]
+
+CRITICAL RULES:
+1. correct_answer must be just the letter (A, B, C, or D)
+2. VARY the correct answers - do NOT make all answers the same letter! Mix A, B, C, and D throughout the quiz.
+3. Each option should start with its letter like "A) answer text"
+4. Make questions educational and relevant to the content
+5. No markdown, ONLY valid JSON array
 
 Text:
 ${sanitized}`;

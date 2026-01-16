@@ -101,6 +101,13 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         setSelectedAnswer(answer);
         setShowResult(true);
 
+        // Update local state with the user's answer
+        setQuizzes(prev => prev.map((q, idx) =>
+            idx === currentIndex
+                ? { ...q, answered: true, user_answer: answer }
+                : q
+        ));
+
         // Only update DB if it has a real ID (not temp)
         if (!currentQuiz.id.startsWith('temp-')) {
             await supabase
@@ -210,58 +217,61 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         const percentage = Math.round((score / quizzes.length) * 100);
 
         return (
-            <div className="flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-indigo-950 p-6 md:p-12 overflow-y-auto">
-                <div className="max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-white/50 dark:border-white/10">
-                    <div className="text-center mb-8">
-                        <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/30 animate-pulse">
-                            <span className="text-4xl font-bold text-white">{percentage}%</span>
+            <div className="flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-indigo-950 p-4 md:p-12 overflow-y-auto pb-24 md:pb-12">
+                <div className="max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-8 border border-white/50 dark:border-white/10">
+                    <div className="text-center mb-6 md:mb-8">
+                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-lg shadow-orange-500/30">
+                            <span className="text-3xl md:text-4xl font-bold text-white">{percentage}%</span>
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                             {percentage >= 80 ? 'Outstanding!' : percentage >= 60 ? 'Good Job!' : 'Keep Practicing!'}
                         </h2>
-                        <p className="text-gray-600 dark:text-gray-400">
+                        <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
                             You got {score} out of {quizzes.length} questions correct.
                         </p>
                     </div>
 
-                    <div className="space-y-4 mb-8">
+                    <div className="space-y-3 mb-6 md:mb-8">
                         <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2 dark:border-gray-700">Review</h3>
                         {quizzes.map((q) => (
-                            <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                            <div key={q.id} className="flex items-start gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 {q.user_answer === q.correct_answer ? (
-                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-500 flex-shrink-0 mt-0.5" />
                                 ) : (
-                                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                    <XCircle className="w-4 h-4 md:w-5 md:h-5 text-red-500 flex-shrink-0 mt-0.5" />
                                 )}
-                                <div>
-                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{q.question}</p>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                        Answer: <span className="font-semibold">{q.correct_answer}</span>
-                                        {q.user_answer !== q.correct_answer && ` (You chose ${q.user_answer})`}
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 break-words">{q.question}</p>
+                                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Answer: <span className="font-semibold text-green-600 dark:text-green-400">{q.correct_answer}</span>
+                                        {q.user_answer !== q.correct_answer && (
+                                            <span className="text-red-500"> (You chose {q.user_answer || 'nothing'})</span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 md:gap-4">
                         <button
                             onClick={() => {
                                 setQuizzes([]);
                                 setCurrentIndex(0);
                                 setShowResult(false);
                             }}
-                            className="flex-1 py-3 px-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-white font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                            className="flex-1 py-2.5 md:py-3 px-4 md:px-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-white font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm md:text-base"
                         >
                             Close
                         </button>
                         <button
                             onClick={handleGenerateQuizzes}
                             disabled={isLoading}
-                            className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-2.5 md:py-3 px-4 md:px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                         >
-                            <RefreshCw className="w-5 h-5" />
-                            New Quiz
+                            <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
+                            <span className="hidden sm:inline">New Quiz</span>
+                            <span className="sm:hidden">New</span>
                         </button>
                     </div>
                 </div>
