@@ -356,23 +356,6 @@ flowchart TD
         return cleaned;
     };
 
-    const generateSimpleDiagram = () => {
-        // Extract key terms from context for a basic diagram
-        const words = context.slice(0, 500).split(/\s+/).filter(w => w.length > 4);
-        const uniqueWords = [...new Set(words)].slice(0, 5);
-
-        const simpleDiagram = `flowchart TD
-    A((Start)) --> B[${uniqueWords[0] || 'Topic'}]
-    B --> C[${uniqueWords[1] || 'Concept 1'}]
-    B --> D[${uniqueWords[2] || 'Concept 2'}]
-    C --> E[${uniqueWords[3] || 'Detail'}]
-    D --> E
-    E --> F((End))`;
-
-        setDiagramCode(simpleDiagram);
-        setError('');
-    };
-
     const downloadSVG = () => {
         const svg = diagramRef.current?.querySelector('svg');
         if (!svg) return;

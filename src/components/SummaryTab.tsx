@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Loader2, Edit3, Check, X, Sliders } from 'lucide-react';
+import { FileText, Loader2, Edit3, Check, X, Sliders, Copy, Download } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface SummaryTabProps {
@@ -52,13 +52,40 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                 <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Document Summary</h2>
                 <div className="flex items-center gap-2">
                     {summary && !isEditing && (
-                        <button
-                            onClick={handleStartEdit}
-                            className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
-                        >
-                            <Edit3 className="w-4 h-4" />
-                            <span>Edit</span>
-                        </button>
+                        <>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(summary);
+                                    // Could add toast notification here
+                                }}
+                                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                                title="Copy to clipboard"
+                            >
+                                <Copy className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const blob = new Blob([summary], { type: 'text/markdown' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = 'summary.md';
+                                    a.click();
+                                    URL.revokeObjectURL(url);
+                                }}
+                                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                                title="Download as Markdown"
+                            >
+                                <Download className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={handleStartEdit}
+                                className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+                            >
+                                <Edit3 className="w-4 h-4" />
+                                <span>Edit</span>
+                            </button>
+                        </>
                     )}
                     {hasUnknownContext && (
                         <div className="relative">
@@ -83,8 +110,8 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                     key={len}
                                                     onClick={() => setOptions({ ...options, length: len })}
                                                     className={`flex-1 px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${options.length === len
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
                                                         }`}
                                                 >
                                                     {len}
@@ -102,8 +129,8 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                     key={style}
                                                     onClick={() => setOptions({ ...options, style })}
                                                     className={`flex-1 px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${options.style === style
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
                                                         }`}
                                                 >
                                                     {style}
