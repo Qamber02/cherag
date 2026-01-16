@@ -1,7 +1,8 @@
 import { useRef, useState, useCallback } from 'react';
 import {
     Upload, LayoutDashboard, Layers, FileQuestion,
-    Play, History, Settings, User, FileText, X, MessageCircle, FileCheck
+    Play, Settings, User, FileText, X, MessageCircle, FileCheck,
+    GitBranch, Map, Clock
 } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
 import logoImg from '../assets/logo.png';
@@ -23,10 +24,10 @@ const navItems = [
     { id: 'summary', icon: FileCheck, label: 'Summary' },
     { id: 'flashcards', icon: Layers, label: 'Flashcards' },
     { id: 'quizzes', icon: FileQuestion, label: 'Quizzes' },
-    { id: 'diagrams', icon: LayoutDashboard, label: 'Diagrams' },
-    { id: 'mindmap', icon: LayoutDashboard, label: 'Mind Map' },
+    { id: 'diagrams', icon: GitBranch, label: 'Diagrams' },
+    { id: 'mindmap', icon: Map, label: 'Roadmap' },
     { id: 'videos', icon: Play, label: 'Study Shorts' },
-    { id: 'history', icon: History, label: 'History' },
+    { id: 'history', icon: Clock, label: 'History' },
 ];
 
 export default function Sidebar({

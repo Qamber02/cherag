@@ -95,20 +95,17 @@ export default function DiagramsTab({ userId, context, hasContext }: DiagramsTab
             // Style the resulting SVG to fit container
             const svg = element.querySelector('svg');
             if (svg) {
-                // Get the viewBox to calculate aspect ratio
-                const viewBox = svg.getAttribute('viewBox');
-                if (viewBox) {
-                    const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
-                    if (vbWidth && vbHeight) {
-                        // Set max dimensions while preserving aspect ratio
-                        svg.style.width = '100%';
-                        svg.style.height = 'auto';
-                        svg.style.maxHeight = '500px';
-                        svg.removeAttribute('height');
-                    }
-                }
+                // Set dimensions for responsive scaling
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.minHeight = '200px'; // Minimum height for visibility
+                svg.style.maxWidth = '100%';
+                svg.removeAttribute('height');
+                svg.removeAttribute('width');
                 svg.style.display = 'block';
                 svg.style.margin = '0 auto';
+                // Enable pinch-to-zoom on mobile
+                svg.style.touchAction = 'pan-x pan-y pinch-zoom';
                 console.log('[Diagram] SVG styled successfully');
             } else {
                 console.warn('[Diagram] No SVG found after mermaid.run()');
@@ -126,7 +123,8 @@ export default function DiagramsTab({ userId, context, hasContext }: DiagramsTab
                     if (svgEl) {
                         svgEl.style.width = '100%';
                         svgEl.style.height = 'auto';
-                        svgEl.style.minHeight = '300px';
+                        svgEl.style.minHeight = '200px';
+                        svgEl.style.touchAction = 'pan-x pan-y pinch-zoom';
                     }
                     console.log('[Diagram] Fallback render succeeded');
                 }
@@ -503,14 +501,14 @@ flowchart TD
                 </div>
             )}
 
-            {/* Diagram Display - Fixed container with proper padding */}
+            {/* Diagram Display - Mobile-friendly scrollable container */}
             <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-auto">
-                <div className="p-8" style={{ minHeight: '400px' }}>
+                <div className="p-4 md:p-8 min-w-fit" style={{ minHeight: '300px' }}>
                     <div
                         ref={diagramRef}
                         key={diagramKey}
-                        className="w-full"
-                        style={{ minHeight: '350px' }}
+                        className="w-full min-w-[300px]"
+                        style={{ minHeight: '250px' }}
                     />
                 </div>
             </div>
