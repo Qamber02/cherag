@@ -59,10 +59,12 @@ export default function DiagramsTab({ userId, context, hasContext }: DiagramsTab
     }, []);
 
     useEffect(() => {
-        if (diagramCode && diagramRef.current) {
+        // Only render when we have code, ref is ready, and loading is complete
+        if (diagramCode && diagramRef.current && !isLoading) {
+            console.log('[Diagram] Triggering render...');
             renderDiagram();
         }
-    }, [diagramCode, diagramKey]);
+    }, [diagramCode, diagramKey, isLoading]);
 
     const renderDiagram = async () => {
         if (!diagramCode || !diagramRef.current) {
