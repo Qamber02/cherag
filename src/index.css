@@ -142,6 +142,31 @@
     color: var(--color-foreground);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    /* Enable safe area insets for notched devices */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+
+    button,
+    a,
+    [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+      /* Prevents iOS zoom on focus */
+    }
+  }
+
+  /* Safe area bottom for bottom navigation */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 

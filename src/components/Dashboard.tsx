@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { Search, User, Menu } from 'lucide-react';
+import { Search, User, Menu, LayoutDashboard, MessageCircle, Layers, FileQuestion, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { saveSummary, getLastSummary } from '../lib/activityService';
 
@@ -151,7 +151,7 @@ export default function Dashboard({ session }: DashboardProps) {
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-hidden p-3 md:p-6 pt-0">
+                <main className="flex-1 overflow-hidden p-3 md:p-6 pt-0 pb-20 md:pb-6">
                     <div className="w-full h-full overflow-hidden relative">
                         {/* Dashboard Tab */}
                         <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'dashboard' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
@@ -251,6 +251,55 @@ export default function Dashboard({ session }: DashboardProps) {
                         </div>
                     </div>
                 </main>
+
+                {/* Mobile Bottom Navigation */}
+                <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-amber-50/95 via-white/95 to-white/90 dark:from-gray-900/95 dark:via-gray-900/95 dark:to-gray-800/90 backdrop-blur-xl border-t border-amber-200/50 dark:border-gray-700 z-50 safe-area-bottom shadow-lg shadow-amber-900/5">
+                    <div className="flex items-center justify-around h-16 px-2">
+                        <button
+                            onClick={() => handleTabChange('dashboard')}
+                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'dashboard'
+                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                        >
+                            <LayoutDashboard className="w-5 h-5" />
+                            <span className="text-[10px] mt-1 font-semibold">Home</span>
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('chat')}
+                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'chat'
+                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            <span className="text-[10px] mt-1 font-semibold">Chat</span>
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('flashcards')}
+                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'flashcards'
+                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                        >
+                            <Layers className="w-5 h-5" />
+                            <span className="text-[10px] mt-1 font-semibold">Cards</span>
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('quizzes')}
+                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'quizzes'
+                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                        >
+                            <FileQuestion className="w-5 h-5" />
+                            <span className="text-[10px] mt-1 font-semibold">Quiz</span>
+                        </button>
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="flex flex-col items-center justify-center flex-1 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-amber-500 transition-all"
+                        >
+                            <MoreHorizontal className="w-5 h-5" />
+                            <span className="text-[10px] mt-1 font-semibold">More</span>
+                        </button>
+                    </div>
+                </nav>
             </div>
         </div>
     );
