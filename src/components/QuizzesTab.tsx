@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight } from 'lucide-react';
+import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2 } from 'lucide-react';
 import { generateQuizzes } from '../lib/aiService';
 
 interface Quiz {
@@ -114,6 +114,22 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         setSelectedAnswer(null);
         setShowResult(false);
         setCurrentIndex(prev => Math.min(prev + 1, quizzes.length - 1));
+    };
+
+    const clearQuizzes = async () => {
+        try {
+            await supabase
+                .from('quizzes')
+                .delete()
+                .eq('user_id', userId);
+
+            setQuizzes([]);
+            setCurrentIndex(0);
+            setSelectedAnswer(null);
+            setShowResult(false);
+        } catch (err) {
+            console.error('Error clearing quizzes:', err);
+        }
     };
 
     const currentQuiz = quizzes[currentIndex];
@@ -261,7 +277,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                 <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
                     <div>
                         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Topic Quiz</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Scientific Thinking</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Test your knowledge</p>
                     </div>
                     <div className="flex items-center gap-4 flex-1 justify-end max-w-sm">
                         <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -273,6 +289,24 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                         <span className="text-sm font-mono font-medium text-gray-600 dark:text-gray-300 min-w-[3rem]">
                             {currentIndex + 1}/{quizzes.length}
                         </span>
+                        <button
+                            onClick={() => {
+                                clearQuizzes();
+                                handleGenerateQuizzes();
+                            }}
+                            disabled={isLoading || !hasContext}
+                            className="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors disabled:opacity-50"
+                            title={hasContext ? "Regenerate from document" : "Upload a document first"}
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                        <button
+                            onClick={clearQuizzes}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Clear all quizzes"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </div>
