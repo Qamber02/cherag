@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight } from 'lucide-react';
 import { generateQuizzes } from '../lib/aiService';
 
 interface Quiz {
@@ -26,6 +26,9 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [showResult, setShowResult] = useState(false);
 
+    const [topicInput, setTopicInput] = useState('');
+    const [isTopicMode, setIsTopicMode] = useState(false);
+
     useEffect(() => {
         fetchQuizzes();
     }, [userId]);
@@ -37,18 +40,22 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
-        if (data) setQuizzes(data);
+        if (data && data.length > 0) setQuizzes(data);
     };
 
     const handleGenerateQuizzes = async () => {
-        if (!context) {
-            alert('Please upload a document first!');
+        const quizContext = topicInput ? `Topic: ${topicInput}` : context;
+
+        if (!quizContext) {
+            setIsTopicMode(true);
             return;
         }
+
         setIsLoading(true);
 
         try {
-            const generated = await generateQuizzes(context);
+            const generated = await generateQuizzes(quizContext);
+            if (!generated || generated.length === 0) throw new Error("No quizzes generated");
 
             // Save to DB
             const quizzesToInsert = generated.map((q: any) => ({
@@ -60,25 +67,47 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
             }));
 
             await supabase.from('quizzes').insert(quizzesToInsert);
-            fetchQuizzes();
+
+            // Refresh local state immediately
+            // Convert to Quiz type
+            const newQuizzes: Quiz[] = generated.map((q: any, i: number) => ({
+                id: `temp-${Date.now()}-${i}`, // Temp ID until fetch
+                question: q.question,
+                options: q.options,
+                correct_answer: q.correct_answer,
+                explanation: q.explanation || '',
+                answered: false,
+                user_answer: null
+            }));
+
+            setQuizzes(newQuizzes);
             setCurrentIndex(0);
+            setIsTopicMode(false);
+
+            // Background fetch to get real IDs
+            fetchQuizzes();
         } catch (err: any) {
             console.error('Quiz generation error:', err);
-            alert(`Error generating quizzes: ${err.message || 'Unknown error'}`);
+            // alert(`Error generating quizzes: ${err.message || 'Unknown error'}`); 
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleAnswer = async (answer: string) => {
+        const currentQuiz = quizzes[currentIndex];
+        if (!currentQuiz) return;
+
         setSelectedAnswer(answer);
         setShowResult(true);
 
-        const currentQuiz = quizzes[currentIndex];
-        await supabase
-            .from('quizzes')
-            .update({ answered: true, user_answer: answer })
-            .eq('id', currentQuiz.id);
+        // Only update DB if it has a real ID (not temp)
+        if (!currentQuiz.id.startsWith('temp-')) {
+            await supabase
+                .from('quizzes')
+                .update({ answered: true, user_answer: answer })
+                .eq('id', currentQuiz.id);
+        }
     };
 
     const nextQuestion = () => {
@@ -92,25 +121,59 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
     // Empty State
     if (quizzes.length === 0 && !isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25">
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50 dark:bg-gray-900/50">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25 animate-float">
                     <FileQuestion className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Quizzes</h2>
-                <p className="text-gray-500 mb-8 max-w-sm">
-                    Test your knowledge with AI-generated multiple choice questions from your documents.
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">AI Quizzes</h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm">
+                    Test your knowledge with AI-generated multiple choice questions.
                 </p>
-                <button
-                    onClick={handleGenerateQuizzes}
-                    disabled={!hasContext || isLoading}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
-                >
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="w-5 h-5" />
-                        <span>Generate Quizzes</span>
+
+                {isTopicMode || (!hasContext && quizzes.length === 0) ? (
+                    <div className="w-full max-w-md animate-fade-in-up">
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="Enter a topic (e.g., Quantum Physics)..."
+                                value={topicInput}
+                                onChange={(e) => setTopicInput(e.target.value)}
+                                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                onKeyDown={(e) => e.key === 'Enter' && handleGenerateQuizzes()}
+                            />
+                            <button
+                                onClick={handleGenerateQuizzes}
+                                disabled={!topicInput.trim() || isLoading}
+                                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg disabled:opacity-50 transition-all"
+                            >
+                                Start
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setIsTopicMode(false)}
+                            className="text-xs text-gray-400 mt-2 hover:text-gray-600"
+                        >
+                            Cancel
+                        </button>
                     </div>
-                </button>
-                {!hasContext && <p className="mt-4 text-sm text-red-400">Upload a document first!</p>}
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={handleGenerateQuizzes}
+                            disabled={!hasContext && !topicInput}
+                            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2 justify-center"
+                        >
+                            <Sparkles className="w-5 h-5" />
+                            <span>Generate from Document</span>
+                        </button>
+                        <button
+                            onClick={() => setIsTopicMode(true)}
+                            className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                        >
+                            Search Specific Topic
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
@@ -125,121 +188,204 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         );
     }
 
+    // Results State
+    if (showResult && currentIndex === quizzes.length - 1 && selectedAnswer) {
+        const score = quizzes.filter(q => q.user_answer === q.correct_answer).length;
+        const percentage = Math.round((score / quizzes.length) * 100);
+
+        return (
+            <div className="flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-indigo-950 p-6 md:p-12 overflow-y-auto">
+                <div className="max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-white/50 dark:border-white/10">
+                    <div className="text-center mb-8">
+                        <div className="w-24 h-24 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/30 animate-pulse">
+                            <span className="text-4xl font-bold text-white">{percentage}%</span>
+                        </div>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                            {percentage >= 80 ? 'Outstanding!' : percentage >= 60 ? 'Good Job!' : 'Keep Practicing!'}
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400">
+                            You got {score} out of {quizzes.length} questions correct.
+                        </p>
+                    </div>
+
+                    <div className="space-y-4 mb-8">
+                        <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2 dark:border-gray-700">Review</h3>
+                        {quizzes.map((q, i) => (
+                            <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                                {q.user_answer === q.correct_answer ? (
+                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                ) : (
+                                    <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                )}
+                                <div>
+                                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{q.question}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Answer: <span className="font-semibold">{q.correct_answer}</span>
+                                        {q.user_answer !== q.correct_answer && ` (You chose ${q.user_answer})`}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => {
+                                setQuizzes([]);
+                                setCurrentIndex(0);
+                                setShowResult(false);
+                            }}
+                            className="flex-1 py-3 px-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-white font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            Close
+                        </button>
+                        <button
+                            onClick={handleGenerateQuizzes}
+                            disabled={isLoading}
+                            className="flex-1 py-3 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                            New Quiz
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // Quiz View
     return (
-        <div className="flex flex-col h-full p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900">Quiz Time!</h2>
-                    <p className="text-sm text-gray-500">Question {currentIndex + 1} of {quizzes.length}</p>
+        <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50">
+            {/* Header / Progress */}
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 md:px-8 shadow-sm z-10">
+                <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Topic Quiz</h2>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Scientific Thinking</p>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1 justify-end max-w-sm">
+                        <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 ease-out"
+                                style={{ width: `${((currentIndex + 1) / quizzes.length) * 100}%` }}
+                            />
+                        </div>
+                        <span className="text-sm font-mono font-medium text-gray-600 dark:text-gray-300 min-w-[3rem]">
+                            {currentIndex + 1}/{quizzes.length}
+                        </span>
+                    </div>
                 </div>
-                <button
-                    onClick={handleGenerateQuizzes}
-                    disabled={isLoading || !hasContext}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Generate more quizzes"
-                >
-                    <RefreshCw className="w-5 h-5 text-gray-500" />
-                </button>
             </div>
 
-            {/* Progress Bar */}
-            <div className="h-2 bg-gray-100 rounded-full mb-8">
-                <div
-                    className="h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all"
-                    style={{ width: `${((currentIndex + 1) / quizzes.length) * 100}%` }}
-                />
-            </div>
+            {/* Main Question Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                <div className="max-w-3xl mx-auto w-full">
+                    {currentQuiz && (
+                        <div className="flex flex-col gap-6 animate-fade-in">
+                            {/* Question Card */}
+                            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+                                <span className="inline-block px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-lg mb-4 uppercase tracking-wider">
+                                    Question {currentIndex + 1}
+                                </span>
+                                <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white leading-relaxed">
+                                    {currentQuiz.question}
+                                </h3>
+                            </div>
 
-            {/* Question */}
-            {currentQuiz && (
-                <div className="flex-1 flex flex-col">
-                    <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-6 mb-6">
-                        <p className="text-lg font-medium text-gray-900">{currentQuiz.question}</p>
-                    </div>
+                            {/* Options */}
+                            <div className="grid gap-3">
+                                {(currentQuiz.options || []).map((option, idx) => {
+                                    const letter = String.fromCharCode(65 + idx);
+                                    const isSelected = selectedAnswer === letter;
+                                    const isCorrect = currentQuiz.correct_answer === letter;
 
-                    {/* Options */}
-                    <div className="grid gap-3 mb-6">
-                        {currentQuiz.options.map((option, idx) => {
-                            const letter = String.fromCharCode(65 + idx);
-                            const isSelected = selectedAnswer === letter;
-                            const isCorrect = currentQuiz.correct_answer === letter;
+                                    // Determine button state style
+                                    let stateClass = "border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10";
 
-                            let buttonClass = "w-full p-4 text-left rounded-xl border-2 transition-all flex items-center gap-3";
+                                    if (showResult) {
+                                        if (isCorrect) {
+                                            stateClass = "border-green-500 bg-green-50 dark:bg-green-900/20";
+                                        } else if (isSelected && !isCorrect) {
+                                            stateClass = "border-red-500 bg-red-50 dark:bg-red-900/20";
+                                        } else {
+                                            stateClass = "border-gray-200 dark:border-gray-700 opacity-50";
+                                        }
+                                    } else if (isSelected) {
+                                        stateClass = "border-purple-600 bg-purple-50 dark:bg-purple-900/20 ring-1 ring-purple-600";
+                                    }
 
-                            if (showResult) {
-                                if (isCorrect) {
-                                    buttonClass += " border-green-500 bg-green-50";
-                                } else if (isSelected && !isCorrect) {
-                                    buttonClass += " border-red-500 bg-red-50";
-                                } else {
-                                    buttonClass += " border-gray-200 opacity-50";
-                                }
-                            } else if (isSelected) {
-                                buttonClass += " border-purple-500 bg-purple-50";
-                            } else {
-                                buttonClass += " border-gray-200 hover:border-purple-300 hover:bg-gray-50";
-                            }
+                                    return (
+                                        <button
+                                            key={idx}
+                                            onClick={() => !showResult && handleAnswer(letter)}
+                                            disabled={showResult}
+                                            className={`
+                                                relative w-full p-4 md:p-5 text-left rounded-xl border-2 transition-all duration-200 group
+                                                ${stateClass}
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <span className={`
+                                                    w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors
+                                                    ${isSelected || (showResult && isCorrect) ? 'bg-white text-gray-900 shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-white'}
+                                                `}>
+                                                    {letter}
+                                                </span>
+                                                <span className="flex-1 font-medium text-gray-700 dark:text-gray-200">{option}</span>
 
-                            return (
-                                <button
-                                    key={idx}
-                                    onClick={() => !showResult && handleAnswer(letter)}
-                                    disabled={showResult}
-                                    className={buttonClass}
-                                >
-                                    <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center font-medium text-gray-600">
-                                        {letter}
-                                    </span>
-                                    <span className="flex-1 text-gray-700">{option}</span>
-                                    {showResult && isCorrect && <CheckCircle className="w-5 h-5 text-green-500" />}
-                                    {showResult && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-500" />}
-                                </button>
-                            );
-                        })}
-                    </div>
+                                                {/* Status Icons */}
+                                                {showResult && isCorrect && <CheckCircle className="w-6 h-6 text-green-500 animate-slide-up" />}
+                                                {showResult && isSelected && !isCorrect && <XCircle className="w-6 h-6 text-red-500 animate-slide-up" />}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
 
-                    {/* Result & Explanation */}
-                    {showResult && (
-                        <div className={`p-4 rounded-xl mb-6 ${selectedAnswer === currentQuiz.correct_answer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                            <div className="flex items-center gap-2 mb-2">
-                                {selectedAnswer === currentQuiz.correct_answer ? (
-                                    <>
-                                        <CheckCircle className="w-5 h-5 text-green-500" />
-                                        <span className="font-medium text-green-700">Correct!</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <XCircle className="w-5 h-5 text-red-500" />
-                                        <span className="font-medium text-red-700">Incorrect</span>
-                                    </>
+                            {/* Explanation / Footer */}
+                            <div className="h-24"> {/* Spacer for consistent layout */}
+                                {showResult && (
+                                    <div className="animate-slide-up">
+                                        <div className={`p-4 rounded-xl border ${selectedAnswer === currentQuiz.correct_answer ? 'bg-green-50 border-green-100 dark:bg-green-900/10 dark:border-green-900' : 'bg-amber-50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-900'} mb-4`}>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                                                {selectedAnswer === currentQuiz.correct_answer ? 'Correct!' : 'Not quite right.'}
+                                            </p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                                {currentQuiz.explanation}
+                                            </p>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                            {currentQuiz.explanation && (
-                                <p className="text-sm text-gray-600">{currentQuiz.explanation}</p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Next Button */}
-                    {showResult && currentIndex < quizzes.length - 1 && (
-                        <button
-                            onClick={nextQuestion}
-                            className="mt-auto px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl self-end"
-                        >
-                            Next Question →
-                        </button>
-                    )}
-
-                    {showResult && currentIndex === quizzes.length - 1 && (
-                        <div className="mt-auto text-center p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl">
-                            <p className="text-lg font-medium text-gray-900">🎉 Quiz Complete!</p>
-                            <p className="text-sm text-gray-600">Great job! Generate more quizzes to keep learning.</p>
                         </div>
                     )}
                 </div>
-            )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+                <div className="max-w-3xl mx-auto flex justify-between items-center">
+                    <button
+                        className="px-4 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
+                        disabled
+                    >
+                        Report Issue
+                    </button>
+
+                    {showResult && (
+                        <button
+                            onClick={nextQuestion}
+                            className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                        >
+                            {currentIndex < quizzes.length - 1 ? (
+                                <>Next Question <ArrowRight className="w-5 h-5" /></>
+                            ) : (
+                                <>See Results <Sparkles className="w-5 h-5" /></>
+                            )}
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

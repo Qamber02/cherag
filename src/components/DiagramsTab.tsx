@@ -47,23 +47,13 @@ export default function DiagramsTab({ userId, context, hasContext }: DiagramsTab
     useEffect(() => {
         mermaid.initialize({
             startOnLoad: false,
-            theme: 'base',
-            themeVariables: {
-                primaryColor: '#6366f1',
-                primaryTextColor: '#ffffff',
-                primaryBorderColor: '#4f46e5',
-                lineColor: '#64748b',
-                secondaryColor: '#e0e7ff',
-                tertiaryColor: '#f1f5f9',
-                fontSize: '13px',
-                fontFamily: 'Inter, system-ui, sans-serif'
-            },
+            securityLevel: 'loose',
+            theme: 'default', // Use default theme for better compatibility
             flowchart: {
                 curve: 'basis',
-                padding: 25,
+                padding: 15,
                 htmlLabels: true,
-                nodeSpacing: 50,
-                rankSpacing: 60
+                useMaxWidth: true
             }
         });
     }, []);
@@ -75,38 +65,63 @@ export default function DiagramsTab({ userId, context, hasContext }: DiagramsTab
     }, [diagramCode, diagramKey]);
 
     const renderDiagram = async () => {
-        if (!diagramRef.current || !diagramCode) return;
+        if (!diagramCode || !diagramRef.current) {
+            console.log('[Diagram] Missing code or ref');
+            return;
+        }
+
+        const element = diagramRef.current;
 
         try {
             // Clear previous content
-            diagramRef.current.innerHTML = '';
+            element.innerHTML = '';
 
-            // Generate unique ID for this render
-            const id = `diagram-${Date.now()}`;
+            // Create a container div with the mermaid code
+            const container = document.createElement('div');
+            container.className = 'mermaid';
+            container.textContent = diagramCode;
+            element.appendChild(container);
 
-            const { svg } = await mermaid.render(id, diagramCode);
-            diagramRef.current.innerHTML = svg;
+            // Run mermaid on the container
+            await mermaid.run({
+                nodes: [container],
+                suppressErrors: false
+            });
 
-            // Style the SVG
-            const svgElement = diagramRef.current.querySelector('svg');
-            if (svgElement) {
-                svgElement.style.maxWidth = '100%';
-                svgElement.style.height = 'auto';
-                svgElement.style.minHeight = '400px';
+            console.log('[Diagram] Mermaid.run() completed');
 
-                // Add padding to prevent cutoff
-                const viewBox = svgElement.getAttribute('viewBox');
-                if (viewBox) {
-                    const [x, y, w, h] = viewBox.split(' ').map(Number);
-                    // Add extra space at top and bottom
-                    svgElement.setAttribute('viewBox', `${x - 20} ${y - 40} ${w + 40} ${h + 80}`);
-                }
+            // Style the resulting SVG
+            const svg = element.querySelector('svg');
+            if (svg) {
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.minHeight = '300px';
+                svg.style.maxWidth = '100%';
+                console.log('[Diagram] SVG styled successfully');
+            } else {
+                console.warn('[Diagram] No SVG found after mermaid.run()');
             }
         } catch (err: any) {
-            console.error('Mermaid render error:', err);
-            setError('Diagram syntax error. Generating simpler version...');
-            // Generate fallback
-            setTimeout(() => generateSimpleDiagram(), 500);
+            console.error('[Diagram] Render error:', err);
+
+            // Try fallback: direct HTML injection
+            try {
+                const id = `mermaid-fallback-${Date.now()}`;
+                const { svg } = await mermaid.render(id, diagramCode);
+                if (svg) {
+                    element.innerHTML = svg;
+                    const svgEl = element.querySelector('svg');
+                    if (svgEl) {
+                        svgEl.style.width = '100%';
+                        svgEl.style.height = 'auto';
+                        svgEl.style.minHeight = '300px';
+                    }
+                    console.log('[Diagram] Fallback render succeeded');
+                }
+            } catch (fallbackErr) {
+                console.error('[Diagram] Fallback also failed:', fallbackErr);
+                setError('Could not render diagram. Please try regenerating.');
+            }
         }
     };
 
@@ -495,12 +510,12 @@ flowchart TD
 
             {/* Diagram Display - Fixed container with proper padding */}
             <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-auto">
-                <div className="min-h-full p-8 flex items-center justify-center">
+                <div className="p-8" style={{ minHeight: '400px' }}>
                     <div
                         ref={diagramRef}
                         key={diagramKey}
-                        className="w-full flex items-center justify-center"
-                        style={{ minHeight: '400px', padding: '40px 20px' }}
+                        className="w-full"
+                        style={{ minHeight: '350px' }}
                     />
                 </div>
             </div>
