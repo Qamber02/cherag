@@ -80,8 +80,11 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
 
     const filters = ['all', 'summary', 'flashcard', 'quiz', 'video', 'chat'];
 
-    // Empty State
-    if (!isLoading && activities.length === 0) {
+    // Only show full empty state on initial load with no data
+    // For filter changes with no results, we'll show inline message
+    const showFullEmptyState = !isLoading && activities.length === 0 && filter === 'all';
+
+    if (showFullEmptyState) {
         return (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-6">
@@ -126,6 +129,21 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                    </div>
+                ) : activities.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center mb-4">
+                            <History className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            No {filter} activities found
+                        </p>
+                        <button
+                            onClick={() => setFilter('all')}
+                            className="mt-3 text-sm text-blue-500 hover:text-blue-600 font-medium"
+                        >
+                            View all activities
+                        </button>
                     </div>
                 ) : (
                     activities.map((activity) => {

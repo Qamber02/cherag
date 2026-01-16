@@ -1,9 +1,10 @@
 import { useRef, useState, useCallback } from 'react';
 import {
     Upload, LayoutDashboard, Layers, FileQuestion,
-    Play, History, Settings, Brain, User, FileText, X, MessageCircle, FileCheck
+    Play, History, Settings, User, FileText, X, MessageCircle, FileCheck
 } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
+import logoImg from '../assets/logo.png';
 
 interface SidebarProps {
     files: Document[];
@@ -75,8 +76,8 @@ export default function Sidebar({
             <aside className="w-20 glass-sidebar flex flex-col h-full py-6 z-20 relative">
                 {/* Logo */}
                 <div className="flex justify-center mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                        <Brain className="w-6 h-6 text-white" />
+                    <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg">
+                        <img src={logoImg} alt="Cherág" className="w-full h-full object-cover" />
                     </div>
                 </div>
 

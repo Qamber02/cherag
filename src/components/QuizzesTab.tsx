@@ -210,7 +210,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
 
                     <div className="space-y-4 mb-8">
                         <h3 className="font-semibold text-gray-900 dark:text-white border-b pb-2 dark:border-gray-700">Review</h3>
-                        {quizzes.map((q, i) => (
+                        {quizzes.map((q) => (
                             <div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
                                 {q.user_answer === q.correct_answer ? (
                                     <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />

@@ -92,13 +92,23 @@ export default function DiagramsTab({ userId, context, hasContext }: DiagramsTab
 
             console.log('[Diagram] Mermaid.run() completed');
 
-            // Style the resulting SVG
+            // Style the resulting SVG to fit container
             const svg = element.querySelector('svg');
             if (svg) {
-                svg.style.width = '100%';
-                svg.style.height = 'auto';
-                svg.style.minHeight = '300px';
-                svg.style.maxWidth = '100%';
+                // Get the viewBox to calculate aspect ratio
+                const viewBox = svg.getAttribute('viewBox');
+                if (viewBox) {
+                    const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
+                    if (vbWidth && vbHeight) {
+                        // Set max dimensions while preserving aspect ratio
+                        svg.style.width = '100%';
+                        svg.style.height = 'auto';
+                        svg.style.maxHeight = '500px';
+                        svg.removeAttribute('height');
+                    }
+                }
+                svg.style.display = 'block';
+                svg.style.margin = '0 auto';
                 console.log('[Diagram] SVG styled successfully');
             } else {
                 console.warn('[Diagram] No SVG found after mermaid.run()');
@@ -515,17 +525,7 @@ flowchart TD
                 </p>
             </div>
 
-            {/* Code Preview */}
-            {diagramCode && (
-                <details className="mt-4">
-                    <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                        View Mermaid Code
-                    </summary>
-                    <pre className="mt-2 p-4 bg-gray-900 text-green-400 rounded-xl text-xs overflow-auto max-h-40">
-                        {diagramCode}
-                    </pre>
-                </details>
-            )}
+
         </div>
     );
 }

@@ -3,7 +3,9 @@ import { Network, Sparkles, Loader2, X, ExternalLink, BookOpen, Video, FileText,
 import { saveRoadmap, getLastRoadmap } from '../lib/activityService';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const OPENROUTER_API_KEY_2 = import.meta.env.VITE_OPENROUTER_API_KEY_2;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
 
 interface RoadmapNode {
     id: string;
@@ -199,6 +201,7 @@ OUTPUT ONLY JSON:`;
 
         let jsonStr = '';
 
+        // Try OpenRouter API Key 1
         if (OPENROUTER_API_KEY) {
             try {
                 const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -220,10 +223,37 @@ OUTPUT ONLY JSON:`;
                     jsonStr = data.choices?.[0]?.message?.content || '';
                 }
             } catch (e) {
-                console.warn('OpenRouter failed:', e);
+                console.warn('OpenRouter key 1 failed:', e);
             }
         }
 
+        // Try OpenRouter API Key 2 as fallback
+        if (!jsonStr && OPENROUTER_API_KEY_2) {
+            try {
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY_2}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'allenai/molmo-2-8b:free',
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 1500,
+                        temperature: 0.3
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    jsonStr = data.choices?.[0]?.message?.content || '';
+                }
+            } catch (e) {
+                console.warn('OpenRouter key 2 failed:', e);
+            }
+        }
+
+        // Try Gemini as fallback
         if (!jsonStr && GEMINI_API_KEY) {
             try {
                 const response = await fetch(
@@ -241,6 +271,33 @@ OUTPUT ONLY JSON:`;
                 }
             } catch (e) {
                 console.warn('Gemini failed:', e);
+            }
+        }
+
+        // Try Hugging Face as final fallback
+        if (!jsonStr && HUGGINGFACE_API_KEY) {
+            try {
+                const response = await fetch(
+                    'https://api-inference.huggingface.co/models/mistralai/Mixtral-8x7B-Instruct-v0.1',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            inputs: prompt,
+                            parameters: { max_new_tokens: 1500, temperature: 0.3 }
+                        })
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    jsonStr = data[0]?.generated_text || '';
+                }
+            } catch (e) {
+                console.warn('Hugging Face failed:', e);
             }
         }
 
@@ -445,52 +502,65 @@ Use proper formatting with headers and bullet points.`;
                                 {/* Vertical connector from main */}
                                 {roadmap.children && roadmap.children.length > 0 && (
                                     <>
-                                        <div className="w-0.5 h-8 bg-slate-300"></div>
+                                        {/* Connector from main to horizontal line */}
+                                        <div className="w-0.5 h-8 bg-slate-400"></div>
 
-                                        {/* Topics Row */}
-                                        <div className="flex gap-8 mt-0">
-                                            {roadmap.children.map((topic) => (
-                                                <div key={topic.id} className="flex flex-col items-center" style={{ minWidth: '200px' }}>
-                                                    {/* Vertical connector to topic */}
-                                                    <div className="w-0.5 h-8 bg-slate-300"></div>
+                                        {/* Horizontal connector bar */}
+                                        <div className="relative w-full">
+                                            {/* Topics Row with connecting line */}
+                                            <div className="flex gap-8 relative">
+                                                {/* Horizontal line spanning across topics */}
+                                                <div
+                                                    className="absolute top-0 h-0.5 bg-slate-400"
+                                                    style={{
+                                                        left: 'calc(100px)',
+                                                        right: 'calc(100px)',
+                                                        width: 'auto'
+                                                    }}
+                                                />
+                                                {roadmap.children.map((topic) => (
+                                                    <div key={topic.id} className="flex flex-col items-center relative" style={{ minWidth: '200px' }}>
+                                                        {/* Vertical connector from horizontal line to topic */}
+                                                        <div className="w-0.5 h-8 bg-slate-400"></div>
 
-                                                    {/* Topic Node */}
-                                                    <button
-                                                        onClick={(e) => handleNodeClick(topic, e)}
-                                                        className={`px-4 py-2.5 rounded-lg font-medium text-white shadow-md transition-all hover:scale-105 cursor-pointer
-                                                            bg-blue-500 hover:bg-blue-600
-                                                            ${selectedNode?.id === topic.id ? 'ring-4 ring-blue-300' : ''}`}
-                                                    >
-                                                        <span className="flex items-center gap-2 whitespace-nowrap">
-                                                            {topic.title}
-                                                            <ChevronRight className="w-4 h-4" />
-                                                        </span>
-                                                    </button>
+                                                        {/* Topic Node */}
+                                                        <button
+                                                            onClick={(e) => handleNodeClick(topic, e)}
+                                                            className={`px-4 py-2.5 rounded-lg font-medium text-white shadow-md transition-all hover:scale-105 cursor-pointer
+                                                                bg-blue-500 hover:bg-blue-600
+                                                                ${selectedNode?.id === topic.id ? 'ring-4 ring-blue-300' : ''}`}
+                                                        >
+                                                            <span className="flex items-center gap-2 whitespace-nowrap">
+                                                                {topic.title}
+                                                                <ChevronRight className="w-4 h-4" />
+                                                            </span>
+                                                        </button>
 
-                                                    {/* Subtopics */}
-                                                    {topic.children && topic.children.length > 0 && (
-                                                        <>
-                                                            <div className="w-0.5 h-6 bg-slate-300"></div>
-                                                            <div className="flex gap-3 flex-wrap justify-center max-w-xs">
-                                                                {topic.children.map((sub) => (
-                                                                    <button
-                                                                        key={sub.id}
-                                                                        onClick={(e) => handleNodeClick(sub, e)}
-                                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow transition-all hover:scale-105 cursor-pointer
-                                                                            bg-purple-500 hover:bg-purple-600
-                                                                            ${selectedNode?.id === sub.id ? 'ring-4 ring-purple-300' : ''}`}
-                                                                    >
-                                                                        <span className="flex items-center gap-1 whitespace-nowrap">
-                                                                            {sub.title}
-                                                                            <ChevronRight className="w-3 h-3" />
-                                                                        </span>
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            ))}
+                                                        {/* Subtopics */}
+                                                        {topic.children && topic.children.length > 0 && (
+                                                            <>
+                                                                <div className="w-0.5 h-6 bg-slate-400"></div>
+                                                                <div className="flex gap-3 flex-wrap justify-center max-w-xs">
+                                                                    {topic.children.map((sub) => (
+                                                                        <button
+                                                                            key={sub.id}
+                                                                            onClick={(e) => handleNodeClick(sub, e)}
+                                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow transition-all hover:scale-105 cursor-pointer
+                                                                                bg-purple-500 hover:bg-purple-600
+                                                                                ${selectedNode?.id === sub.id ? 'ring-4 ring-purple-300' : ''}`}
+                                                                        >
+                                                                            <span className="flex items-center gap-1 whitespace-nowrap">
+                                                                                {sub.title}
+                                                                                <ChevronRight className="w-3 h-3" />
+                                                                            </span>
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </>
                                 )}
@@ -563,7 +633,9 @@ Use proper formatting with headers and bullet points.`;
                                         </h4>
                                         <div className="space-y-2">
                                             <a
-                                                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedNode.title + ' explained tutorial')}`}
+                                                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                                                    selectedNode.title + ' in ' + (roadmap?.title || '') + ' explained tutorial'
+                                                )}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm"
@@ -573,7 +645,9 @@ Use proper formatting with headers and bullet points.`;
                                                 <ExternalLink className="w-3 h-3" />
                                             </a>
                                             <a
-                                                href={`https://www.google.com/search?q=${encodeURIComponent(selectedNode.title + ' guide')}`}
+                                                href={`https://www.google.com/search?q=${encodeURIComponent(
+                                                    selectedNode.title + ' in ' + (roadmap?.title || '') + ' guide'
+                                                )}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm"
