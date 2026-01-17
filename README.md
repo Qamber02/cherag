@@ -98,7 +98,7 @@ Authentication is handled via Supabase Auth. The app supports email/password log
 ## License
 MIT License
 
-## 🤝 Contributing
+##  Contributing
 
 1.  Fork the project
 2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
