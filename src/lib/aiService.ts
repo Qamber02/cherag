@@ -136,7 +136,8 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
                 continue;
             }
 
-            throw new Error(data.error?.message || 'Gemini API error');
+            // Security: Sanitize error message to avoid leaking API details
+            throw new Error('AI service temporarily unavailable. Please try again.');
         } catch (err: any) {
             console.warn(`[AI] Failed with ${model}:`, err.message);
             if (i === GEMINI_MODELS.length - 1) {
@@ -153,7 +154,7 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
 // Hugging Face fallback
 async function callHuggingFace(prompt: string, taskType: string): Promise<string> {
     if (!HUGGINGFACE_API_KEY) {
-        throw new Error('No Hugging Face API key available');
+        throw new Error('AI service configuration error. Please contact support.');
     }
 
     const model = HF_MODELS[taskType as keyof typeof HF_MODELS] || HF_MODELS.chat;

@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { FileText, Loader2, Edit3, Check, X, Sliders, Copy, Download } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { FileText, Loader2, Edit3, Check, X, Sliders, Copy, Download, ChevronDown, FileDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { downloadAsMarkdown, downloadAsPDF, downloadAsDOCX } from '../lib/downloadUtils';
 
 interface SummaryTabProps {
     summary: string;
@@ -20,11 +21,24 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
     const [isEditing, setIsEditing] = useState(false);
     const [editedSummary, setEditedSummary] = useState(summary);
     const [showOptions, setShowOptions] = useState(false);
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+    const downloadMenuRef = useRef<HTMLDivElement>(null);
     const [options, setOptions] = useState<SummaryOptions>({
         length: 'medium',
         style: 'mixed',
         focus: ''
     });
+
+    // Close download menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target as Node)) {
+                setShowDownloadMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleStartEdit = () => {
         setEditedSummary(summary);
@@ -63,21 +77,52 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                             >
                                 <Copy className="w-4 h-4" />
                             </button>
-                            <button
-                                onClick={() => {
-                                    const blob = new Blob([summary], { type: 'text/markdown' });
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = 'summary.md';
-                                    a.click();
-                                    URL.revokeObjectURL(url);
-                                }}
-                                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-                                title="Download as Markdown"
-                            >
-                                <Download className="w-4 h-4" />
-                            </button>
+                            {/* Download Dropdown */}
+                            <div className="relative" ref={downloadMenuRef}>
+                                <button
+                                    onClick={() => setShowDownloadMenu(!showDownloadMenu)}
+                                    className="flex items-center gap-1 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                                    title="Download summary"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    <ChevronDown className="w-3 h-3" />
+                                </button>
+
+                                {showDownloadMenu && (
+                                    <div className="absolute right-0 top-10 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 py-2 z-50 animate-fade-in">
+                                        <button
+                                            onClick={() => {
+                                                downloadAsMarkdown(summary, 'summary');
+                                                setShowDownloadMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                        >
+                                            <FileDown className="w-4 h-4 text-gray-400" />
+                                            <span>Markdown (.md)</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                downloadAsDOCX(summary, 'summary');
+                                                setShowDownloadMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                        >
+                                            <FileDown className="w-4 h-4 text-blue-500" />
+                                            <span>Word (.docx)</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                downloadAsPDF(summary, 'summary');
+                                                setShowDownloadMenu(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                        >
+                                            <FileDown className="w-4 h-4 text-red-500" />
+                                            <span>PDF (.pdf)</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                             <button
                                 onClick={handleStartEdit}
                                 className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"

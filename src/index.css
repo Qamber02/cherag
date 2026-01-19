@@ -244,6 +244,14 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
+  .dark .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .dark .icon-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
   /* Search Bar */
   .search-bar {
     background: rgba(255, 255, 255, 0.6);
