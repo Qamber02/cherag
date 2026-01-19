@@ -2,7 +2,7 @@
 
 Cherág is an advanced AI-powered study companion designed to help students learn more effectively. By analyzing uploaded course materials (PDFs, docs, notes), it generates personalized study aids including flashcards, quizzes, summaries, mind maps, and curated video recommendations.
 
-## 🚀 Key Features
+##  Key Features
 
 *   **Intelligent Dashboard**: Upload lecture notes and documents to get started. Supports PDF, DOCX, TXT, and MD files.
 *   **AI Chat Assistant**: Ask questions about your materials and get accurate, context-aware answers.
@@ -15,7 +15,7 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 *   **Study Shorts**: curated YouTube video recommendations based on your study topics.
 *   **Multi-Model AI**: Powered by Google Gemini 2.0 Flash, with fallbacks to OpenRouter (Molmo) and Hugging Face for reliability.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 *   **Frontend**: React (v19), TypeScript, Vite
 *   **Styling**: TailwindCSS, Lucide React (Icons), Framer Motion (Animations)
@@ -27,7 +27,7 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 *   **External APIs**: YouTube Data API (for Study Shorts)
 *   **Visualization**: Mermaid.js, React Flow
 
-## ⚡ Prerequisites
+##  Prerequisites
 
 *   Node.js (v18 or higher)
 *   npm
@@ -35,7 +35,7 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 *   Google Gemini API Key
 *   (Optional) YouTube Data API Keys, OpenRouter Key, Hugging Face Key
 
-## 📦 Installation
+##  Installation
 
 1.  **Clone the repository**
     ```bash
@@ -70,7 +70,7 @@ Cherág is an advanced AI-powered study companion designed to help students lear
     npm run dev
     ```
 
-## 🏗️ Project Structure
+##  Project Structure
 
 ```
 src/
@@ -91,14 +91,20 @@ src/
 └── App.tsx            # Routing & Auth state
 ```
 
-## 🛡️ Authentication
+##  Authentication
 
 Authentication is handled via Supabase Auth. The app supports email/password login and sign-up. Ensure your Supabase project is configured to allow email authentication.
 
-## 🤝 Contributing
+## License
+MIT License
+
+##  Contributing
 
 1.  Fork the project
 2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
 3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4.  Push to the branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
+
+## Project URL
+https://cherag.pages.dev/auth
