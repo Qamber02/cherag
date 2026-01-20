@@ -70,20 +70,7 @@ ${context}`;
     return JSON.parse(cleaned);
 }
 
-export async function generateDiagram(context: string): Promise<string> {
-    const prompt = `Create a Mermaid.js flowchart diagram based on this text. Output ONLY valid Mermaid syntax, nothing else.
-Use flowchart TD (top-down) style. Include relationships and key concepts.
-Example format:
-flowchart TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Action 1]
-    B -->|No| D[Action 2]
 
-Text to diagram:
-${context}`;
-    const result = await callGemini(prompt);
-    return result.replace(/```mermaid/g, '').replace(/```/g, '').trim();
-}
 
 export async function generateMindMap(context: string): Promise<{ title: string, children: any[] }> {
     const prompt = `Create a mind map structure from this text as JSON.

@@ -4,7 +4,7 @@ import { supabase } from './supabaseClient';
 
 export interface ActivityRecord {
     user_id: string;
-    activity_type: 'summary' | 'flashcard' | 'quiz' | 'diagram' | 'mindmap' | 'chat' | 'video';
+    activity_type: 'summary' | 'flashcard' | 'quiz' | 'mindmap' | 'chat' | 'video';
     title: string;
     content_preview: string;
 }
@@ -37,15 +37,7 @@ export async function getSavedContent(_userId: string, _type: string): Promise<s
     return null;
 }
 
-// Save diagram - just logs activity, doesn't persist full content
-export async function saveDiagram(userId: string, _diagramCode: string): Promise<void> {
-    await saveActivity({
-        user_id: userId,
-        activity_type: 'diagram',
-        title: 'Generated Flowchart',
-        content_preview: 'Flowchart diagram generated'
-    });
-}
+
 
 // Save mindmap/roadmap - just logs activity
 export async function saveRoadmap(userId: string, roadmap: any): Promise<void> {
@@ -67,10 +59,7 @@ export async function saveSummary(userId: string, summary: string): Promise<void
     });
 }
 
-// These return null since we can't persist full content without proper schema
-export async function getLastDiagram(_userId: string): Promise<string | null> {
-    return null;
-}
+
 
 export async function getLastRoadmap(_userId: string): Promise<any | null> {
     return null;

@@ -13,7 +13,7 @@ import SettingsTab from './SettingsTab';
 import QuizzesTab from './QuizzesTab';
 import HistoryTab from './HistoryTab';
 import DashboardHome from './DashboardHome';
-import DiagramsTab from './DiagramsTab';
+
 import MindMapTab from './MindMapTab';
 
 import { useFiles } from '../hooks/useFiles';
@@ -25,7 +25,7 @@ interface DashboardProps {
     session: Session;
 }
 
-type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'diagrams' | 'mindmap' | 'videos' | 'history' | 'settings';
+type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'videos' | 'history' | 'settings';
 
 export default function Dashboard({ session }: DashboardProps) {
     const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -205,14 +205,7 @@ export default function Dashboard({ session }: DashboardProps) {
                             />
                         </div>
 
-                        {/* Diagrams Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'diagrams' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <DiagramsTab
-                                userId={session.user.id}
-                                context={context}
-                                hasContext={files.length > 0}
-                            />
-                        </div>
+
 
                         {/* Mind Map Tab */}
                         <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'mindmap' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>

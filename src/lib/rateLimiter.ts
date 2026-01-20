@@ -18,7 +18,7 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
     summary: { maxTokens: 10, refillRate: 10 / 60, refillInterval: 1000 },      // 10 per minute
     flashcards: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },     // 8 per minute
     quizzes: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },        // 8 per minute
-    diagrams: { maxTokens: 5, refillRate: 5 / 60, refillInterval: 1000 },       // 5 per minute
+
     mindmap: { maxTokens: 5, refillRate: 5 / 60, refillInterval: 1000 },        // 5 per minute
     chat: { maxTokens: 15, refillRate: 15 / 60, refillInterval: 1000 },         // 15 per minute
     videos: { maxTokens: 10, refillRate: 10 / 60, refillInterval: 1000 },       // 10 per minute

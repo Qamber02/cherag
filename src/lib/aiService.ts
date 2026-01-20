@@ -344,79 +344,7 @@ ${sanitized}`;
     }
 }
 
-export async function generateDiagram(context: string): Promise<string> {
-    // Security: Sanitize and limit input
-    const sanitizedContext = sanitizeInput(context, 5000);
 
-    if (sanitizedContext.length < 10) {
-        throw new Error('Insufficient content for diagram generation');
-    }
-
-    // Generate detailed diagram specification using AI
-    try {
-        console.log('[Diagram] Analyzing content for professional diagram...');
-
-        const analysisPrompt = `Analyze this educational content and create a detailed professional diagram specification.
-
-Content: ${sanitizedContext}
-
-Provide a comprehensive specification including:
-1. Main title/concept (clear and concise)
-2. 5-8 key elements or steps with brief descriptions
-3. Relationships and connections between elements
-4. Recommended color scheme (professional, educational)
-5. Best diagram type (flowchart, process diagram, hierarchy, concept map, etc.)
-6. Visual suggestions (icons, layout, style)
-
-Be specific and detailed to guide professional diagram creation.`;
-
-        const specification = await callGeminiWithFallback(analysisPrompt, 'diagrams');
-
-        // Create professional image generation prompt
-        const imagePrompt = `Create a highly professional, detailed educational diagram based on this specification:
-
-${specification}
-
-CRITICAL DESIGN REQUIREMENTS:
-✓ Professional infographic style with modern, clean aesthetics
-✓ Use a cohesive professional color palette (blues, purples, teals, or educational colors)
-✓ Large, clear, readable typography with proper hierarchy
-✓ Include relevant icons or simple illustrations for each key concept
-✓ Clear visual flow with professional arrows/connectors
-✓ Proper spacing and balanced layout
-✓ White or light neutral background for maximum clarity
-✓ High contrast for text readability
-✓ Publication-quality graphic design
-✓ Suitable for educational presentations or study materials
-✓ Modern flat design style
-✓ Professional diagram layout (flowchart, process, or concept map)
-
-The diagram should look like it was created by a professional graphic designer for an educational textbook or presentation. Focus on visual clarity, professional appearance, and educational value.`;
-
-        // Return special marker for image generation
-        return `IMAGE:${imagePrompt}`;
-
-    } catch (error: any) {
-        console.warn('[Diagram] AI-assisted generation failed, using simplified approach');
-
-        // Fallback: Direct image prompt from content
-        const simplifiedPrompt = `Create a professional educational diagram illustrating the key concepts from this content:
-
-"${sanitizedContext.slice(0, 500)}..."
-
-Design Requirements:
-- Modern, clean infographic style
-- Professional blue/purple color scheme
-- Clear labels and text
-- Visual flow diagram or concept map
-- Icons for main concepts
-- White background
-- High-quality, professional appearance
-- Educational and polished look`;
-
-        return `IMAGE:${simplifiedPrompt}`;
-    }
-}
 
 export async function generateMindMap(context: string): Promise<{ title: string, children: any[] }> {
     await rateLimiter.waitForToken('mindmap');
