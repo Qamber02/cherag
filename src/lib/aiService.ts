@@ -1,5 +1,6 @@
 // Advanced AI Service with multiple models, rate limiting, and fallbacks
 import { rateLimiter } from './rateLimiter';
+import { generateCacheKey, getFromCache, saveToCache } from './cacheService';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
@@ -247,9 +248,17 @@ export async function generateImageWithGemini(prompt: string): Promise<string | 
 // Task-specific functions with validation and rate limiting
 
 export async function generateSummary(context: string, options?: { length?: string; style?: string; focus?: string }): Promise<string> {
-    await rateLimiter.waitForToken('summary');
-
     const sanitized = sanitizeInput(context);
+
+    // Check cache first
+    const cacheKey = generateCacheKey(sanitized + JSON.stringify(options || {}), 'summary');
+    const cached = getFromCache<string>(cacheKey);
+    if (cached) {
+        console.log('[AI] Using cached summary');
+        return cached;
+    }
+
+    await rateLimiter.waitForToken('summary');
 
     // Build customized instructions based on options
     let lengthInstruction = 'medium length';
@@ -285,13 +294,27 @@ ${focusInstruction}
 Text:
 ${sanitized}`;
 
-    return callGeminiWithFallback(prompt, 'summary');
+    const result = await callGeminiWithFallback(prompt, 'summary');
+
+    // Cache the result
+    saveToCache(cacheKey, result, 'summary');
+
+    return result;
 }
 
 export async function generateFlashcards(context: string): Promise<Array<{ question: string, answer: string }>> {
+    const sanitized = sanitizeInput(context);
+
+    // Check cache first
+    const cacheKey = generateCacheKey(sanitized, 'flashcards');
+    const cached = getFromCache<Array<{ question: string, answer: string }>>(cacheKey);
+    if (cached) {
+        console.log('[AI] Using cached flashcards');
+        return cached;
+    }
+
     await rateLimiter.waitForToken('flashcards');
 
-    const sanitized = sanitizeInput(context);
     const prompt = `Generate 5 study flashcards as a JSON array. Format: [{"question": "...", "answer": "..."}]. No markdown, ONLY valid JSON.
 
 Text:
@@ -303,6 +326,10 @@ ${sanitized}`;
     try {
         const parsed = JSON.parse(cleaned);
         if (!Array.isArray(parsed)) throw new Error('Not an array');
+
+        // Cache the result
+        saveToCache(cacheKey, parsed, 'flashcards');
+
         return parsed;
     } catch (err) {
         // If parsing fails, create simple flashcards from text
@@ -315,9 +342,18 @@ ${sanitized}`;
 }
 
 export async function generateQuizzes(context: string): Promise<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>> {
+    const sanitized = sanitizeInput(context);
+
+    // Check cache first
+    const cacheKey = generateCacheKey(sanitized, 'quizzes');
+    const cached = getFromCache<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>>(cacheKey);
+    if (cached) {
+        console.log('[AI] Using cached quizzes');
+        return cached;
+    }
+
     await rateLimiter.waitForToken('quizzes');
 
-    const sanitized = sanitizeInput(context);
     const prompt = `Generate 5 multiple choice questions as a JSON array. 
 Format: [{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}]
 
@@ -337,6 +373,10 @@ ${sanitized}`;
     try {
         const parsed = JSON.parse(cleaned);
         if (!Array.isArray(parsed)) throw new Error('Not an array');
+
+        // Cache the result
+        saveToCache(cacheKey, parsed, 'quizzes');
+
         return parsed;
     } catch (err) {
         console.warn('Failed to parse quizzes JSON');

@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { Search, User, Menu, LayoutDashboard, MessageCircle, Layers, FileQuestion, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { saveSummary, getLastSummary } from '../lib/activityService';
+import { getPreference, setPreference } from '../lib/preferencesService';
 
 import Sidebar from './Sidebar';
 import ChatTab from './ChatTab';
@@ -28,7 +29,9 @@ interface DashboardProps {
 type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'videos' | 'history' | 'settings';
 
 export default function Dashboard({ session }: DashboardProps) {
-    const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+    // Initialize from saved preference
+    const savedTab = getPreference('lastActiveTab') as Tab;
+    const [activeTab, setActiveTab] = useState<Tab>(savedTab || 'dashboard');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -87,6 +90,8 @@ export default function Dashboard({ session }: DashboardProps) {
 
     const handleTabChange = (tab: string) => {
         setActiveTab(tab as Tab);
+        // Save to preferences for persistence
+        setPreference('lastActiveTab', tab);
     };
 
     return (
