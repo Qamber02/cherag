@@ -1,11 +1,7 @@
 // Advanced AI Service with multiple models, rate limiting, and fallbacks
 import { rateLimiter } from './rateLimiter';
 import { generateCacheKey, getFromCache, saveToCache } from './cacheService';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
-
+import { keyManager } from './keyManager';
 import { getPreference } from './preferencesService';
 
 // OpenRouter model for chat
@@ -54,65 +50,57 @@ interface GeminiResponse {
     error?: { message: string; code?: number };
 }
 
-// Call OpenRouter (free molmo model)
-const OPENROUTER_KEYS = [
-    import.meta.env.VITE_OPENROUTER_API_KEY,
-    import.meta.env.VITE_OPENROUTER_API_KEY_2,
-    import.meta.env.VITE_OPENROUTER_API_KEY_3
-].filter(Boolean);
-
 // Call OpenRouter with Key Rotation
 async function callOpenRouter(prompt: string): Promise<string | null> {
-    if (OPENROUTER_KEYS.length === 0) return null;
+    const apiKey = keyManager.getKey('openrouter');
+    if (!apiKey) return null;
 
-    for (let i = 0; i < OPENROUTER_KEYS.length; i++) {
-        const apiKey = OPENROUTER_KEYS[i];
-        try {
-            console.log(`[AI] Trying OpenRouter molmo-2-8b:free (Key ${i + 1})...`);
+    try {
+        console.log(`[AI] Trying OpenRouter molmo-2-8b:free...`);
 
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Cherag Study Assistant'
-                },
-                body: JSON.stringify({
-                    model: MOLMO_MODEL,
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 2000,
-                    temperature: 0.5
-                })
-            });
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Cherag Study Assistant'
+            },
+            body: JSON.stringify({
+                model: MOLMO_MODEL,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 2000,
+                temperature: 0.5
+            })
+        });
 
-            if (response.ok) {
-                const data = await response.json();
-                const content = data.choices?.[0]?.message?.content;
-                if (content) {
-                    console.log(`[AI] ✅ Success with OpenRouter (Key ${i + 1})`);
-                    return content;
-                }
+        if (response.ok) {
+            const data = await response.json();
+            const content = data.choices?.[0]?.message?.content;
+            if (content) {
+                console.log(`[AI] ✅ Success with OpenRouter`);
+                return content;
             }
-
-            if (response.status === 429) {
-                console.warn(`[AI] OpenRouter (Key ${i + 1}) Rate Limit (429). Trying next key...`);
-                continue;
-            }
-
-            console.warn(`[AI] OpenRouter error (Key ${i + 1}):`, response.status);
-        } catch (err) {
-            console.warn(`[AI] OpenRouter failed (Key ${i + 1}):`, err);
         }
-    }
 
-    console.warn('[AI] All OpenRouter keys exhausted.');
+        if (response.status === 429) {
+            console.warn(`[AI] OpenRouter Rate Limit (429). Rotating key...`);
+            keyManager.markRateLimited('openrouter');
+            // Recursive retry with new key
+            return callOpenRouter(prompt);
+        }
+
+        console.warn(`[AI] OpenRouter error:`, response.status);
+    } catch (err) {
+        console.warn(`[AI] OpenRouter failed:`, err);
+    }
     return null;
 }
 
 // Call DeepSeek
 async function callDeepSeek(prompt: string, _taskType: string = 'general'): Promise<string | null> {
-    if (!DEEPSEEK_API_KEY) return null;
+    const apiKey = keyManager.getKey('deepseek');
+    if (!apiKey) return null;
 
     try {
         console.log(`[AI] Trying DeepSeek (deepseek-chat)...`);
@@ -120,7 +108,7 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
                 model: 'deepseek-chat',
@@ -139,6 +127,12 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
         if (response.ok && data.choices?.[0]?.message?.content) {
             console.log(`[AI] ✅ Success with DeepSeek`);
             return data.choices[0].message.content;
+        }
+
+        if (response.status === 429) {
+            console.warn(`[AI] DeepSeek Rate Limit (429). Rotating key...`);
+            keyManager.markRateLimited('deepseek');
+            return callDeepSeek(prompt, _taskType);
         }
 
         console.warn(`[AI] DeepSeek error:`, data);
@@ -165,11 +159,9 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
         const result = await callOpenRouter(sanitizedPrompt);
         if (result) return result;
     }
-    // Note: Gemini preference handled in fallback loop or could be explicit here, 
-    // but the fallback loop is Gemini-centric anyway.
 
     // 2. DeepSeek (Default robust generic) - if not already tried or failed
-    if (preferred !== 'deepseek' && DEEPSEEK_API_KEY) {
+    if (preferred !== 'deepseek') {
         const result = await callDeepSeek(sanitizedPrompt, taskType);
         if (result) return result;
     }
@@ -181,48 +173,65 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
     }
 
     // 4. Gemini Fallback Loop
+    // We iterate through models, and for each model, we try the current key.
+    // If key fails (429), we rotate key and try same model again.
+    // If model fails (other error), we move to next model.
     for (let i = 0; i < GEMINI_MODELS.length; i++) {
         const model = GEMINI_MODELS[i];
-        try {
-            console.log(`[AI] Trying Gemini model: ${model}`);
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: sanitizedPrompt }] }]
-                    })
+
+        let attempts = 0;
+        const MAX_RETRIES_PER_MODEL = 2; // Try up to 2 keys per model before moving to next model
+
+        while (attempts < MAX_RETRIES_PER_MODEL) {
+            const apiKey = keyManager.getKey('gemini');
+            if (!apiKey) break; // Should not happen unless config missing
+
+            try {
+                console.log(`[AI] Trying Gemini model: ${model}`);
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: sanitizedPrompt }] }]
+                        })
+                    }
+                );
+
+                const data: GeminiResponse = await response.json();
+
+                if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    console.log(`[AI] ✅ Success with ${model}`);
+                    return data.candidates[0].content.parts[0].text;
                 }
-            );
 
-            const data: GeminiResponse = await response.json();
-
-            if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                console.log(`[AI] ✅ Success with ${model}`);
-                return data.candidates[0].content.parts[0].text;
-            }
-
-            if (data.error?.code === 429 || data.error?.message?.includes('quota')) {
-                console.warn(`[AI] Rate limit on ${model}, trying next...`);
-                continue;
-            }
-            throw new Error('AI service temporarily unavailable.');
-        } catch (err: any) {
-            console.warn(`[AI] Failed with ${model}:`, err.message);
-            if (i === GEMINI_MODELS.length - 1) {
-                // All Gemini failed
-                console.log('[AI] All Gemini models failed, trying Hugging Face...');
-                try {
-                    return await callHuggingFace(prompt, taskType);
-                } catch (e) {
-                    console.warn('[AI] Hugging Face failed, trying mock fallback...');
+                if (response.status === 429 || data.error?.code === 429 || data.error?.message?.includes('quota')) {
+                    console.warn(`[AI] Rate limit on ${model}, rotating key...`);
+                    keyManager.markRateLimited('gemini');
+                    attempts++;
+                    continue; // Retry with new key
                 }
+
+                // If it's not a rate limit, it's a model error (e.g. overloaded), so break inner loop to try next model
+                throw new Error(data.error?.message || 'Gemini error');
+            } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                console.warn(`[AI] Failed with ${model}:`, errorMessage);
+                break; // Break inner loop, try next model
             }
         }
     }
 
-    // 5. Final Fallback: Mock Data (Demo Mode)
+    // 5. Hugging Face Fallback
+    console.log('[AI] All Gemini models failed, trying Hugging Face...');
+    try {
+        return await callHuggingFace(prompt, taskType);
+    } catch (e) {
+        console.warn('[AI] Hugging Face failed, trying mock fallback...');
+    }
+
+    // 6. Final Fallback: Mock Data (Demo Mode)
     console.warn('[AI] ⚠️ All APIs failed. Using MOCK fallback.');
     return await tryMockFallback(prompt, taskType);
 }
@@ -230,28 +239,33 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
 // Mock Fallback for when all APIs fail
 async function tryMockFallback(_prompt: string, taskType: string): Promise<string> {
     // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     if (taskType === 'summary') {
-        return `## Summary (Simulated)
+        return `## ⚠️ Offline Mode: Summary
         
-**Note: All AI services are currently unavailable. This is a simulated response.**
+**Note: AI services are currently unreachable. Displaying fallback content.**
 
-The text discusses key educational concepts. It likely covers:
-*   **Fundamental Principles**: The core ideas of the subject.
-*   **Applications**: How these principles are used in practice.
-*   **Implications**: The broader impact of understanding these topics.
+### Key Concepts
+*   **System Resilience**: The ability of a system to handle failures gracefully.
+*   **Fallback Mechanisms**: Strategies like "Simulation Mode" to keep the UI functional.
+*   **User Experience**: Ensuring the user knows why data is generic (e.g., connectivity issues).
 
-This fallback ensures you can still see the UI layout while we reconnect to the AI services.`;
+> "Reliability is not about never failing, but about recovering quickly."
+
+### Next Steps
+1. Check your internet connection.
+2. Verify API keys in settings.
+3. Try again in a few minutes.`;
     }
 
     if (taskType === 'flashcards') {
         const mockCards = [
-            { question: "What is the status of the AI service?", answer: "Currently offline (Simulated Mode)" },
-            { question: "Why am I seeing this?", answer: "To preserve app functionality during API outages." },
-            { question: "How does the fallback work?", answer: "It returns predefined data structures." },
-            { question: "Is this a real flashcard?", answer: "No, it is a placeholder." },
-            { question: "What should I do?", answer: "Check your API keys or wait for rate limits to reset." }
+            { question: "What is 'Simulation Mode'?", answer: "A fallback state when AI services are offline." },
+            { question: "Why is this happening?", answer: "Network issues or API rate limits." },
+            { question: "How do I fix it?", answer: "Check your API keys or wait for the quota to reset." },
+            { question: "Is my data safe?", answer: "Yes, your local data is preserved." },
+            { question: "Can I still study?", answer: "Yes, you can review existing materials." }
         ];
         return JSON.stringify(mockCards);
     }
@@ -259,23 +273,40 @@ This fallback ensures you can still see the UI layout while we reconnect to the 
     if (taskType === 'quizzes') {
         const mockQuiz = [
             {
-                question: "What is the current mode of the application?",
-                options: ["A) Live Mode", "B) Simulation Mode", "C) Offline Mode", "D) Debug Mode"],
-                correct_answer: "B",
-                explanation: "All external APIs failed, so the system switched to Simulation Mode."
+                question: "Which component manages API keys?",
+                options: ["A) KeyManager", "B) RateLimiter", "C) Dashboard", "D) App.tsx"],
+                correct_answer: "A",
+                explanation: "The KeyManager class handles key rotation and failover."
             },
             {
-                question: "Which component handles this fallback?",
-                options: ["A) Dashboard.tsx", "B) aiService.ts", "C) main.tsx", "D) App.tsx"],
-                correct_answer: "B",
-                explanation: "The aiService.ts file contains the tryMockFallback function."
+                question: "What does HTTP 429 mean?",
+                options: ["A) Not Found", "B) Server Error", "C) Too Many Requests", "D) Unauthorized"],
+                correct_answer: "C",
+                explanation: "429 indicates that the API rate limit has been exceeded."
+            },
+            {
+                question: "What is the primary fallback model?",
+                options: ["A) GPT-4", "B) Claude 3", "C) DeepSeek", "D) Hugging Face"],
+                correct_answer: "D",
+                explanation: "Hugging Face is used as a fallback when Gemini fails."
             }
         ];
         return JSON.stringify(mockQuiz);
     }
 
     if (taskType === 'chat') {
-        return "I am currently in **Offline Simulation Mode** because I cannot reach my AI brain (DeepSeek/Gemini). I can't answer specific questions about your text right now, but I'm still here! 🤖";
+        return "I'm currently in **Offline Simulation Mode**. \n\nI can't process new text right now, but I'm here to tell you that the app is still working! Please check your connection or API keys.";
+    }
+
+    if (taskType === 'mindmap') {
+        return JSON.stringify({
+            title: "Offline Mode",
+            children: [
+                { title: "Check Connection" },
+                { title: "Verify API Keys" },
+                { title: "Wait for Quota Reset" }
+            ]
+        });
     }
 
     return "AI Service Unavailable (Simulated Response)";
@@ -283,7 +314,8 @@ This fallback ensures you can still see the UI layout while we reconnect to the 
 
 // Hugging Face fallback
 async function callHuggingFace(prompt: string, taskType: string): Promise<string> {
-    if (!HUGGINGFACE_API_KEY) {
+    const apiKey = keyManager.getKey('huggingface');
+    if (!apiKey) {
         throw new Error('AI service configuration error. Please contact support.');
     }
 
@@ -299,7 +331,7 @@ async function callHuggingFace(prompt: string, taskType: string): Promise<string
             {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${HUGGINGFACE_API_KEY}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
@@ -320,22 +352,30 @@ async function callHuggingFace(prompt: string, taskType: string): Promise<string
             return data.summary_text;
         }
 
+        if (response.status === 429 || data.error?.includes('Rate limit')) {
+            console.warn(`[AI] HuggingFace Rate Limit (429). Rotating key...`);
+            keyManager.markRateLimited('huggingface');
+            return callHuggingFace(prompt, taskType);
+        }
+
         throw new Error('Unexpected Hugging Face response format');
-    } catch (err: any) {
-        console.error('Hugging Face error:', err);
-        throw new Error(`All AI providers failed: ${err.message}`);
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('Hugging Face error:', errorMessage);
+        throw new Error(`All AI providers failed: ${errorMessage}`);
     }
 }
 
 // Gemini Image Generation
 export async function generateImageWithGemini(prompt: string): Promise<string | null> {
-    if (!GEMINI_API_KEY) return null;
+    const apiKey = keyManager.getKey('gemini');
+    if (!apiKey) return null;
 
     try {
         console.log('[AI] Generating image with Gemini...');
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

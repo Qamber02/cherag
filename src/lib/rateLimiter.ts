@@ -15,14 +15,14 @@ interface TokenBucket {
 
 // Rate limit configurations per feature
 const RATE_LIMITS: Record<string, RateLimitConfig> = {
-    summary: { maxTokens: 10, refillRate: 10 / 60, refillInterval: 1000 },      // 10 per minute
-    flashcards: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },     // 8 per minute
-    quizzes: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },        // 8 per minute
+    summary: { maxTokens: 5, refillRate: 5 / 60, refillInterval: 1000 },        // 5 per minute (was 10)
+    flashcards: { maxTokens: 5, refillRate: 5 / 60, refillInterval: 1000 },     // 5 per minute (was 8)
+    quizzes: { maxTokens: 5, refillRate: 5 / 60, refillInterval: 1000 },        // 5 per minute (was 8)
 
-    mindmap: { maxTokens: 5, refillRate: 5 / 60, refillInterval: 1000 },        // 5 per minute
-    chat: { maxTokens: 15, refillRate: 15 / 60, refillInterval: 1000 },         // 15 per minute
-    videos: { maxTokens: 10, refillRate: 10 / 60, refillInterval: 1000 },       // 10 per minute
-    default: { maxTokens: 10, refillRate: 10 / 60, refillInterval: 1000 },      // Default: 10 per minute
+    mindmap: { maxTokens: 3, refillRate: 3 / 60, refillInterval: 1000 },        // 3 per minute (was 5)
+    chat: { maxTokens: 10, refillRate: 10 / 60, refillInterval: 1000 },         // 10 per minute (was 15)
+    videos: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },         // 8 per minute (was 10)
+    default: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },        // Default: 8 per minute
 };
 
 class RateLimiter {
