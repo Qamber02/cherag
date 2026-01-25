@@ -16,6 +16,16 @@ import HistoryTab from './HistoryTab';
 import DashboardHome from './DashboardHome';
 
 import MindMapTab from './MindMapTab';
+import {
+    KnowledgeRadarTab,
+    ConfidenceMeterTab,
+    ExamEngineTab,
+    TeachAITab,
+    ConceptCompressionTab,
+    ConceptRemixTab,
+    MentalModelTab
+} from './premium';
+import { usePremiumFeatures } from '../hooks/usePremiumFeatures';
 
 import { useFiles } from '../hooks/useFiles';
 import { useChat } from '../hooks/useChat';
@@ -26,11 +36,12 @@ interface DashboardProps {
     session: Session;
 }
 
-type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'videos' | 'history' | 'settings';
+type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'radar' | 'confidence' | 'exam' | 'teaching' | 'compress' | 'remix' | 'mental' | 'videos' | 'history' | 'settings';
 
 export default function Dashboard({ session }: DashboardProps) {
     // Initialize from saved preference
     const savedTab = getPreference('lastActiveTab') as Tab;
+    // State
     const [activeTab, setActiveTab] = useState<Tab>(savedTab || 'dashboard');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,6 +53,13 @@ export default function Dashboard({ session }: DashboardProps) {
     const { messages, sendMessage, isLoading: isChatLoading } = useChat(session.user);
     const { flashcards, generateFlashcards, clearFlashcards, isLoading: isFlashcardsLoading } = useFlashcards(session.user, context);
     const { videos, generateShorts, loadMore, isLoading: isVideosLoading, isLoadingMore, hasMore } = useStudyShorts(session.user, context);
+
+    // Premium Features Hook
+    const {
+        knowledgeGraph,
+        isLoading: isPremiumLoading,
+        analyzeContent
+    } = usePremiumFeatures(session.user.id);
 
     // Summary state
     const [summary, setSummary] = useState('');
@@ -94,8 +112,32 @@ export default function Dashboard({ session }: DashboardProps) {
         setPreference('lastActiveTab', tab);
     };
 
+    // Helper to render tabs with preservation or conditional mounting
+    const renderTab = (tabName: Tab, component: React.ReactNode, preserveState = true, isScrollable = true) => {
+        const isActive = activeTab === tabName;
+
+        // Container styles
+        const baseClasses = "absolute inset-0 h-full w-full bg-background transition-opacity duration-200";
+        const visibilityClasses = isActive ? "opacity-100 z-10 visible" : "opacity-0 z-0 invisible pointer-events-none";
+        const scrollClasses = isScrollable ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden";
+
+        if (!preserveState) {
+            return isActive ? (
+                <div className={`absolute inset-0 h-full w-full ${scrollClasses} ${isActive ? 'z-10' : 'z-0'}`}>
+                    {component}
+                </div>
+            ) : null;
+        }
+
+        return (
+            <div className={`${baseClasses} ${visibilityClasses} ${scrollClasses}`}>
+                {component}
+            </div>
+        );
+    };
+
     return (
-        <div className="flex h-screen bg-scholar overflow-hidden font-sans text-foreground">
+        <div className="flex h-[100dvh] bg-scholar overflow-hidden font-sans text-foreground">
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
@@ -105,7 +147,7 @@ export default function Dashboard({ session }: DashboardProps) {
             )}
 
             {/* Icon Sidebar */}
-            <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-50 transition-transform duration-300 h-full`}>
+            <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-50 transition-transform duration-300 h-full shrink-0`}>
                 <Sidebar
                     files={files}
                     isParsing={isParsing}
@@ -118,31 +160,32 @@ export default function Dashboard({ session }: DashboardProps) {
                         handleTabChange(tab);
                         setSidebarOpen(false);
                     }}
+                    session={session}
                 />
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
                 {/* Top Bar with Search */}
-                <header className="h-14 md:h-16 flex items-center px-4 md:px-6 gap-3 md:gap-4 shrink-0 transition-all duration-300">
+                <header className="h-14 md:h-16 flex items-center px-4 md:px-6 gap-3 md:gap-4 shrink-0 border-b border-border/50 bg-background/50 backdrop-blur-sm">
                     {/* Mobile Menu Button */}
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg md:hidden text-foreground"
+                        className="p-2 hover:bg-secondary rounded-lg md:hidden text-foreground"
                     >
                         <Menu className="w-5 h-5" />
                     </button>
 
                     {/* Search Bar */}
                     <div className="flex-1 max-w-2xl">
-                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/50 dark:bg-black/20 border border-white/20 dark:border-white/5 shadow-sm focus-within:ring-2 ring-primary/20 transition-all">
+                        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-secondary/50 border border-border/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                             <Search className="w-4 h-4 text-muted-foreground" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search..."
-                                className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
+                                className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-w-0"
                             />
                         </div>
                     </div>
@@ -156,10 +199,10 @@ export default function Dashboard({ session }: DashboardProps) {
                 </header>
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-hidden p-3 md:p-6 pt-0 pb-20 md:pb-6">
-                    <div className="w-full h-full overflow-hidden relative">
-                        {/* Dashboard Tab */}
-                        <div className={`absolute inset-0 transition-opacity duration-300 ${activeTab === 'dashboard' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                <main className="flex-1 overflow-hidden relative">
+                    {/* Dashboard Tab */}
+                    {renderTab('dashboard', (
+                        <div className="w-full min-h-full p-3 md:p-6 pb-20 md:pb-6">
                             <DashboardHome
                                 files={files}
                                 flashcards={flashcards}
@@ -169,60 +212,172 @@ export default function Dashboard({ session }: DashboardProps) {
                                 isParsing={isParsing}
                             />
                         </div>
+                    ), true, true)}
 
-                        {/* Chat Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'chat' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <ChatTab
-                                messages={messages}
-                                onSendMessage={(msg) => sendMessage(msg, context)}
-                                isLoading={isChatLoading}
-                            />
+                    {/* Chat Tab - Preserve State, Internal Scroll */}
+                    {renderTab('chat', (
+                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl h-full overflow-hidden">
+                                <ChatTab
+                                    messages={messages}
+                                    onSendMessage={(msg) => sendMessage(msg, context)}
+                                    isLoading={isChatLoading}
+                                />
+                            </div>
                         </div>
+                    ), true, false)}
 
-                        {/* Flashcards Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'flashcards' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <FlashcardsTab
-                                flashcards={flashcards}
-                                isLoading={isFlashcardsLoading}
-                                onGenerate={generateFlashcards}
-                                onClear={clearFlashcards}
-                                hasUnknownContext={files.length > 0}
-                            />
+                    {/* Flashcards Tab - Page Scroll */}
+                    {renderTab('flashcards', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <FlashcardsTab
+                                    flashcards={flashcards}
+                                    isLoading={isFlashcardsLoading}
+                                    onGenerate={generateFlashcards}
+                                    onClear={clearFlashcards}
+                                    hasUnknownContext={files.length > 0}
+                                />
+                            </div>
                         </div>
+                    ), true, true)}
 
-                        {/* Summary Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'summary' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <SummaryTab
-                                summary={summary}
-                                isLoading={isSummaryLoading}
-                                onGenerate={handleGenerateSummary}
-                                onUpdateSummary={handleUpdateSummary}
-                                hasUnknownContext={files.length > 0}
-                            />
+                    {/* Summary Tab - Page Scroll */}
+                    {renderTab('summary', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <SummaryTab
+                                    summary={summary}
+                                    isLoading={isSummaryLoading}
+                                    onGenerate={handleGenerateSummary}
+                                    onUpdateSummary={handleUpdateSummary}
+                                    hasUnknownContext={files.length > 0}
+                                />
+                            </div>
                         </div>
+                    ), true, true)}
 
-                        {/* Quizzes Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'quizzes' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <QuizzesTab
+                    {/* Quizzes Tab - Page Scroll */}
+                    {renderTab('quizzes', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <QuizzesTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
+                        </div>
+                    ), true, true)}
+
+                    {/* Mind Map Tab - Internal Scroll (Split View) */}
+                    {renderTab('mindmap', (
+                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl h-full overflow-hidden">
+                                <MindMapTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
+                        </div>
+                    ), true, false)}
+
+                    {/* Knowledge Radar Tab - Page Scroll */}
+                    {renderTab('radar', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <KnowledgeRadarTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                    onAnalyze={analyzeContent}
+                                    knowledgeGraph={knowledgeGraph}
+                                    isLoading={isPremiumLoading}
+                                />
+                            </div>
+                        </div>
+                    ), true, true)}
+
+                    {/* Confidence Meter Tab - Page Scroll */}
+                    {renderTab('confidence', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <ConfidenceMeterTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
+                        </div>
+                    ), true, true)}
+
+                    {/* Exam Engine Tab - Page Scroll */}
+                    {renderTab('exam', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <ExamEngineTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
+                        </div>
+                    ), true, true)}
+
+                    {/* Teach AI Tab - Internal Scroll */}
+                    {renderTab('teaching', (
+                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
+                            <TeachAITab
                                 userId={session.user.id}
                                 context={context}
                                 hasContext={files.length > 0}
                             />
                         </div>
+                    ), true, false)}
 
-
-
-                        {/* Mind Map Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'mindmap' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <MindMapTab
-                                userId={session.user.id}
-                                context={context}
-                                hasContext={files.length > 0}
-                            />
+                    {/* Compression Tab - Page Scroll */}
+                    {renderTab('compress', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <ConceptCompressionTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
                         </div>
+                    ), true, true)}
 
-                        {/* Study Shorts Tab */}
-                        <div className={`h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'videos' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                    {/* Remix Tab - Page Scroll */}
+                    {renderTab('remix', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <ConceptRemixTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
+                        </div>
+                    ), true, true)}
+
+                    {/* Mental Model Tab - Page Scroll */}
+                    {renderTab('mental', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <MentalModelTab
+                                    userId={session.user.id}
+                                    context={context}
+                                    hasContext={files.length > 0}
+                                />
+                            </div>
+                        </div>
+                    ), true, true)}
+
+                    {/* Study Shorts Tab - Page Scroll */}
+                    {renderTab('videos', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
                             <StudyShortsTab
                                 videos={videos}
                                 isLoading={isVideosLoading}
@@ -233,31 +388,37 @@ export default function Dashboard({ session }: DashboardProps) {
                                 hasUnknownContext={files.length > 0}
                             />
                         </div>
+                    ), true, true)}
 
-                        {/* History Tab */}
-                        <div className={`glass-card rounded-2xl h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'history' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                            <HistoryTab userId={session.user.id} />
+                    {/* History Tab - Page Scroll */}
+                    {renderTab('history', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl overflow-hidden">
+                                <HistoryTab userId={session.user.id} />
+                            </div>
                         </div>
+                    ), true, true)}
 
-                        {/* Settings Tab */}
-                        <div className={`h-full overflow-hidden absolute inset-0 transition-all duration-300 ${activeTab === 'settings' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                    {/* Settings Tab - Page Scroll */}
+                    {renderTab('settings', (
+                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
                             <SettingsTab
                                 userEmail={session.user.email}
                                 onSignOut={handleSignOut}
                                 onClearData={handleClearAllData}
                             />
                         </div>
-                    </div>
+                    ), true, true)}
                 </main>
 
                 {/* Mobile Bottom Navigation */}
-                <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-amber-50/95 via-white/95 to-white/90 dark:from-gray-900/95 dark:via-gray-900/95 dark:to-gray-800/90 backdrop-blur-xl border-t border-amber-200/50 dark:border-gray-700 z-50 safe-area-bottom shadow-lg shadow-amber-900/5">
+                <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-background via-background/95 to-background/80 backdrop-blur-xl border-t border-border z-50 safe-area-bottom shadow-lg">
                     <div className="flex items-center justify-around h-16 px-2">
                         <button
                             onClick={() => handleTabChange('dashboard')}
                             className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'dashboard'
-                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground hover:text-primary'}`}
                         >
                             <LayoutDashboard className="w-5 h-5" />
                             <span className="text-[10px] mt-1 font-semibold">Home</span>
@@ -265,8 +426,8 @@ export default function Dashboard({ session }: DashboardProps) {
                         <button
                             onClick={() => handleTabChange('chat')}
                             className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'chat'
-                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground hover:text-primary'}`}
                         >
                             <MessageCircle className="w-5 h-5" />
                             <span className="text-[10px] mt-1 font-semibold">Chat</span>
@@ -274,8 +435,8 @@ export default function Dashboard({ session }: DashboardProps) {
                         <button
                             onClick={() => handleTabChange('flashcards')}
                             className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'flashcards'
-                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground hover:text-primary'}`}
                         >
                             <Layers className="w-5 h-5" />
                             <span className="text-[10px] mt-1 font-semibold">Cards</span>
@@ -283,15 +444,15 @@ export default function Dashboard({ session }: DashboardProps) {
                         <button
                             onClick={() => handleTabChange('quizzes')}
                             className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'quizzes'
-                                ? 'text-amber-600 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-900/30'
-                                : 'text-gray-500 dark:text-gray-400 hover:text-amber-500'}`}
+                                ? 'text-primary bg-primary/10'
+                                : 'text-muted-foreground hover:text-primary'}`}
                         >
                             <FileQuestion className="w-5 h-5" />
                             <span className="text-[10px] mt-1 font-semibold">Quiz</span>
                         </button>
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="flex flex-col items-center justify-center flex-1 py-2 rounded-xl text-gray-500 dark:text-gray-400 hover:text-amber-500 transition-all"
+                            className="flex flex-col items-center justify-center flex-1 py-2 rounded-xl text-muted-foreground hover:text-primary transition-all"
                         >
                             <MoreHorizontal className="w-5 h-5" />
                             <span className="text-[10px] mt-1 font-semibold">More</span>

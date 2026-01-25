@@ -2,10 +2,11 @@ import { useRef, useState, useCallback } from 'react';
 import {
     Upload, LayoutDashboard, Layers, FileQuestion,
     Play, Settings, User, FileText, X, MessageCircle, FileCheck,
-    Map, Clock
+    Map, Clock, Radar, Gauge, Target, GraduationCap, Minimize2, GitMerge, Brain
 } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
 import logoImg from '../assets/logo.png';
+import type { Session } from '@supabase/supabase-js';
 
 interface SidebarProps {
     files: Document[];
@@ -16,6 +17,7 @@ interface SidebarProps {
     userEmail?: string;
     activeTab: string;
     onTabChange: (tab: string) => void;
+    session: Session; // Added
 }
 
 const navItems = [
@@ -27,6 +29,13 @@ const navItems = [
 
     { id: 'mindmap', icon: Map, label: 'Roadmap' },
     { id: 'videos', icon: Play, label: 'Study Shorts' },
+    { id: 'radar', icon: Radar, label: 'Knowledge Radar' },
+    { id: 'confidence', icon: Gauge, label: 'Confidence' },
+    { id: 'exam', icon: Target, label: 'Exam Engine' },
+    { id: 'teaching', icon: GraduationCap, label: 'Feynman Mode' },
+    { id: 'compress', icon: Minimize2, label: 'Compression' },
+    { id: 'remix', icon: GitMerge, label: 'Concept Remix' },
+    { id: 'mental', icon: Brain, label: 'Mental Models' },
     { id: 'history', icon: Clock, label: 'History' },
 ];
 
@@ -35,9 +44,11 @@ export default function Sidebar({
     isParsing,
     onUpload,
     onRemove,
+    onSignOut,
     userEmail,
     activeTab,
-    onTabChange
+    onTabChange,
+    session,
 }: SidebarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showFilePanel, setShowFilePanel] = useState(false);
@@ -83,7 +94,7 @@ export default function Sidebar({
                 </div>
 
                 {/* Navigation Icons */}
-                <nav className="flex-1 flex flex-col items-center space-y-2">
+                <nav className="flex-1 flex flex-col items-center space-y-2 w-full overflow-y-auto min-h-0 custom-scrollbar px-2">
                     {/* Upload Button */}
                     <button
                         onClick={() => setShowFilePanel(!showFilePanel)}
@@ -144,22 +155,36 @@ export default function Sidebar({
                 />
 
                 {/* Bottom section - Settings & User */}
-                <div className="flex flex-col items-center space-y-2 mt-auto">
-                    <button
-                        onClick={() => onTabChange('settings')}
-                        className={`icon-btn ${activeTab === 'settings' ? 'active' : ''}`}
-                        title="Settings"
-                    >
-                        <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'text-gray-900' : 'text-gray-500'}`} />
-                    </button>
+                <div className="flex flex-col items-center space-y-4 mt-auto mb-4 w-full px-2">
+
+                    <div className="flex flex-col gap-2 items-center">
+                        <button
+                            onClick={() => onTabChange('settings')}
+                            className={`icon-btn ${activeTab === 'settings' ? 'active' : ''}`}
+                            title="Settings"
+                        >
+                            <Settings className={`w-5 h-5 ${activeTab === 'settings' ? 'text-gray-900' : 'text-gray-500'}`} />
+                        </button>
+
+                        {/* Sign Out (Use onSignOut) */}
+                        <button
+                            onClick={onSignOut}
+                            className="icon-btn hover:text-red-500 hover:bg-red-50/10"
+                            title="Sign Out"
+                        >
+                            <User className="w-4 h-4 text-gray-400 group-hover:text-red-500" />
+                        </button>
+                    </div>
 
                     {/* User Avatar */}
-                    <div
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white font-medium text-sm cursor-pointer hover:shadow-lg transition-shadow"
-                        title={userEmail}
-                    >
-                        {userEmail ? userEmail[0].toUpperCase() : <User className="w-4 h-4" />}
-                    </div>
+                    {session && (
+                        <div
+                            className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white font-medium text-sm cursor-pointer hover:shadow-lg transition-shadow"
+                            title={userEmail}
+                        >
+                            {userEmail ? userEmail[0].toUpperCase() : 'U'}
+                        </div>
+                    )}
                 </div>
             </aside>
 

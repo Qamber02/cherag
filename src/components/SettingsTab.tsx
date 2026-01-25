@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Settings, Moon, Sun, Trash2, LogOut, User, Database, Sparkles, Mail, Check, X } from 'lucide-react';
+import { Settings, Moon, Sun, Trash2, LogOut, User, Database, Sparkles, Mail, Check, X, Bot } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 interface SettingsTabProps {
@@ -71,7 +71,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
     };
 
     return (
-        <div className="p-8 h-full overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="p-8 min-h-full bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
             <div className="max-w-2xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
@@ -183,6 +183,46 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                                     {isDarkMode ? <Moon className="w-3 h-3 text-amber-500" /> : <Sun className="w-3 h-3 text-gray-400" />}
                                 </div>
                             </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* AI Preferences Section */}
+                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+                        <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Bot className="w-4 h-4" />
+                            AI Preferences
+                        </h2>
+                    </div>
+                    <div className="p-4">
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Response Detail Level</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Control how verbose the AI responses should be</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                {['Concise', 'Balanced', 'Detailed'].map((option) => {
+                                    const current = localStorage.getItem('ai_verbosity') || 'Balanced';
+                                    const isSelected = current === option;
+                                    return (
+                                        <button
+                                            key={option}
+                                            onClick={() => {
+                                                localStorage.setItem('ai_verbosity', option);
+                                                // Force re-render (hacky but simple for now)
+                                                window.dispatchEvent(new Event('storage'));
+                                            }}
+                                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isSelected
+                                                ? 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
+                                                : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700'
+                                                }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </section>
