@@ -20,6 +20,8 @@ export {
     parseJSONResponse,
     executePromptChain,
     generateMentalModelAnalysis,
+    generateStressTest,
+    generateActiveLesson,
 } from './premiumAiService';
 
 export type { KnowledgeRadarData } from './premiumAiService';
@@ -92,4 +94,5 @@ export type {
     DailyPlan,
     NotesAnalysis,
     MentalModelResult,
+    MicroLessonResult,
 } from './prompts';

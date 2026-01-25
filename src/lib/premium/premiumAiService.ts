@@ -40,6 +40,8 @@ const HF_MODELS = {
     quizzes: 'mistralai/Mistral-7B-Instruct-v0.2',
 };
 
+import { getPreference } from '../preferencesService';
+
 interface AIResponse {
     success: boolean;
     data: string;
@@ -58,12 +60,14 @@ export async function callPremiumAI(
         temperature?: number;
         useCache?: boolean;
         cacheTTL?: number; // minutes
+        preferredProvider?: 'auto' | 'deepseek' | 'gemini' | 'huggingface' | 'openrouter';
     } = {}
 ): Promise<AIResponse> {
     const {
         maxTokens = 2000,
         temperature = 0.5,
         useCache = true,
+        preferredProvider = getPreference('aiModel') as any || 'auto'
     } = options;
 
     // Security: Sanitize prompt
@@ -82,8 +86,51 @@ export async function callPremiumAI(
     // Rate limiting
     await rateLimiter.waitForToken(taskType);
 
-    // 1. Try OpenRouter (Molmo) First (Free & Fast)
-    if (OPENROUTER_API_KEY) {
+    // ==========================================
+    // STRATEGY: PREFERRED -> DEEPSEEK -> OPENROUTER -> GEMINI -> HUGGINGFACE
+    // ==========================================
+
+    const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+
+    // 0. Try Preferred Provider First (if strictly set)
+    if (preferredProvider === 'deepseek' && DEEPSEEK_API_KEY) {
+        try {
+            const deepseekResult = await tryDeepSeek(sanitizedPrompt, maxTokens, temperature, taskType);
+            if (deepseekResult) {
+                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), deepseekResult.data, taskType);
+                return deepseekResult;
+            }
+        } catch (e) {
+            console.warn('[Premium AI] Preferred (DeepSeek) failed, falling back...');
+        }
+    } else if (preferredProvider === 'gemini') {
+        try {
+            const geminiResult = await tryGeminiModels(sanitizedPrompt, maxTokens, temperature, taskType);
+            if (geminiResult) {
+                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), geminiResult.data, taskType);
+                return geminiResult;
+            }
+        } catch (e) {
+            console.warn('[Premium AI] Preferred (Gemini) failed, falling back...');
+        }
+    }
+    // Add other preferred providers here if needed...
+
+    // 1. Try DeepSeek (Default robust model)
+    if (DEEPSEEK_API_KEY && preferredProvider !== 'gemini' && preferredProvider !== 'huggingface' && preferredProvider !== 'openrouter') { // Don't retry if it was already tried or explicitly avoided
+        try {
+            const deepseekResult = await tryDeepSeek(sanitizedPrompt, maxTokens, temperature, taskType);
+            if (deepseekResult) {
+                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), deepseekResult.data, taskType);
+                return deepseekResult;
+            }
+        } catch (e) {
+            console.warn('[Premium AI] DeepSeek failed, checking next fallback...');
+        }
+    }
+
+    // 2. Try OpenRouter (Molmo)
+    if (OPENROUTER_API_KEY && preferredProvider !== 'deepseek') {
         try {
             const openRouterResult = await tryOpenRouter(sanitizedPrompt, maxTokens, temperature);
             if (openRouterResult) {
@@ -95,7 +142,7 @@ export async function callPremiumAI(
         }
     }
 
-    // 2. Try Gemini Models
+    // 3. Try Gemini Models
     try {
         const geminiResult = await tryGeminiModels(sanitizedPrompt, maxTokens, temperature, taskType);
         if (geminiResult) {
@@ -106,7 +153,7 @@ export async function callPremiumAI(
         console.warn('[Premium AI] Gemini loop exhausted or failed, checking fallbacks...');
     }
 
-    // 3. Fallback: Hugging Face
+    // 4. Fallback: Hugging Face
     if (HUGGINGFACE_API_KEY) {
         try {
             const hfResult = await tryHuggingFace(sanitizedPrompt, maxTokens, temperature, taskType);
@@ -117,6 +164,14 @@ export async function callPremiumAI(
         } catch (e) {
             console.warn('[Premium AI] Hugging Face failed.');
         }
+    }
+
+    // 5. Final Fallback: Mock Data (Demo Mode)
+    try {
+        const mockResult = await tryMockFallback(sanitizedPrompt, taskType);
+        return mockResult;
+    } catch (e) {
+        console.error('[Premium AI] Mock fallback failed (should never happen).');
     }
 
     throw new Error('All premium AI models and fallbacks failed. Please try again later.');
@@ -158,51 +213,169 @@ async function tryGeminiModels(prompt: string, maxTokens: number, temperature: n
                 continue;
             }
             throw new Error(data.error?.message || 'Unknown error');
-        } catch (err: any) {
-            console.warn(`[Premium AI] ${model} failed:`, err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.warn(`[Premium AI] ${model} failed:`, message);
             continue;
         }
     }
     return null;
 }
 
-async function tryOpenRouter(prompt: string, maxTokens: number, temperature: number): Promise<AIResponse | null> {
-    try {
-        console.log(`[Premium AI] Trying OpenRouter ${MOLMO_MODEL}...`);
+const OPENROUTER_KEYS = [
+    import.meta.env.VITE_OPENROUTER_API_KEY,
+    import.meta.env.VITE_OPENROUTER_API_KEY_2,
+    import.meta.env.VITE_OPENROUTER_API_KEY_3
+].filter(Boolean);
 
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
+async function tryOpenRouter(prompt: string, maxTokens: number, temperature: number): Promise<AIResponse | null> {
+    if (OPENROUTER_KEYS.length === 0) return null;
+
+    for (let i = 0; i < OPENROUTER_KEYS.length; i++) {
+        const apiKey = OPENROUTER_KEYS[i];
+        try {
+            console.log(`[Premium AI] Trying OpenRouter ${MOLMO_MODEL} (Key ${i + 1})...`);
+
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.origin,
+                    "X-Title": "Cherag Educational Platform"
+                },
+                body: JSON.stringify({
+                    "model": MOLMO_MODEL,
+                    "messages": [
+                        { "role": "user", "content": prompt }
+                    ],
+                    "max_tokens": maxTokens,
+                    "temperature": temperature,
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.choices?.[0]?.message?.content) {
+                const result = data.choices[0].message.content;
+                console.log(`[Premium AI] ✅ Success with OpenRouter (Key ${i + 1})`);
+                return { success: true, data: result, model: 'openrouter', cached: false };
+            }
+
+            if (response.status === 429) {
+                console.warn(`[Premium AI] OpenRouter (Key ${i + 1}) Rate Limit (429). Trying next key...`);
+                continue;
+            }
+
+            console.warn(`[Premium AI] OpenRouter error (Key ${i + 1}):`, data);
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : String(e);
+            console.warn(`[Premium AI] OpenRouter (Key ${i + 1}) failed:`, message);
+        }
+    }
+
+    console.warn('[Premium AI] All OpenRouter keys exhausted.');
+    return null;
+}
+async function tryDeepSeek(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
+    // Determine model based on task type
+    // Use reasoner for complex tasks like mental models or exam generation
+    const isComplex = taskType.includes('mental_model') || taskType.includes('exam') || taskType.includes('analysis');
+    const model = isComplex ? 'deepseek-reasoner' : 'deepseek-chat';
+
+    console.log(`[Premium AI] Trying DeepSeek (${model}) for ${taskType}...`);
+
+    try {
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
             headers: {
-                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": window.location.origin,
-                "X-Title": "Cherag Educational Platform"
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
             },
             body: JSON.stringify({
-                "model": MOLMO_MODEL,
-                "messages": [
-                    { "role": "user", "content": prompt }
+                model: model,
+                messages: [
+                    { role: "system", content: "You are a helpful assistant." }, // Optional system message
+                    { role: "user", content: prompt }
                 ],
-                "max_tokens": maxTokens,
-                "temperature": temperature,
+                max_tokens: maxTokens,
+                temperature: temperature,
+                stream: false
             })
         });
 
         const data = await response.json();
 
         if (response.ok && data.choices?.[0]?.message?.content) {
-            const result = data.choices[0].message.content;
-            console.log(`[Premium AI] ✅ Success with OpenRouter`);
-            return { success: true, data: result, model: 'openrouter', cached: false };
+            console.log(`[Premium AI] ✅ Success with DeepSeek (${model})`);
+            return { success: true, data: data.choices[0].message.content, model: `deepseek-${model}`, cached: false };
         }
 
-        console.warn(`[Premium AI] OpenRouter error:`, data);
+        if (response.status === 402) {
+            console.error('[Premium AI] 🚨 DeepSeek Quota Exceeded (402). Please top up credit.');
+            // Return null to trigger fallback
+            return null;
+        }
+
+        console.warn(`[Premium AI] DeepSeek error:`, data);
         return null;
 
-    } catch (e: any) {
-        console.warn(`[Premium AI] OpenRouter fetch failed:`, e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.warn(`[Premium AI] DeepSeek fetch failed:`, message);
         return null;
     }
+}
+
+// Mock Fallback for when all APIs fail (Demo Mode)
+async function tryMockFallback(prompt: string, taskType: string): Promise<AIResponse> {
+    console.warn(`[Premium AI] ⚠️ All APIs failed. Falling back to MOCK mode for demo purposes.`);
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    let mockData = "";
+
+    if (taskType.includes('active_lesson')) {
+        const concept = taskType.replace('active_lesson_', '');
+        mockData = JSON.stringify({
+            explanation: {
+                hook: `Here is a simulated lesson for ${concept}.`,
+                core_concept: `${concept} is a fundamental building block in this domain.`,
+                analogy: `Think of ${concept} like a key that unlocks specific doors in a building.`,
+                key_takeaway: `Mastering ${concept} allows you to understand more complex systems.`
+            },
+            quiz: {
+                question: `What is the primary function of ${concept} in this context?`,
+                options: [
+                    "It has no function",
+                    `It serves as a foundational element`,
+                    "It is deprecated",
+                    "It is unrelated to the topic"
+                ],
+                correct_index: 1,
+                explanation: `Correct! ${concept} acts as a core component upon which others rely.`
+            }
+        });
+    } else if (taskType.includes('knowledge_radar')) {
+        // Fallback for analysis
+        mockData = JSON.stringify({
+            concepts: [
+                { concept: "Core Concept", description: "The central idea", complexity_level: "foundational" },
+                { concept: "Advanced Application", description: "Using the core idea", complexity_level: "advanced" },
+                { concept: "Intermediate Technique", description: "A balanced approach", complexity_level: "intermediate" }
+            ],
+            dependencies: [
+                { concept: "Advanced Application", prerequisites: ["Core Concept"], is_foundational: false },
+                { concept: "Intermediate Technique", prerequisites: ["Core Concept"], is_foundational: false }
+            ]
+        });
+    } else {
+        // Generic fallback
+        mockData = "This is a simulated AI response because all external providers (DeepSeek, Gemini, etc.) are currently rate-limited or unavailable.";
+    }
+
+    return { success: true, data: mockData, model: 'offline-mock', cached: false };
 }
 
 async function tryHuggingFace(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
@@ -210,9 +383,13 @@ async function tryHuggingFace(prompt: string, maxTokens: number, temperature: nu
 
     console.log(`[Premium AI] 🔄 Fallback: Trying Hugging Face (${model})...`);
 
+    // Use local proxy if in development to avoid CORS
+    // In production, you would need a real backend proxy
+    const baseUrl = import.meta.env.DEV ? '/api/hf' : 'https://router.huggingface.co';
+
     try {
         const response = await fetch(
-            `https://api-inference.huggingface.co/models/${model}`,
+            `${baseUrl}/models/${model}`,
             {
                 method: "POST",
                 headers: {
@@ -242,8 +419,12 @@ async function tryHuggingFace(prompt: string, maxTokens: number, temperature: nu
         console.warn(`[Premium AI] Hugging Face error:`, data);
         return null;
 
-    } catch (e: any) {
-        console.warn(`[Premium AI] Hugging Face fetch failed:`, e.message);
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+            console.warn(`[Premium AI] Hugging Face fetch failed:`, e.message);
+        } else {
+            console.warn(`[Premium AI] Hugging Face fetch failed:`, String(e));
+        }
         return null;
     }
 }
@@ -254,16 +435,29 @@ async function tryHuggingFace(prompt: string, maxTokens: number, temperature: nu
 export function parseJSONResponse<T>(response: string): T {
     let cleaned = response.trim();
 
-    // Remove markdown code blocks
-    cleaned = cleaned.replace(/```[a-z]*\s*/gi, '');
-    cleaned = cleaned.replace(/```\s*$/g, '');
+    // Strip DeepSeek <think>...</think> blocks (multiline)
+    cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+    // Also strip generic <think> tags if they appear without closing (truncated)
+    cleaned = cleaned.replace(/<think>[\s\S]*$/gi, '').trim();
+
+    // Remove markdown code blocks (json, plain, or implicit)
+    // Handle standard blocks
+    cleaned = cleaned.replace(/```(?:json)?\s*([\s\S]*?)\s*```/gi, '$1');
+    // Handle unclosed blocks (truncated) - remove the opening tag
+    cleaned = cleaned.replace(/```(?:json)?/gi, '');
+    // Remove any trailing backticks
+    cleaned = cleaned.replace(/```/g, '');
+
+    cleaned = cleaned.trim();
 
     // Find first valid start character
     const firstBrace = cleaned.indexOf('{');
     const firstBracket = cleaned.indexOf('[');
 
     if (firstBrace === -1 && firstBracket === -1) {
-        throw new Error('No JSON object or array found in response');
+        // As a last resort, try to find the last closing brace and work backwards? 
+        // Or just let it fail.
+        throw new Error(`No JSON object or array found in response. Content: ${cleaned.substring(0, 100)}...`);
     }
 
     const isObject = firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket);
@@ -322,8 +516,9 @@ export function parseJSONResponse<T>(response: string): T {
 
     try {
         return JSON.parse(cleaned);
-    } catch (e) {
-        console.warn('JSON Parse Failed initially. Attempting repair...', (e as any).message);
+    } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        console.warn('JSON Parse Failed initially. Attempting repair...', errorMessage);
 
         // Attempt 1: Fix trailing commas
         try {
@@ -509,10 +704,22 @@ export async function analyzeSyllabus(syllabus: string): Promise<SyllabusAnalysi
                 'exam_syllabus',
                 { maxTokens: 8192, useCache: false }
             );
-            return parseJSONResponse<SyllabusAnalysisResult>(response.data);
+            const result = parseJSONResponse<SyllabusAnalysisResult>(response.data);
+
+            // Cache the result
+            return result;
         }
         throw e;
     }
+}
+
+export async function generateStressTest(concept: string, currentLevel: number = 1): Promise<any> {
+    const response = await callPremiumAI(
+        EXAM_ENGINE_PROMPTS.stressTest(concept, currentLevel),
+        `stress_test_${concept}_${currentLevel}`,
+        { maxTokens: 4096 }
+    );
+    return parseJSONResponse<any>(response.data);
 }
 
 export async function calculateExamReadiness(
@@ -685,6 +892,48 @@ export async function remixConcepts(
 }
 
 // ============================================
+// ACTIVE LEARNING
+// ============================================
+
+import { ACTIVE_LEARNING_PROMPTS } from './prompts';
+import type { MicroLessonResult } from './prompts';
+
+export async function generateActiveLesson(
+    concept: string,
+    context: string
+): Promise<MicroLessonResult> {
+    const response = await callPremiumAI(
+        ACTIVE_LEARNING_PROMPTS.microLesson(concept, context),
+        `active_lesson_${concept}`,
+        { maxTokens: 4000 }
+    );
+
+    const result = parseJSONResponse<MicroLessonResult>(response.data);
+
+    // Sanitize Quiz Data
+    if (result?.quiz?.options && Array.isArray(result.quiz.options)) {
+        // Ensure index is within bounds
+        const maxIdx = result.quiz.options.length - 1;
+        if (typeof result.quiz.correct_index !== 'number' || result.quiz.correct_index < 0 || result.quiz.correct_index > maxIdx) {
+            console.warn(`[Premium] Fixed out-of-bounds correct_index: ${result.quiz.correct_index} -> 0`);
+            result.quiz.correct_index = 0; // Default to A if broken
+        }
+
+        // Heuristic: If explanation explicitly mentions "Option B" or "Answer: B", try to match it
+        const explanationLower = result.quiz.explanation?.toLowerCase() || "";
+        if (explanationLower.includes("correct answer is b") || explanationLower.includes("option b")) {
+            if (result.quiz.correct_index !== 1 && result.quiz.options.length > 1) {
+                console.warn('[Premium] Re-aligning index to B based on explanation');
+                result.quiz.correct_index = 1;
+            }
+        }
+        // Similar checks could be added for A, C, D but B/C confusion is most common
+    }
+
+    return result;
+}
+
+// ============================================
 // STUDY AGENT
 // ============================================
 
@@ -745,12 +994,13 @@ export function getKnowledgeTwinPrompt(profile: {
 
 export async function generateMentalModelAnalysis(
     content: string,
-    model: 'first_principles' | 'second_order' | 'pareto' | 'inversion' | 'opportunity_cost'
+    model: 'first_principles' | 'second_order' | 'pareto' | 'inversion' | 'opportunity_cost',
+    preferredProvider?: 'auto' | 'deepseek' | 'gemini' | 'huggingface' | 'openrouter'
 ): Promise<MentalModelResult> {
     let response = await callPremiumAI(
         MENTAL_MODEL_PROMPTS.analysis(content, model),
         `mental_model_${model}`,
-        { maxTokens: 4000 }
+        { maxTokens: 4000, preferredProvider }
     );
 
     try {
@@ -761,7 +1011,7 @@ export async function generateMentalModelAnalysis(
             response = await callPremiumAI(
                 MENTAL_MODEL_PROMPTS.analysis(content, model),
                 `mental_model_${model}`,
-                { maxTokens: 4000, useCache: false }
+                { maxTokens: 4000, useCache: false, preferredProvider }
             );
             return parseJSONResponse<MentalModelResult>(response.data);
         }

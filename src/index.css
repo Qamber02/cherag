@@ -199,7 +199,7 @@
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.7);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
@@ -212,22 +212,44 @@
   }
 
   .dark .glass-card {
-    background: rgba(40, 40, 50, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    @apply bg-white/60 dark:bg-gray-900/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-sm transition-all duration-300;
+  }
+
+  /* Premium Card with Depth */
+  .glass-card-premium {
+    @apply bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg transition-all duration-300;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+    /* Top highlight for depth */
+  }
+
+  .dark .glass-card-premium {
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
 
   /* Glass Sidebar */
   .glass-sidebar {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(255, 255, 255, 0.5);
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-800/50;
   }
 
-  .dark .glass-sidebar {
-    background: rgba(30, 30, 40, 0.7);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+  /* Custom Focus Ring for Accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+  }
+
+  /* Global Focus Override */
+  :focus-visible {
+    outline: 2px solid rgba(245, 158, 11, 0.5);
+    /* Amber-500 @ 50% */
+    outline-offset: 2px;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
   }
 
   /* Icon Button */
@@ -294,8 +316,9 @@
 
   /* Smooth scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    /* Thinner */
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -303,12 +326,27 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.05);
+    /* Very subtle */
+    border-radius: 10px;
+    transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.2);
+    /* Visible on hover */
+  }
+
+  /* Utility to hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 }
 

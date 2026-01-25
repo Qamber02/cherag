@@ -36,28 +36,22 @@ ${JSON.stringify(concepts, null, 2)}
 
 Return as JSON:
 {
-  "connections": [{
-    "concepts": ["concept A", "concept B"],
-    "connection_type": "structural" | "principle" | "process" | "metaphorical",
-    "description": "how they connect",
-    "insight": "why this connection matters for learning",
-    "transfer_opportunity": "how understanding one helps with other"
-  }],
-  "unified_model": {
-    "title": "overarching theme",
-    "description": "how all concepts fit together",
-    "diagram_suggestion": "description of visual showing relationships"
-  },
-  "surprising_connection": {
-    "description": "least obvious but valuable connection",
-    "why_surprising": "what makes it non-obvious"
-  }
+  "connection": "A creative, metaphorical bridge sentence explaining how these two concepts form a unified idea (e.g. 'The Creative Bridge'). Make it poetic yet functional.",
+  "insights": [
+    "Key insight 1 about their relationship",
+    "Key insight 2 about their relationship"
+  ],
+  "applications": [
+    "Practical application 1 of this combined thinking",
+    "Practical application 2 of this combined thinking"
+  ]
 }
 
 RULES:
 - Find genuine connections, not forced ones
 - Prioritize pedagogically valuable connections
-- Include at least one non-obvious insight
+- Insights should be deep and surprising
+- Applications should be concrete/study-related
 - No markdown, only valid JSON`,
 
   /**
@@ -210,22 +204,9 @@ export type CompressionResult = {
 };
 
 export type RemixResult = {
-  connections: Array<{
-    concepts: string[];
-    connection_type: 'structural' | 'principle' | 'process' | 'metaphorical';
-    description: string;
-    insight: string;
-    transfer_opportunity: string;
-  }>;
-  unified_model: {
-    title: string;
-    description: string;
-    diagram_suggestion: string;
-  };
-  surprising_connection: {
-    description: string;
-    why_surprising: string;
-  };
+  connection: string;
+  insights: string[];
+  applications: string[];
 };
 
 export type VideoSegmentResult = {

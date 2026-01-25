@@ -2,6 +2,7 @@
 // Central hook for accessing premium functionality in components
 
 import { useState, useCallback, useEffect } from 'react';
+import { getPreference } from '../lib/preferencesService';
 
 import {
     // AI Services
@@ -29,6 +30,7 @@ import {
     setSessionGraph,
     // Mental Models
     generateMentalModelAnalysis,
+    generateActiveLesson,
 } from '../lib/premium';
 
 import type {
@@ -37,6 +39,7 @@ import type {
     CognitiveLoadResult,
     LearningDNAResult,
     DailyPlan,
+    MicroLessonResult,
 } from '../lib/premium';
 
 interface UsePremiumFeaturesReturn {
@@ -56,6 +59,9 @@ interface UsePremiumFeaturesReturn {
     compressConceptAction: (content: string, name: string) => Promise<any>;
     remixConceptsAction: (concepts: Array<{ name: string; description: string }>) => Promise<any>;
 
+    // Active Learning
+    generateActiveLessonAction: (concept: string, context: string) => Promise<MicroLessonResult | null>;
+
     // Session tracking
     startStudySession: () => void;
     recordAnswer: (correct: boolean, timeMs: number, conceptId?: string) => void;
@@ -63,7 +69,7 @@ interface UsePremiumFeaturesReturn {
 
     // Teaching Mode
     startTeachingSession: (concept: string, difficulty: 'beginner' | 'intermediate' | 'advanced', context?: string) => Promise<string>;
-    sendTeachingMessage: (history: Array<{ role: 'teacher' | 'student'; content: string }>, concept: string, context?: string) => Promise<string>;
+    sendTeachingMessage: (history: Array<{ role: 'teacher' | 'student'; content: string }>, concept: string, difficulty: 'beginner' | 'intermediate' | 'advanced', context?: string) => Promise<string>;
     evaluateSession: (concept: string, history: Array<{ role: 'teacher' | 'student'; content: string }>) => Promise<any>;
 
     // Mental Models
@@ -263,17 +269,40 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
     }, []);
 
     const recordAnswer = useCallback((correct: boolean, timeMs: number, conceptId?: string) => {
+        // 1. Record analytics
         recordInteraction(correct, timeMs, conceptId);
-    }, []);
 
-    // Mental Models
+        // 2. Update local graph state for immediate UI feedback
+        if (conceptId && knowledgeGraph) {
+            setKnowledgeGraph(prevGraph => {
+                if (!prevGraph) return null;
+
+                const updatedNodes = prevGraph.nodes.map(node => {
+                    if (node.id === conceptId) {
+                        // Simple mastery update simulation for UI responsiveness
+                        // Real calculation happens on server/analytics sync
+                        const currentMastery = node.mastery || 0;
+                        const increment = correct ? 15 : -5; // +15% for correct, -5% for wrong
+                        const newMastery = Math.min(100, Math.max(0, currentMastery + increment));
+
+                        return { ...node, mastery: newMastery };
+                    }
+                    return node;
+                });
+
+                return { ...prevGraph, nodes: updatedNodes };
+            });
+        }
+    }, [knowledgeGraph]);
+
     const analyzeMentalModelAction = useCallback(async (
         content: string,
         model: 'first_principles' | 'second_order' | 'pareto' | 'inversion' | 'opportunity_cost'
     ) => {
         setIsLoading(true);
+        const aiModel = getPreference('aiModel');
         try {
-            return await generateMentalModelAnalysis(content, model);
+            return await generateMentalModelAnalysis(content, model, aiModel === 'auto' ? undefined : aiModel);
         } catch (err: any) {
             setError(err.message);
             return null;
@@ -281,6 +310,8 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
             setIsLoading(false);
         }
     }, []);
+
+    // ... (rest of the file)
 
     const endStudySession = useCallback(() => {
         const metrics = endSession();
@@ -292,7 +323,7 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
         if (!userId) throw new Error('User not authenticated');
 
         const systemPrompt = getTeachingModeSystemPrompt(concept, difficulty);
-        const openingPrompt = `${systemPrompt}
+        const openingPrompt = `${systemPrompt.system}
 
 Context provided: ${context ? context.slice(0, 300) + '...' : 'None'}
 
@@ -303,15 +334,29 @@ Student (AI): (Greet the teacher excitedly and ask existing knowledge based on c
         return response;
     };
 
-    const sendTeachingMessage = async (history: Array<{ role: 'teacher' | 'student'; content: string }>, concept: string, context?: string) => {
+    const sendTeachingMessage = async (history: Array<{ role: 'teacher' | 'student'; content: string }>, concept: string, difficulty: 'beginner' | 'intermediate' | 'advanced', context?: string) => {
+        const lastUserMsg = history[history.length - 1];
+        const isUserConfused = /don'?t know|idk|not sure|explain|confused|lost|help/i.test(lastUserMsg.content);
+
         const conversation = history.map(msg => `${msg.role === 'teacher' ? 'Teacher' : 'Student'}: ${msg.content}`).join('\n');
+        const systemPrompt = getTeachingModeSystemPrompt(concept, difficulty).system;
+
+        let dynamicInstruction = "";
+        if (isUserConfused) {
+            dynamicInstruction = `\n[SYSTEM INTERVENTION: The teacher (user) is confused. STOP QUESTIONING IMMEDIATELY. Briefly explain the concept yourself using a simple query or analogy. Then check for understanding.]\n`;
+        }
+
         const prompt = `
+${systemPrompt}
+
+${dynamicInstruction}
+
 Context about concept (${concept}) from files: ${context ? context.slice(0, 500) : 'None'}
 
 Current Conversation:
 ${conversation}
 
-Student (AI): (Reply naturally as the student, asking clarifying questions or showing understanding. Keep it short.)`;
+Student (AI):`;
 
         const response = await generateTeachingResponse(prompt);
         return response;
@@ -353,5 +398,18 @@ Student (AI): (Reply naturally as the student, asking clarifying questions or sh
 
         // Mental Models
         analyzeMentalModelAction,
+
+        // Active Learning
+        generateActiveLessonAction: async (concept: string, context: string) => {
+            setIsLoading(true);
+            try {
+                return await generateActiveLesson(concept, context);
+            } catch (err: any) {
+                setError(err.message);
+                return null;
+            } finally {
+                setIsLoading(false);
+            }
+        },
     };
 }

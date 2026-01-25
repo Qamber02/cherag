@@ -43,7 +43,6 @@ const corsHeaders = {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
 }
 
-}
 
 // ============================================================================
 // SECURITY: INPUT SANITIZATION & RATE LIMITING
@@ -192,7 +191,7 @@ async function fetchYouTubeVideos(
         return { videos: [], nextPageToken: undefined };
     }
 
-    const videoIds = searchData.items.map((i: any) => i.id.videoId).join(',');
+    const videoIds = (searchData.items as Array<{ id: { videoId: string } }>).map((i) => i.id.videoId).join(',');
 
     // Step 2: Get full metadata
     const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds}&key=${youtubeKey}`;
@@ -399,7 +398,7 @@ async function checkSemanticSimilarity(
 // 5. CHANNEL TRUST
 // ============================================================================
 async function updateChannelTrust(
-    supabase: any,
+    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     channelId: string,
     channelName: string,
     passed: boolean
@@ -440,7 +439,7 @@ async function updateChannelTrust(
         });
 
         return newScore;
-    } catch (e) {
+    } catch (_e) {
         console.log('[TRUST] Table may not exist, skipping trust update');
         return 0.5;
     }
@@ -467,7 +466,7 @@ function rankVideos(videos: VerifiedVideo[]): VerifiedVideo[] {
 // ============================================================================
 // 7. CACHE MANAGEMENT
 // ============================================================================
-async function getCachedVideos(supabase: any, topic: string): Promise<VerifiedVideo[]> {
+async function getCachedVideos(supabase: any, topic: string): Promise<VerifiedVideo[]> { // eslint-disable-line @typescript-eslint/no-explicit-any // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
         const { data } = await supabase
             .from('verified_videos')
@@ -486,14 +485,14 @@ async function getCachedVideos(supabase: any, topic: string): Promise<VerifiedVi
             relevanceScore: v.relevance_score,
             semanticScore: v.semantic_score
         }));
-    } catch (e) {
+    } catch (_e) {
         console.log('[CACHE] Table may not exist, skipping cache check');
         return [];
     }
 }
 
 async function cacheVerifiedVideos(
-    supabase: any,
+    supabase: any, // eslint-disable-line @typescript-eslint/no-explicit-any
     videos: VerifiedVideo[],
     topic: string,
     channelMap: Map<string, string>
@@ -511,7 +510,7 @@ async function cacheVerifiedVideos(
     try {
         await supabase.from('verified_videos').upsert(rows, { onConflict: 'video_id' });
         console.log(`[CACHE] Stored ${rows.length} verified videos`);
-    } catch (e) {
+    } catch (_e) {
         console.log('[CACHE] Could not store videos, table may not exist');
     }
 }
@@ -674,8 +673,9 @@ serve(async (req) => {
                     return new Response(JSON.stringify({ result: diagram }), {
                         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                     });
-                } catch (error: any) {
-                    console.warn('[AI-GATEWAY] OpenRouter failed, falling back to Gemini:', error.message);
+                } catch (error: unknown) {
+                    const msg = error instanceof Error ? error.message : String(error);
+                    console.warn('[AI-GATEWAY] OpenRouter failed, falling back to Gemini:', msg);
                 }
             }
         }
@@ -744,9 +744,10 @@ ${sanitizedContext}`;
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("[ERROR]", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        const message = error instanceof Error ? error.message : String(error);
+        return new Response(JSON.stringify({ error: message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

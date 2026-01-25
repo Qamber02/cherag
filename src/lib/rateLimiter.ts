@@ -119,12 +119,12 @@ export const rateLimiter = new RateLimiter();
 /**
  * Decorator function to add rate limiting to async functions
  */
-export function withRateLimit<T extends (...args: any[]) => Promise<any>>(
+export function withRateLimit<A extends unknown[], R>(
     endpoint: string,
-    fn: T
-): T {
-    return (async (...args: any[]) => {
+    fn: (...args: A) => Promise<R>
+): (...args: A) => Promise<R> {
+    return async (...args: A): Promise<R> => {
         await rateLimiter.waitForToken(endpoint);
         return fn(...args);
-    }) as T;
+    };
 }

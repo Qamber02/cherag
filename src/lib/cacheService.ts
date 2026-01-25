@@ -22,7 +22,7 @@ const CACHE_CONFIG: Record<string, CacheConfig> = {
     default: { ttl: 15 * 60 * 1000, maxEntries: 20 },      // 15 minutes
 };
 
-const CACHE_PREFIX = 'cherag_cache_';
+const CACHE_PREFIX = 'cherag_cache_v2_';
 
 /**
  * Generate a hash key from content for cache lookup

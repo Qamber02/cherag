@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, RefreshCw, Trash2, ChevronLeft, ChevronRight, RotateCcw, Sparkles, BookOpen, CheckCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export interface Flashcard {
     question: string;
@@ -138,9 +139,9 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                             {/* Front */}
                             <div className="absolute w-full h-full backface-hidden bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 flex flex-col items-center justify-center border border-gray-100 dark:border-gray-700">
                                 <span className="text-xs uppercase tracking-wider text-gray-400 mb-4 font-bold">Question</span>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white text-center leading-relaxed">
-                                    {card.question}
-                                </p>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white text-center leading-relaxed w-full prose prose-lg dark:prose-invert">
+                                    <ReactMarkdown>{card.question}</ReactMarkdown>
+                                </div>
                                 <span className="absolute bottom-6 text-sm text-blue-500 font-medium">Tap to flip</span>
                             </div>
 
@@ -150,9 +151,9 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                                 style={{ transform: 'rotateY(180deg)' }}
                             >
                                 <span className="text-xs uppercase tracking-wider text-blue-200 mb-4 font-bold">Answer</span>
-                                <p className="text-xl font-medium text-white text-center leading-relaxed">
-                                    {card.answer}
-                                </p>
+                                <div className="text-xl font-medium text-white text-center leading-relaxed w-full prose prose-lg prose-invert">
+                                    <ReactMarkdown>{card.answer}</ReactMarkdown>
+                                </div>
                             </div>
                         </motion.div>
                     </div>
@@ -268,30 +269,39 @@ function FlipCard({ question, answer }: { question: string; answer: string }) {
 
     return (
         <div
-            className="h-64 cursor-pointer perspective-1000"
+            className="h-64 cursor-pointer perspective-1000 group"
             onClick={() => setIsFlipped(!isFlipped)}
         >
             <motion.div
                 className="relative w-full h-full"
                 initial={false}
-                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+                animate={{
+                    rotateY: isFlipped ? 180 : 0,
+                    scale: isFlipped ? 1.02 : 1,
+                }}
+                transition={{ duration: 0.4, type: "spring", stiffness: 260, damping: 20 }}
                 style={{ transformStyle: 'preserve-3d' }}
             >
                 {/* Front */}
-                <div className="absolute w-full h-full backface-hidden bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center">
-                    <span className="text-xs uppercase tracking-wider text-gray-400 mb-3 font-semibold">Question</span>
-                    <p className="text-lg font-medium text-gray-900 dark:text-white leading-relaxed text-center">{question}</p>
-                    <span className="absolute bottom-4 text-xs text-blue-500 font-medium">Click to flip</span>
+                <div className="absolute w-full h-full backface-hidden bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-lg group-hover:shadow-xl transition-shadow p-8 flex flex-col items-center justify-center">
+                    <span className="text-xs uppercase tracking-widest text-gray-400 mb-4 font-bold">Question</span>
+                    <div className="text-xl font-semibold text-gray-900 dark:text-white leading-relaxed text-center font-serif w-full prose prose-sm dark:prose-invert">
+                        <ReactMarkdown>{question}</ReactMarkdown>
+                    </div>
+                    <span className="absolute bottom-6 text-xs text-amber-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        Click to flip <Sparkles className="w-3 h-3" />
+                    </span>
                 </div>
 
                 {/* Back */}
                 <div
-                    className="absolute w-full h-full backface-hidden bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center"
+                    className="absolute w-full h-full backface-hidden bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-8 flex flex-col items-center justify-center"
                     style={{ transform: 'rotateY(180deg)' }}
                 >
-                    <span className="text-xs uppercase tracking-wider text-blue-200 mb-3 font-semibold">Answer</span>
-                    <p className="text-base text-white leading-relaxed text-center font-medium">{answer}</p>
+                    <span className="text-xs uppercase tracking-widest text-white/80 mb-4 font-bold">Answer</span>
+                    <div className="text-lg text-white leading-relaxed text-center font-medium w-full prose prose-sm prose-invert">
+                        <ReactMarkdown>{answer}</ReactMarkdown>
+                    </div>
                 </div>
             </motion.div>
         </div>

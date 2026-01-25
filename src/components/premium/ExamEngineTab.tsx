@@ -18,6 +18,7 @@ import {
     calculateExamReadiness,
     getUserMastery,
     generateExamQuestions,
+    generateStressTest,
 } from '../../lib/premium';
 
 import type {
@@ -109,6 +110,32 @@ export default function ExamEngineTab({
             at_risk: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
         };
         return styles[status];
+    };
+
+    const startStressTest = async (concept: string) => {
+        setIsGenerating(true);
+        try {
+            const questions = await generateStressTest(concept);
+
+            // Map stress test questions to ExamQuestion format for the simulator
+            const mappedQuestions: ExamQuestion[] = questions.map((q: any) => ({
+                question: q.question,
+                type: 'short_answer', // Stress test is usually interactive/short answer
+                difficulty: q.level === 'basic' ? 'easy' : q.level === 'synthesis' ? 'hard' : 'medium',
+                time_estimate_minutes: 3,
+                topic: concept,
+                correct_answer: q.answer,
+                explanation: q.hint ? `Hint: ${q.hint}. \n\nCorrect Answer: ${q.answer}` : q.answer,
+                options: []
+            }));
+
+            setExamQuestions(mappedQuestions);
+            setIsTakingExam(true);
+        } catch (error) {
+            console.error('Failed to generate stress test:', error);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     // Render Exam Simulator View
@@ -421,10 +448,12 @@ export default function ExamEngineTab({
                                 {readiness.critical_gaps.map((gap, index) => (
                                     <button
                                         key={index}
-                                        className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary transition-colors"
+                                        onClick={() => startStressTest(gap)}
+                                        disabled={isGenerating}
+                                        className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:border-primary transition-colors disabled:opacity-50 disabled:cursor-wait"
                                     >
                                         <span className="font-medium text-foreground">{gap}</span>
-                                        <Zap className="w-5 h-5 text-orange-500" />
+                                        {isGenerating ? <Loader2 className="w-5 h-5 animate-spin text-orange-500" /> : <Zap className="w-5 h-5 text-orange-500" />}
                                     </button>
                                 ))}
                             </div>

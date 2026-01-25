@@ -221,47 +221,66 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                 </div>
             </div>
 
-            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-700 p-6">
+            {/* Content Area */}
+            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 p-8 relative overflow-hidden group">
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-500" />
-                        <p>Analyzing documents...</p>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse"></div>
+                            <Loader2 className="w-10 h-10 animate-spin text-blue-500 relative z-10" />
+                        </div>
+                        <p className="text-lg font-medium animate-pulse">Synthesizing document insights...</p>
                     </div>
                 ) : isEditing ? (
-                    <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Editing summary...</span>
+                    <div className="flex flex-col h-full animate-fade-in">
+                        <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-zinc-700 pb-4">
+                            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                                <Edit3 className="w-4 h-4" /> Editing Mode
+                            </span>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={handleSaveEdit}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                                    onClick={handleCancelEdit}
+                                    className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors"
                                 >
-                                    <Check className="w-4 h-4" />
-                                    Save
+                                    Cancel
                                 </button>
                                 <button
-                                    onClick={handleCancelEdit}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-600 text-sm"
+                                    onClick={handleSaveEdit}
+                                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow-md flex items-center gap-2"
                                 >
-                                    <X className="w-4 h-4" />
-                                    Cancel
+                                    <Check className="w-4 h-4" /> Save Changes
                                 </button>
                             </div>
                         </div>
                         <textarea
                             value={editedSummary}
                             onChange={(e) => setEditedSummary(e.target.value)}
-                            className="flex-1 w-full p-4 rounded-lg bg-gray-50 dark:bg-zinc-900 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 outline-none resize-none font-mono text-sm leading-relaxed"
-                            placeholder="Edit your summary here..."
+                            className="flex-1 w-full p-4 rounded-xl bg-gray-50 dark:bg-zinc-900/50 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none resize-none font-mono text-sm leading-relaxed transition-all"
+                            placeholder="Type your summary improvements here..."
+                            autoFocus
                         />
                     </div>
                 ) : summary ? (
-                    <div className="prose prose-gray dark:prose-invert max-w-none prose-headings:text-gray-800 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-strong:text-gray-800 dark:prose-strong:text-white prose-li:text-gray-700 dark:prose-li:text-gray-300">
-                        <ReactMarkdown>{summary}</ReactMarkdown>
+                    <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
+                        <article className="prose prose-lg prose-slate dark:prose-invert max-w-none 
+                            prose-headings:font-bold prose-headings:tracking-tight 
+                            prose-h1:text-3xl prose-h2:text-2xl 
+                            prose-p:leading-relaxed prose-p:text-gray-600 dark:prose-p:text-gray-300
+                            prose-li:text-gray-600 dark:prose-li:text-gray-300
+                            prose-strong:text-gray-900 dark:prose-strong:text-white"
+                        >
+                            <ReactMarkdown>{summary}</ReactMarkdown>
+                        </article>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                        <p>Upload documents and click Generate to see a summary.</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-700/50 rounded-2xl flex items-center justify-center mb-4">
+                            <FileText className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready to Summarize</h3>
+                        <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+                            Generate a concise summary of your uploaded documents to grasp key concepts quickly.
+                        </p>
                     </div>
                 )}
             </div>

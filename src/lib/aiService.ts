@@ -5,6 +5,9 @@ import { generateCacheKey, getFromCache, saveToCache } from './cacheService';
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+
+import { getPreference } from './preferencesService';
 
 // OpenRouter model for chat
 const MOLMO_MODEL = 'allenai/molmo-2-8b:free';
@@ -53,66 +56,136 @@ interface GeminiResponse {
 }
 
 // Call OpenRouter (free molmo model)
+const OPENROUTER_KEYS = [
+    import.meta.env.VITE_OPENROUTER_API_KEY,
+    import.meta.env.VITE_OPENROUTER_API_KEY_2,
+    import.meta.env.VITE_OPENROUTER_API_KEY_3
+].filter(Boolean);
+
+// Call OpenRouter with Key Rotation
 async function callOpenRouter(prompt: string): Promise<string | null> {
-    if (!OPENROUTER_API_KEY) return null;
+    if (OPENROUTER_KEYS.length === 0) return null;
+
+    for (let i = 0; i < OPENROUTER_KEYS.length; i++) {
+        const apiKey = OPENROUTER_KEYS[i];
+        try {
+            console.log(`[AI] Trying OpenRouter molmo-2-8b:free (Key ${i + 1})...`);
+
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Cherag Study Assistant'
+                },
+                body: JSON.stringify({
+                    model: MOLMO_MODEL,
+                    messages: [{ role: 'user', content: prompt }],
+                    max_tokens: 2000,
+                    temperature: 0.5
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const content = data.choices?.[0]?.message?.content;
+                if (content) {
+                    console.log(`[AI] ✅ Success with OpenRouter (Key ${i + 1})`);
+                    return content;
+                }
+            }
+
+            if (response.status === 429) {
+                console.warn(`[AI] OpenRouter (Key ${i + 1}) Rate Limit (429). Trying next key...`);
+                continue;
+            }
+
+            console.warn(`[AI] OpenRouter error (Key ${i + 1}):`, response.status);
+        } catch (err) {
+            console.warn(`[AI] OpenRouter failed (Key ${i + 1}):`, err);
+        }
+    }
+
+    console.warn('[AI] All OpenRouter keys exhausted.');
+    return null;
+}
+
+// Call DeepSeek
+async function callDeepSeek(prompt: string, taskType: string = 'general'): Promise<string | null> {
+    if (!DEEPSEEK_API_KEY) return null;
 
     try {
-        console.log('[AI] Trying OpenRouter molmo-2-8b:free...');
-
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        console.log(`[AI] Trying DeepSeek (deepseek-chat)...`);
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'Cherag Study Assistant'
+                'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
             },
             body: JSON.stringify({
-                model: MOLMO_MODEL,
-                messages: [{ role: 'user', content: prompt }],
+                model: 'deepseek-chat',
+                messages: [
+                    { role: "system", content: "You are a helpful study assistant." },
+                    { role: "user", content: prompt }
+                ],
                 max_tokens: 2000,
-                temperature: 0.5
+                temperature: 0.5,
+                stream: false
             })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            const content = data.choices?.[0]?.message?.content;
-            if (content) {
-                console.log('[AI] ✅ Success with OpenRouter');
-                return content;
-            }
+        const data = await response.json();
+
+        if (response.ok && data.choices?.[0]?.message?.content) {
+            console.log(`[AI] ✅ Success with DeepSeek`);
+            return data.choices[0].message.content;
         }
 
-        console.warn('[AI] OpenRouter response invalid, falling back...');
+        console.warn(`[AI] DeepSeek error:`, data);
         return null;
-    } catch (err) {
-        console.warn('[AI] OpenRouter failed:', err);
+    } catch (e) {
+        console.warn(`[AI] DeepSeek failed:`, e);
         return null;
     }
 }
 
-// Call Gemini with automatic fallback and rate limiting
+// Unified Call Function with Preferences
 async function callGeminiWithFallback(prompt: string, taskType: string = 'general'): Promise<string> {
     // Security: Sanitize prompt
     const sanitizedPrompt = sanitizeInput(prompt, 15000);
+    if (!sanitizedPrompt) throw new Error('Invalid input provided');
 
-    if (!sanitizedPrompt) {
-        throw new Error('Invalid input provided');
+    const preferred = getPreference('aiModel');
+
+    // 1. Try Preferred Model First
+    if (preferred === 'deepseek') {
+        const result = await callDeepSeek(sanitizedPrompt, taskType);
+        if (result) return result;
+    } else if (preferred === 'openrouter') {
+        const result = await callOpenRouter(sanitizedPrompt);
+        if (result) return result;
+    }
+    // Note: Gemini preference handled in fallback loop or could be explicit here, 
+    // but the fallback loop is Gemini-centric anyway.
+
+    // 2. DeepSeek (Default robust generic) - if not already tried or failed
+    if (preferred !== 'deepseek' && DEEPSEEK_API_KEY) {
+        const result = await callDeepSeek(sanitizedPrompt, taskType);
+        if (result) return result;
     }
 
-    // Try OpenRouter first (free and no rate limits)
-    const openRouterResult = await callOpenRouter(sanitizedPrompt);
-    if (openRouterResult) {
-        return openRouterResult;
+    // 3. OpenRouter (Free) - if not already tried
+    if (preferred !== 'openrouter') {
+        const openRouterResult = await callOpenRouter(sanitizedPrompt);
+        if (openRouterResult) return openRouterResult;
     }
 
-    // Fallback to Gemini models
+    // 4. Gemini Fallback Loop
     for (let i = 0; i < GEMINI_MODELS.length; i++) {
         const model = GEMINI_MODELS[i];
         try {
             console.log(`[AI] Trying Gemini model: ${model}`);
-
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
                 {
@@ -131,25 +204,82 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
                 return data.candidates[0].content.parts[0].text;
             }
 
-            // If rate limited or quota exceeded, try next model
             if (data.error?.code === 429 || data.error?.message?.includes('quota')) {
                 console.warn(`[AI] Rate limit on ${model}, trying next...`);
                 continue;
             }
-
-            // Security: Sanitize error message to avoid leaking API details
-            throw new Error('AI service temporarily unavailable. Please try again.');
+            throw new Error('AI service temporarily unavailable.');
         } catch (err: any) {
             console.warn(`[AI] Failed with ${model}:`, err.message);
             if (i === GEMINI_MODELS.length - 1) {
-                // All Gemini models failed, fallback to Hugging Face
+                // All Gemini failed
                 console.log('[AI] All Gemini models failed, trying Hugging Face...');
-                return await callHuggingFace(prompt, taskType);
+                try {
+                    return await callHuggingFace(prompt, taskType);
+                } catch (e) {
+                    console.warn('[AI] Hugging Face failed, trying mock fallback...');
+                }
             }
         }
     }
 
-    throw new Error('All AI models failed. Please try again in a few minutes.');
+    // 5. Final Fallback: Mock Data (Demo Mode)
+    console.warn('[AI] ⚠️ All APIs failed. Using MOCK fallback.');
+    return await tryMockFallback(prompt, taskType);
+}
+
+// Mock Fallback for when all APIs fail
+async function tryMockFallback(prompt: string, taskType: string): Promise<string> {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    if (taskType === 'summary') {
+        return `## Summary (Simulated)
+        
+**Note: All AI services are currently unavailable. This is a simulated response.**
+
+The text discusses key educational concepts. It likely covers:
+*   **Fundamental Principles**: The core ideas of the subject.
+*   **Applications**: How these principles are used in practice.
+*   **Implications**: The broader impact of understanding these topics.
+
+This fallback ensures you can still see the UI layout while we reconnect to the AI services.`;
+    }
+
+    if (taskType === 'flashcards') {
+        const mockCards = [
+            { question: "What is the status of the AI service?", answer: "Currently offline (Simulated Mode)" },
+            { question: "Why am I seeing this?", answer: "To preserve app functionality during API outages." },
+            { question: "How does the fallback work?", answer: "It returns predefined data structures." },
+            { question: "Is this a real flashcard?", answer: "No, it is a placeholder." },
+            { question: "What should I do?", answer: "Check your API keys or wait for rate limits to reset." }
+        ];
+        return JSON.stringify(mockCards);
+    }
+
+    if (taskType === 'quizzes') {
+        const mockQuiz = [
+            {
+                question: "What is the current mode of the application?",
+                options: ["A) Live Mode", "B) Simulation Mode", "C) Offline Mode", "D) Debug Mode"],
+                correct_answer: "B",
+                explanation: "All external APIs failed, so the system switched to Simulation Mode."
+            },
+            {
+                question: "Which component handles this fallback?",
+                options: ["A) Dashboard.tsx", "B) aiService.ts", "C) main.tsx", "D) App.tsx"],
+                correct_answer: "B",
+                explanation: "The aiService.ts file contains the tryMockFallback function."
+            }
+        ];
+        return JSON.stringify(mockQuiz);
+    }
+
+    if (taskType === 'chat') {
+        return "I am currently in **Offline Simulation Mode** because I cannot reach my AI brain (DeepSeek/Gemini). I can't answer specific questions about your text right now, but I'm still here! 🤖";
+    }
+
+    return "AI Service Unavailable (Simulated Response)";
 }
 
 // Hugging Face fallback
@@ -160,11 +290,13 @@ async function callHuggingFace(prompt: string, taskType: string): Promise<string
 
     const model = HF_MODELS[taskType as keyof typeof HF_MODELS] || HF_MODELS.chat;
 
+    const baseUrl = import.meta.env.DEV ? '/api/hf' : 'https://router.huggingface.co';
+
     try {
         console.log(`Using Hugging Face model: ${model}`);
 
         const response = await fetch(
-            `https://api-inference.huggingface.co/models/${model}`,
+            `${baseUrl}/models/${model}`,
             {
                 method: 'POST',
                 headers: {
@@ -261,33 +393,33 @@ export async function generateSummary(context: string, options?: { length?: stri
     await rateLimiter.waitForToken('summary');
 
     // Build customized instructions based on options
-    let lengthInstruction = 'medium length';
-    let styleInstruction = 'Use a mix of bullet points and paragraphs';
+    let lengthInstruction = 'medium length (4-5 paragraphs)';
+    let styleInstruction = 'Use a balanced mix of bullet points for lists and paragraphs for explanations.';
     let focusInstruction = '';
 
     if (options?.length === 'short') {
-        lengthInstruction = 'brief and concise (2-3 paragraphs max)';
+        lengthInstruction = 'very brief and concise (2-3 paragraphs max)';
     } else if (options?.length === 'detailed') {
-        lengthInstruction = 'comprehensive and detailed';
+        lengthInstruction = 'comprehensive, detailed, and in-depth';
     }
 
     if (options?.style === 'bullet') {
-        styleInstruction = 'Use bullet points exclusively for easy scanning';
+        styleInstruction = 'STRICT FORMATTING RULE: Use BULLET POINTS ONLY. Do NOT use paragraphs. Break down every concept into bulleted lists.';
     } else if (options?.style === 'paragraph') {
-        styleInstruction = 'Use flowing paragraphs for narrative structure';
+        styleInstruction = 'STRICT FORMATTING RULE: Use PARAGRAPHS ONLY. Do NOT use bullet points. Write in full, flowing sentences.';
     }
 
     if (options?.focus) {
         focusInstruction = `Focus specifically on: ${options.focus}.`;
     }
 
-    const prompt = `Create a ${lengthInstruction} summary of this text for a student studying for exams.
+    const prompt = `Create a ${lengthInstruction} summary of this text for a student.
 
-**Formatting Requirements:**
-- Use **bold** for key terms and important concepts
-- ${styleInstruction}
-- Include section headers using ## for organization
-- Highlight definitions and core concepts
+**CRITICAL FORMATTING RULES:**
+1. ${styleInstruction}
+2. Use **bold** for key terms and important concepts.
+3. Include section headers using ## for organization.
+4. Highlight definitions and core concepts.
 
 ${focusInstruction}
 
@@ -296,8 +428,10 @@ ${sanitized}`;
 
     const result = await callGeminiWithFallback(prompt, 'summary');
 
-    // Cache the result
-    saveToCache(cacheKey, result, 'summary');
+    // Only cache if NOT a simulated response
+    if (!result.includes('(Simulated)')) {
+        saveToCache(cacheKey, result, 'summary');
+    }
 
     return result;
 }
@@ -327,8 +461,12 @@ ${sanitized}`;
         const parsed = JSON.parse(cleaned);
         if (!Array.isArray(parsed)) throw new Error('Not an array');
 
-        // Cache the result
-        saveToCache(cacheKey, parsed, 'flashcards');
+        // Only cache if NOT a simulated response (simple check for mock structure)
+        const isMock = Array.isArray(parsed) && parsed[0]?.answer?.includes('Simulated Mode');
+
+        if (!isMock) {
+            saveToCache(cacheKey, parsed, 'flashcards');
+        }
 
         return parsed;
     } catch (err) {
@@ -374,8 +512,12 @@ ${sanitized}`;
         const parsed = JSON.parse(cleaned);
         if (!Array.isArray(parsed)) throw new Error('Not an array');
 
-        // Cache the result
-        saveToCache(cacheKey, parsed, 'quizzes');
+        // Only cache if NOT a simulated response
+        const isMock = Array.isArray(parsed) && parsed[0]?.explanation?.includes('Simulation Mode');
+
+        if (!isMock) {
+            saveToCache(cacheKey, parsed, 'quizzes');
+        }
 
         return parsed;
     } catch (err) {
@@ -430,45 +572,7 @@ ${sanitizedContext || 'No context provided'}
 
 Question: ${sanitizedQuery}`;
 
-    // Try OpenRouter molmo first
-    if (OPENROUTER_API_KEY) {
-        try {
-            console.log('[Chat] Using OpenRouter molmo-2-8b:free...');
-
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                    'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Cherag Study Assistant'
-                },
-                body: JSON.stringify({
-                    model: MOLMO_MODEL,
-                    messages: [
-                        { role: 'system', content: systemPrompt },
-                        { role: 'user', content: userPrompt }
-                    ],
-                    max_tokens: 1500,
-                    temperature: 0.7
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const answer = data.choices?.[0]?.message?.content;
-                if (answer) {
-                    console.log('[Chat] ✅ Success with molmo-2-8b');
-                    return answer;
-                }
-            }
-            console.warn('[Chat] OpenRouter response not valid, falling back to Gemini');
-        } catch (error: any) {
-            console.warn('[Chat] OpenRouter failed:', error.message);
-        }
-    }
-
-    // Fallback to Gemini
+    // Fallback to Gemini/DeepSeek/OpenRouter via unified function
     const prompt = `${systemPrompt}\n\n${userPrompt}`;
     return callGeminiWithFallback(prompt, 'chat');
 }
@@ -504,7 +608,7 @@ Content: ${topic.slice(0, 1000)}
 
 Keywords:`;
 
-                const extractedTopic = await callOpenRouter(topicPrompt);
+                const extractedTopic = await callGeminiWithFallback(topicPrompt, 'general');
                 if (extractedTopic && extractedTopic.length > 3 && extractedTopic.length < 100) {
                     searchTopic = extractedTopic.trim();
                     console.log('[Videos] Extracted topic:', searchTopic);

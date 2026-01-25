@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Moon, Sun, Trash2, LogOut, User, Database, Sparkles, Mail, Check, X, Bot } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { usePreferences } from '../hooks/usePreferences';
 
 interface SettingsTabProps {
     userEmail?: string;
@@ -10,6 +11,8 @@ interface SettingsTabProps {
 }
 
 export default function SettingsTab({ userEmail, onSignOut, onClearData }: SettingsTabProps) {
+    const { preferences, updatePreference } = usePreferences();
+
     // Initialize from localStorage or system preference
     const [isDarkMode, setIsDarkMode] = useState(() => {
         const saved = localStorage.getItem('theme');
@@ -195,9 +198,46 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                             AI Preferences
                         </h2>
                     </div>
-                    <div className="p-4">
-                        <div className="flex flex-col gap-4">
-                            <div>
+                    <div className="p-4 space-y-6">
+                        {/* Model Selection */}
+                        <div>
+                            <div className="mb-3">
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Preferred AI Model</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Choose which AI powers your experience</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    { id: 'auto', label: 'Auto (Best)' },
+                                    { id: 'deepseek', label: 'DeepSeek' },
+                                    { id: 'gemini', label: 'Gemini' },
+                                    { id: 'openrouter', label: 'OpenRouter' }
+                                ].map((option) => {
+                                    const isSelected = preferences.aiModel === option.id;
+
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            onClick={() => {
+                                                updatePreference('aiModel', option.id as any);
+                                                // Theme sync is automatic via effect in hook/main component usually, 
+                                                // but local state update here is fine for immediate feedback if needed.
+                                            }}
+                                            className={`px-4 py-3 rounded-xl text-sm font-medium transition-all border flex items-center justify-center gap-2 ${isSelected
+                                                ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 ring-1 ring-indigo-500/20'
+                                                : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700'
+                                                }`}
+                                        >
+                                            {option.label}
+                                            {isSelected && <Check className="w-3 h-3" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Response Verbosity */}
+                        <div>
+                            <div className="mb-3">
                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Response Detail Level</p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Control how verbose the AI responses should be</p>
                             </div>
@@ -210,8 +250,8 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                                             key={option}
                                             onClick={() => {
                                                 localStorage.setItem('ai_verbosity', option);
-                                                // Force re-render (hacky but simple for now)
                                                 window.dispatchEvent(new Event('storage'));
+                                                setIsDarkMode(prev => prev);
                                             }}
                                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${isSelected
                                                 ? 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'

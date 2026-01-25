@@ -42,3 +42,6 @@ export type {
 } from './studyAgent.prompts';
 
 export * from './mentalModel.prompts';
+
+export { ACTIVE_LEARNING_PROMPTS } from './activeLearning.prompts';
+export type { MicroLessonResult } from './activeLearning.prompts';

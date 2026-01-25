@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2 } from 'lucide-react';
 import { generateQuizzes } from '../lib/aiService';
+import ReactMarkdown from 'react-markdown';
 
 interface Quiz {
     id: string;
@@ -331,9 +332,9 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                 <span className="inline-block px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-lg mb-4 uppercase tracking-wider">
                                     Question {currentIndex + 1}
                                 </span>
-                                <h3 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white leading-relaxed">
-                                    {currentQuiz.question}
-                                </h3>
+                                <div className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white leading-relaxed prose prose-lg dark:prose-invert max-w-none">
+                                    <ReactMarkdown>{currentQuiz.question}</ReactMarkdown>
+                                </div>
                             </div>
 
                             {/* Options */}
@@ -370,16 +371,18 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                         >
                                             <div className="flex items-center gap-4">
                                                 <span className={`
-                                                    w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors
+                                                    w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors shrink-0
                                                     ${isSelected || (showResult && isCorrect) ? 'bg-white text-gray-900 shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-white'}
                                                 `}>
                                                     {letter}
                                                 </span>
-                                                <span className="flex-1 font-medium text-gray-700 dark:text-gray-200">{option}</span>
+                                                <div className="flex-1 font-medium text-gray-700 dark:text-gray-200 prose prose-sm dark:prose-invert">
+                                                    <ReactMarkdown>{option}</ReactMarkdown>
+                                                </div>
 
                                                 {/* Status Icons */}
-                                                {showResult && isCorrect && <CheckCircle className="w-6 h-6 text-green-500 animate-slide-up" />}
-                                                {showResult && isSelected && !isCorrect && <XCircle className="w-6 h-6 text-red-500 animate-slide-up" />}
+                                                {showResult && isCorrect && <CheckCircle className="w-6 h-6 text-green-500 animate-slide-up shrink-0" />}
+                                                {showResult && isSelected && !isCorrect && <XCircle className="w-6 h-6 text-red-500 animate-slide-up shrink-0" />}
                                             </div>
                                         </button>
                                     );
@@ -394,9 +397,9 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                             <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
                                                 {selectedAnswer === currentQuiz.correct_answer ? 'Correct!' : 'Not quite right.'}
                                             </p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                                                {currentQuiz.explanation}
-                                            </p>
+                                            <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed prose prose-sm dark:prose-invert">
+                                                <ReactMarkdown>{currentQuiz.explanation}</ReactMarkdown>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

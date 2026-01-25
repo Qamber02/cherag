@@ -9,16 +9,9 @@ import Sidebar from './Sidebar';
 import ChatTab from './ChatTab';
 import FlashcardsTab from './FlashcardsTab';
 import SummaryTab from './SummaryTab';
-import StudyShortsTab from './StudyShortsTab';
-import SettingsTab from './SettingsTab';
-import QuizzesTab from './QuizzesTab';
-import HistoryTab from './HistoryTab';
 import DashboardHome from './DashboardHome';
-
-import MindMapTab from './MindMapTab';
+// Lazy Load Heavy Components to optimize initial load
 import {
-    KnowledgeRadarTab,
-    ConfidenceMeterTab,
     ExamEngineTab,
     TeachAITab,
     ConceptCompressionTab,
@@ -26,6 +19,24 @@ import {
     MentalModelTab
 } from './premium';
 import { usePremiumFeatures } from '../hooks/usePremiumFeatures';
+import { Suspense, lazy } from 'react';
+import { Loader2 } from 'lucide-react';
+
+// Lazy Load Heavy Components
+const KnowledgeRadarTab = lazy(() => import('./premium').then(module => ({ default: module.KnowledgeRadarTab })));
+const MindMapTab = lazy(() => import('./MindMapTab'));
+const QuizzesTab = lazy(() => import('./QuizzesTab'));
+const StudyShortsTab = lazy(() => import('./StudyShortsTab'));
+const HistoryTab = lazy(() => import('./HistoryTab'));
+const SettingsTab = lazy(() => import('./SettingsTab'));
+
+// Loading Fallback
+const TabLoading = () => (
+    <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground animate-pulse">
+        <Loader2 className="w-8 h-8 animate-spin mb-2" />
+        <p className="text-sm">Loading component...</p>
+    </div>
+);
 
 import { useFiles } from '../hooks/useFiles';
 import { useChat } from '../hooks/useChat';
@@ -58,7 +69,9 @@ export default function Dashboard({ session }: DashboardProps) {
     const {
         knowledgeGraph,
         isLoading: isPremiumLoading,
-        analyzeContent
+        analyzeContent,
+        generateActiveLessonAction,
+        recordAnswer
     } = usePremiumFeatures(session.user.id);
 
     // Summary state
@@ -99,11 +112,14 @@ export default function Dashboard({ session }: DashboardProps) {
     const handleSignOut = () => supabase.auth.signOut();
 
     const handleClearAllData = async () => {
-        await supabase.from('flashcards').delete().eq('user_id', session.user.id);
-        await supabase.from('videos').delete().eq('user_id', session.user.id);
-        await supabase.from('quizzes').delete().eq('user_id', session.user.id);
-        await supabase.from('messages').delete().match({ chat_id: session.user.id });
-        window.location.reload();
+        try {
+            const { clearUserData } = await import('../lib/premium/dataService');
+            await clearUserData(session.user.id);
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to clear data', error);
+            alert('Failed to clear data. Please try again.');
+        }
     };
 
     const handleTabChange = (tab: string) => {
@@ -124,14 +140,18 @@ export default function Dashboard({ session }: DashboardProps) {
         if (!preserveState) {
             return isActive ? (
                 <div className={`absolute inset-0 h-full w-full ${scrollClasses} ${isActive ? 'z-10' : 'z-0'}`}>
-                    {component}
+                    <Suspense fallback={<TabLoading />}>
+                        {component}
+                    </Suspense>
                 </div>
             ) : null;
         }
 
         return (
             <div className={`${baseClasses} ${visibilityClasses} ${scrollClasses}`}>
-                {component}
+                <Suspense fallback={<TabLoading />}>
+                    {component}
+                </Suspense>
             </div>
         );
     };
@@ -294,19 +314,8 @@ export default function Dashboard({ session }: DashboardProps) {
                                     onAnalyze={analyzeContent}
                                     knowledgeGraph={knowledgeGraph}
                                     isLoading={isPremiumLoading}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Confidence Meter Tab - Page Scroll */}
-                    {renderTab('confidence', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <ConfidenceMeterTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
+                                    onGenerateLesson={generateActiveLessonAction}
+                                    onRecordAnswer={recordAnswer}
                                 />
                             </div>
                         </div>

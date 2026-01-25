@@ -26,7 +26,7 @@ ${content.slice(0, 8000)}`,
     /**
      * CHAIN 2: Map dependencies between concepts
      */
-    dependencyMapping: (concepts: string[]) => `For each concept, identify prerequisite knowledge required.
+    dependencyMapping: (concepts: string[]) => `For each concept, identify prerequisite knowledge required from the provided list.
 
 Concepts to analyze:
 ${JSON.stringify(concepts)}
@@ -39,11 +39,12 @@ Return as JSON array:
 }]
 
 RULES:
-- Prerequisites must be from the provided list OR common knowledge
-- is_foundational = true if no prerequisites needed
-- Order matters: list most essential prerequisites first
-- No circular dependencies
-- No markdown, only valid JSON`,
+- Prerequisites MUST be selected ONLY from the provided "Concepts to analyze" list.
+- Do NOT invent external prerequisites.
+- If a concept has no prerequisites from the list, set is_foundational = true.
+- Order matters: list most essential prerequisites first.
+- No circular dependencies.
+- No markdown, only valid JSON.`,
 
     /**
      * CHAIN 3: Identify knowledge gaps
@@ -62,7 +63,7 @@ ${JSON.stringify(userMastery)}
 Return as JSON array:
 [{
   "gap": "concept with gap",
-  "blocking_concepts": ["unmastered prerequisite 1"],
+  "blockingConcepts": ["unmastered prerequisite 1"],
   "priority": "critical" | "important" | "minor",
   "recommendation": "what to study first"
 }]
@@ -87,7 +88,7 @@ export type DependencyMappingResult = Array<{
 
 export type GapAnalysisResult = Array<{
     gap: string;
-    blocking_concepts: string[];
+    blockingConcepts: string[];
     priority: 'critical' | 'important' | 'minor';
     recommendation: string;
 }>;

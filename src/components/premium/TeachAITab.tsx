@@ -15,6 +15,7 @@ import {
     ArrowDown
 } from 'lucide-react';
 import { usePremiumFeatures } from '../../hooks/usePremiumFeatures';
+import { saveTeachingSessionState, getLastTeachingSessionState } from '../../lib/activityService';
 
 interface TeachAITabProps {
     userId: string;
@@ -48,11 +49,6 @@ export default function TeachAITab({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const { startTeachingSession, sendTeachingMessage, evaluateSession } = usePremiumFeatures(userId);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        setShowScrollButton(false);
-    };
-
     const handleScroll = () => {
         if (!scrollContainerRef.current) return;
         const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
@@ -60,9 +56,41 @@ export default function TeachAITab({
         setShowScrollButton(!isNearBottom);
     };
 
+    // Load last session on mount
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+        async function loadSession() {
+            const lastSession = await getLastTeachingSessionState(userId);
+            if (lastSession) {
+                setConcept(lastSession.concept);
+                setMessages(lastSession.messages.map((m: any) => ({
+                    ...m,
+                    timestamp: new Date(m.timestamp) // Fix date parsing
+                })));
+                setEvaluation(lastSession.evaluation);
+                if (!lastSession.evaluation && lastSession.messages.length > 0) {
+                    setIsSessionActive(true);
+                }
+            }
+        }
+        loadSession();
+    }, [userId]);
+
+    // Auto-save on meaningful changes
+    useEffect(() => {
+        if ((messages.length > 0 || evaluation) && concept) {
+            const timer = setTimeout(() => {
+                saveTeachingSessionState(userId, concept, messages, evaluation);
+            }, 1000); // Debounce save
+            return () => clearTimeout(timer);
+        }
+    }, [messages, evaluation, concept, userId]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        setShowScrollButton(false);
+    };
+
+    // ...
 
     const handleStartSession = async () => {
         if (!concept.trim()) return;
@@ -72,14 +100,17 @@ export default function TeachAITab({
             // Initialize session
             const initialMessage = await startTeachingSession(concept, difficulty, context);
             setIsSessionActive(true);
-            setMessages([
+            const newMessages: Message[] = [
                 {
                     id: '1',
                     role: 'student',
                     content: initialMessage,
                     timestamp: new Date()
                 }
-            ]);
+            ];
+            setMessages(newMessages);
+            // Save initial state
+            // Handled by useEffect
         } catch (error) {
             console.error('Failed to start teaching session:', error);
         } finally {
@@ -97,7 +128,8 @@ export default function TeachAITab({
             timestamp: new Date(),
         };
 
-        setMessages(prev => [...prev, userMsg]);
+        const currentMessages = [...messages, userMsg];
+        setMessages(currentMessages);
         setInput('');
         setIsLoading(true);
 
@@ -109,7 +141,7 @@ export default function TeachAITab({
 
             // Race against the actual API call
             const response = await Promise.race([
-                sendTeachingMessage(messages.concat(userMsg), concept, difficulty, context),
+                sendTeachingMessage(currentMessages, concept, difficulty, context),
                 timeoutPromise
             ]);
 
@@ -142,6 +174,7 @@ export default function TeachAITab({
             const result = await evaluateSession(concept, messages);
             setEvaluation(result);
             setIsSessionActive(false);
+            // Saved by useEffect
         } catch (error) {
             console.error('Failed to evaluate session:', error);
         } finally {

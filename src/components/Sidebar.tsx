@@ -2,7 +2,8 @@ import { useRef, useState, useCallback } from 'react';
 import {
     Upload, LayoutDashboard, Layers, FileQuestion,
     Play, Settings, User, FileText, X, MessageCircle, FileCheck,
-    Map, Clock, Radar, Gauge, Target, GraduationCap, Minimize2, GitMerge, Brain
+    Map, Clock, Radar, Target, GraduationCap, Minimize2, GitMerge, Brain,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
 import logoImg from '../assets/logo.png';
@@ -30,7 +31,6 @@ const navItems = [
     { id: 'mindmap', icon: Map, label: 'Roadmap' },
     { id: 'videos', icon: Play, label: 'Study Shorts' },
     { id: 'radar', icon: Radar, label: 'Knowledge Radar' },
-    { id: 'confidence', icon: Gauge, label: 'Confidence' },
     { id: 'exam', icon: Target, label: 'Exam Engine' },
     { id: 'teaching', icon: GraduationCap, label: 'Feynman Mode' },
     { id: 'compress', icon: Minimize2, label: 'Compression' },
@@ -53,6 +53,7 @@ export default function Sidebar({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showFilePanel, setShowFilePanel] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const uploadedFiles = event.target.files;
@@ -84,46 +85,54 @@ export default function Sidebar({
     }, []);
 
     return (
-        <div className="flex h-full">
-            <aside className="w-20 glass-sidebar flex flex-col h-full py-6 z-20 relative">
-                {/* Logo */}
-                <div className="flex justify-center mb-8">
-                    <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-lg">
+        <div className="flex h-full transition-all duration-300 ease-in-out">
+            <aside className={`${isCollapsed ? 'w-20' : 'w-64'} glass-sidebar flex flex-col h-full py-6 z-20 relative transition-all duration-300`}>
+                {/* Logo & Toggle */}
+                <div className={`flex ${isCollapsed ? 'justify-center' : 'px-6 justify-between'} items-center mb-8 transition-all`}>
+                    <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shrink-0">
                         <img src={logoImg} alt="Cherág" className="w-full h-full object-cover" />
                     </div>
+                    {!isCollapsed && (
+                        <h1 className="font-bold text-xl ml-3 text-gray-800 dark:text-white tracking-tight">Cherág</h1>
+                    )}
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className={`p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'absolute -right-3 top-8 bg-white shadow-md border border-gray-100 dark:bg-gray-800 dark:border-gray-700' : ''}`}
+                    >
+                        {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-4 h-4" />}
+                    </button>
                 </div>
 
                 {/* Navigation Icons */}
-                <nav className="flex-1 flex flex-col items-center space-y-2 w-full overflow-y-auto min-h-0 custom-scrollbar px-2">
+                <nav className="flex-1 flex flex-col space-y-1 w-full overflow-y-auto min-h-0 no-scrollbar px-3 pt-2">
                     {/* Upload Button */}
                     <button
                         onClick={() => setShowFilePanel(!showFilePanel)}
-                        className={`icon-btn group relative ${showFilePanel ? 'active' : ''}`}
-                        title="Upload Files"
+                        className={`flex items-center ${isCollapsed ? 'justify-center p-3' : 'px-4 py-3'} rounded-xl transition-all duration-200 group relative mb-4 ${showFilePanel ? 'bg-primary/10 text-primary' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                        title={isCollapsed ? "Upload Files" : undefined}
                     >
-                        <Upload className={`w-5 h-5 ${showFilePanel ? 'text-gray-900' : 'text-gray-500'}`} />
+                        <Upload className={`w-5 h-5 ${showFilePanel ? 'text-primary' : 'text-gray-500'}`} />
+
+                        {!isCollapsed && (
+                            <span className="ml-3 font-medium text-sm">Upload Files</span>
+                        )}
 
                         {/* File count badge */}
                         {files.length > 0 && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                            <span className={`absolute ${isCollapsed ? '-top-1 -right-1' : 'right-3'} w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center`}>
                                 {files.length}
                             </span>
                         )}
 
-                        {/* Parsing indicator */}
-                        {isParsing && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4">
-                                <span className="animate-ping absolute w-4 h-4 rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative block w-4 h-4 rounded-full bg-blue-500"></span>
+                        {isCollapsed && (
+                            <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                                Upload Files
                             </span>
                         )}
-
-                        <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                            Upload Files
-                        </span>
                     </button>
 
-                    {navItems.map((item) => {
+                    {/* Core Tools */}
+                    {navItems.slice(0, 5).map((item) => {
                         const Icon = item.icon;
                         const isActive = activeTab === item.id;
 
@@ -131,14 +140,59 @@ export default function Sidebar({
                             <button
                                 key={item.id}
                                 onClick={() => onTabChange(item.id)}
-                                className={`icon-btn group relative ${isActive ? 'active' : ''}`}
-                                title={item.label}
+                                className={`flex items-center ${isCollapsed ? 'justify-center p-3' : 'px-4 py-3'} rounded-xl transition-all duration-200 group relative ${isActive ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                                title={isCollapsed ? item.label : undefined}
                             >
-                                <Icon className={`w-5 h-5 ${isActive ? 'text-gray-900' : 'text-gray-500'}`} />
+                                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
 
-                                <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                                    {item.label}
-                                </span>
+                                {!isCollapsed && (
+                                    <span className="ml-3 font-medium text-sm">{item.label}</span>
+                                )}
+
+                                {isCollapsed && (
+                                    <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                                        {item.label}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+
+                    {/* Separator */}
+                    <div className="py-2">
+                        {isCollapsed ? (
+                            <div className="w-8 h-px bg-gray-200 dark:bg-gray-700 mx-auto" />
+                        ) : (
+                            <div className="flex items-center gap-2 px-4 py-2 opacity-50">
+                                <span className="text-xs font-bold tracking-wider uppercase">Advanced Tools</span>
+                                <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1" />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Advanced Tools */}
+                    {navItems.slice(5).map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeTab === item.id;
+
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => onTabChange(item.id)}
+                                className={`flex items-center ${isCollapsed ? 'justify-center p-3' : 'px-4 py-3'} rounded-xl transition-all duration-200 group relative ${isActive ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}`}
+                                title={isCollapsed ? item.label : undefined}
+                            >
+                                <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-gray-500'}`} />
+
+                                {!isCollapsed && (
+                                    <span className="ml-3 font-medium text-sm">{item.label}</span>
+                                )}
+
+                                {isCollapsed && (
+                                    <span className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+                                        {item.label}
+                                    </span>
+                                )}
                             </button>
                         );
                     })}

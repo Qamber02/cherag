@@ -13,6 +13,7 @@ export interface UserPreferences {
         length?: string;
         style?: string;
     };
+    aiModel: 'auto' | 'deepseek' | 'gemini' | 'huggingface' | 'openrouter';
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -20,6 +21,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     lastActiveTab: 'dashboard',
     sidebarExpanded: true,
     lastVisit: Date.now(),
+    aiModel: 'auto',
 };
 
 /**
@@ -50,6 +52,9 @@ export function savePreferences(prefs: Partial<UserPreferences>): void {
         if (prefs.theme) {
             setCookie('theme', prefs.theme, COOKIE_MAX_AGE);
         }
+
+        // Notify listeners
+        window.dispatchEvent(new Event('preferences_changed'));
     } catch (err) {
         console.warn('[Preferences] Save failed:', err);
     }

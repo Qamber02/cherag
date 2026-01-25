@@ -1,15 +1,7 @@
-import { useState } from 'react';
-import {
-    Brain,
-    Lightbulb,
-    RefreshCw,
-    TrendingUp,
-    Filter,
-    Layers,
-    Search,
-    BookOpen
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Brain, BookOpen, RefreshCw, Layers, Lightbulb, Target, GitMerge, ArrowUpRight, Scale } from 'lucide-react';
 import { usePremiumFeatures } from '../../hooks/usePremiumFeatures';
+import { saveMentalModel, getLastMentalModel } from '../../lib/activityService';
 
 interface MentalModelTabProps {
     userId: string;
@@ -17,39 +9,14 @@ interface MentalModelTabProps {
     hasContext: boolean;
 }
 
-type ThinkingModel = 'first_principles' | 'second_order' | 'pareto' | 'inversion' | 'opportunity_cost';
+export type ThinkingModel = 'first_principles' | 'second_order' | 'pareto' | 'inversion' | 'opportunity_cost';
 
-const MODELS: Array<{ id: ThinkingModel; name: string; icon: any; description: string }> = [
-    {
-        id: 'first_principles',
-        name: 'First Principles',
-        icon: Layers,
-        description: 'Break problems down to basic truths'
-    },
-    {
-        id: 'second_order',
-        name: 'Second Order',
-        icon: TrendingUp,
-        description: 'Think: "And then what?"'
-    },
-    {
-        id: 'pareto',
-        name: '80/20 Rule',
-        icon: Filter,
-        description: 'Focus on high-impact factors'
-    },
-    {
-        id: 'inversion',
-        name: 'Inversion',
-        icon: RefreshCw,
-        description: 'Avoid stupidity > Seek brilliance'
-    },
-    {
-        id: 'opportunity_cost',
-        name: 'Opportunity Cost',
-        icon: Search,
-        description: 'What are you giving up?'
-    }
+export const MODELS: { id: ThinkingModel; name: string; description: string; icon: any }[] = [
+    { id: 'first_principles', name: 'First Principles', description: 'Break problems down to basic truths', icon: Target },
+    { id: 'second_order', name: 'Second Order', description: 'Consider long-term consequences', icon: ArrowUpRight },
+    { id: 'pareto', name: 'Pareto (80/20)', description: 'Focus on the vital few inputs', icon: Scale },
+    { id: 'inversion', name: 'Inversion', description: 'Avoid failure to succeed', icon: RefreshCw },
+    { id: 'opportunity_cost', name: 'Opportunity Cost', description: 'What are you giving up?', icon: GitMerge },
 ];
 
 export default function MentalModelTab({
@@ -64,6 +31,18 @@ export default function MentalModelTab({
 
     const { analyzeMentalModelAction } = usePremiumFeatures(userId);
 
+    // Load saved state
+    useEffect(() => {
+        if (!userId) return;
+        getLastMentalModel(userId).then((data) => {
+            if (data) {
+                setInputText(data.input || '');
+                setSelectedModel(data.model as ThinkingModel || 'first_principles');
+                setResult(data.result);
+            }
+        });
+    }, [userId]);
+
     const handleAnalyze = async () => {
         if (!inputText.trim()) return;
 
@@ -71,6 +50,8 @@ export default function MentalModelTab({
         try {
             const data = await analyzeMentalModelAction(inputText, selectedModel);
             setResult(data);
+            // Save state
+            await saveMentalModel(userId, selectedModel, inputText, data);
         } catch (error) {
             console.error('Mental Model Analysis failed:', error);
         } finally {

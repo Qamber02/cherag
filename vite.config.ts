@@ -39,6 +39,16 @@ export default defineConfig({
   // Server configuration for development
   server: {
     // Enable CORS
+    // Enable CORS
     cors: true,
+    // Proxy for API calls to avoid CORS
+    proxy: {
+      '/api/hf': {
+        target: 'https://router.huggingface.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/hf/, ''),
+        secure: true,
+      }
+    }
   },
 })
