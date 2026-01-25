@@ -2,17 +2,8 @@
 import { rateLimiter } from '../rateLimiter';
 import { generateCacheKey, getFromCache, saveToCache } from '../cacheService';
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-
 // OpenRouter model for chat
 const MOLMO_MODEL = 'allenai/molmo-2-8b:free';
-
-const OPENROUTER_KEYS = [
-    import.meta.env.VITE_OPENROUTER_API_KEY,
-    import.meta.env.VITE_OPENROUTER_API_KEY_2,
-    import.meta.env.VITE_OPENROUTER_API_KEY_3
-].filter(Boolean);
 
 // Security: Input sanitization
 function sanitizeInput(text: string, maxLength: number = 10000): string {
@@ -95,10 +86,12 @@ export async function callPremiumAI(
     // STRATEGY: PREFERRED -> DEEPSEEK -> OPENROUTER -> GEMINI -> HUGGINGFACE
     // ==========================================
 
-    const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+    const hasDeepSeek = !!keyManager.getKey('deepseek');
+    const hasOpenRouter = !!keyManager.getKey('openrouter');
+    const hasHuggingFace = !!keyManager.getKey('huggingface');
 
     // 0. Try Preferred Provider First (if strictly set)
-    if (preferredProvider === 'deepseek' && DEEPSEEK_API_KEY) {
+    if (preferredProvider === 'deepseek' && hasDeepSeek) {
         try {
             const deepseekResult = await tryDeepSeek(sanitizedPrompt, maxTokens, temperature, taskType);
             if (deepseekResult) {
@@ -122,7 +115,7 @@ export async function callPremiumAI(
     // Add other preferred providers here if needed...
 
     // 1. Try DeepSeek (Default robust model)
-    if (DEEPSEEK_API_KEY && preferredProvider !== 'gemini' && preferredProvider !== 'huggingface' && preferredProvider !== 'openrouter') { // Don't retry if it was already tried or explicitly avoided
+    if (hasDeepSeek && preferredProvider !== 'gemini' && preferredProvider !== 'huggingface' && preferredProvider !== 'openrouter') { // Don't retry if it was already tried or explicitly avoided
         try {
             const deepseekResult = await tryDeepSeek(sanitizedPrompt, maxTokens, temperature, taskType);
             if (deepseekResult) {
@@ -135,7 +128,7 @@ export async function callPremiumAI(
     }
 
     // 2. Try OpenRouter (Molmo)
-    if (OPENROUTER_KEYS.length > 0 && preferredProvider !== 'deepseek') {
+    if (hasOpenRouter && preferredProvider !== 'deepseek') {
         try {
             const openRouterResult = await tryOpenRouter(sanitizedPrompt, maxTokens, temperature);
             if (openRouterResult) {
@@ -159,7 +152,7 @@ export async function callPremiumAI(
     }
 
     // 4. Fallback: Hugging Face
-    if (HUGGINGFACE_API_KEY) {
+    if (hasHuggingFace) {
         try {
             const hfResult = await tryHuggingFace(sanitizedPrompt, maxTokens, temperature, taskType);
             if (hfResult) {
@@ -184,44 +177,52 @@ export async function callPremiumAI(
 
 // --- Helpers ---
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 async function tryGeminiModels(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
     for (const model of PREMIUM_GEMINI_MODELS) {
-        try {
-            console.log(`[Premium AI] Trying ${model} for ${taskType}...`);
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: {
-                            maxOutputTokens: maxTokens,
-                            temperature: temperature,
-                        }
-                    })
+        let attempts = 0;
+        const MAX_RETRIES_PER_MODEL = 2; // Try up to 2 keys
+
+        while (attempts < MAX_RETRIES_PER_MODEL) {
+            const apiKey = keyManager.getKey('gemini');
+            if (!apiKey) break;
+
+            try {
+                console.log(`[Premium AI] Trying ${model} for ${taskType}...`);
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                maxOutputTokens: maxTokens,
+                                temperature: temperature,
+                            }
+                        })
+                    }
+                );
+                const data = await response.json();
+
+                if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    const result = data.candidates[0].content.parts[0].text;
+                    console.log(`[Premium AI] ✅ Success with ${model}`);
+                    return { success: true, data: result, model, cached: false };
                 }
-            );
-            const data = await response.json();
 
-            if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                const result = data.candidates[0].content.parts[0].text;
-                console.log(`[Premium AI] ✅ Success with ${model}`);
-                return { success: true, data: result, model, cached: false };
-            }
+                if (response.status === 429 || data.error?.code === 429) {
+                    console.warn(`[Premium AI] Rate limit on ${model}, rotating key...`);
+                    keyManager.markRateLimited('gemini');
+                    attempts++;
+                    continue;
+                }
 
-            if (data.error?.code === 429) {
-                console.warn(`[Premium AI] Rate limit on ${model}, waiting 1s then trying next...`);
-                await delay(1000); // Wait 1s before next model to let burst limit cool down
-                continue;
+                throw new Error(data.error?.message || 'Unknown error');
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                console.warn(`[Premium AI] ${model} failed:`, message);
+                break; // Model error, try next model
             }
-            throw new Error(data.error?.message || 'Unknown error');
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            console.warn(`[Premium AI] ${model} failed:`, message);
-            continue;
         }
     }
     return null;
@@ -229,55 +230,57 @@ async function tryGeminiModels(prompt: string, maxTokens: number, temperature: n
 
 
 async function tryOpenRouter(prompt: string, maxTokens: number, temperature: number): Promise<AIResponse | null> {
-    if (OPENROUTER_KEYS.length === 0) return null;
+    const apiKey = keyManager.getKey('openrouter');
+    if (!apiKey) return null;
 
-    for (let i = 0; i < OPENROUTER_KEYS.length; i++) {
-        const apiKey = OPENROUTER_KEYS[i];
-        try {
-            console.log(`[Premium AI] Trying OpenRouter ${MOLMO_MODEL} (Key ${i + 1})...`);
+    try {
+        console.log(`[Premium AI] Trying OpenRouter ${MOLMO_MODEL}...`);
 
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": window.location.origin,
-                    "X-Title": "Cherag Educational Platform"
-                },
-                body: JSON.stringify({
-                    "model": MOLMO_MODEL,
-                    "messages": [
-                        { "role": "user", "content": prompt }
-                    ],
-                    "max_tokens": maxTokens,
-                    "temperature": temperature,
-                })
-            });
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": window.location.origin,
+                "X-Title": "Cherag Educational Platform"
+            },
+            body: JSON.stringify({
+                "model": MOLMO_MODEL,
+                "messages": [
+                    { "role": "user", "content": prompt }
+                ],
+                "max_tokens": maxTokens,
+                "temperature": temperature,
+            })
+        });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            if (response.ok && data.choices?.[0]?.message?.content) {
-                const result = data.choices[0].message.content;
-                console.log(`[Premium AI] ✅ Success with OpenRouter (Key ${i + 1})`);
-                return { success: true, data: result, model: 'openrouter', cached: false };
-            }
-
-            if (response.status === 429) {
-                console.warn(`[Premium AI] OpenRouter (Key ${i + 1}) Rate Limit (429). Trying next key...`);
-                continue;
-            }
-
-            console.warn(`[Premium AI] OpenRouter error (Key ${i + 1}):`, data);
-        } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            console.warn(`[Premium AI] OpenRouter (Key ${i + 1}) failed:`, message);
+        if (response.ok && data.choices?.[0]?.message?.content) {
+            const result = data.choices[0].message.content;
+            console.log(`[Premium AI] ✅ Success with OpenRouter`);
+            return { success: true, data: result, model: 'openrouter', cached: false };
         }
+
+        if (response.status === 429) {
+            console.warn(`[Premium AI] OpenRouter Rate Limit (429). Rotating key...`);
+            keyManager.markRateLimited('openrouter');
+            return tryOpenRouter(prompt, maxTokens, temperature);
+        }
+
+        console.warn(`[Premium AI] OpenRouter error:`, data);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.warn(`[Premium AI] OpenRouter failed:`, message);
     }
 
-    console.warn('[Premium AI] All OpenRouter keys exhausted.');
     return null;
 }
+
 async function tryDeepSeek(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
+    const apiKey = keyManager.getKey('deepseek');
+    if (!apiKey) return null;
+
     // Determine model based on task type
     // Use reasoner for complex tasks like mental models or exam generation
     const isComplex = taskType.includes('mental_model') || taskType.includes('exam') || taskType.includes('analysis');
@@ -290,7 +293,7 @@ async function tryDeepSeek(prompt: string, maxTokens: number, temperature: numbe
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
                 model: model,
@@ -311,10 +314,10 @@ async function tryDeepSeek(prompt: string, maxTokens: number, temperature: numbe
             return { success: true, data: data.choices[0].message.content, model: `deepseek-${model}`, cached: false };
         }
 
-        if (response.status === 402) {
-            console.error('[Premium AI] 🚨 DeepSeek Quota Exceeded (402). Please top up credit.');
-            // Return null to trigger fallback
-            return null;
+        if (response.status === 429) {
+            console.warn(`[Premium AI] DeepSeek Rate Limit (429). Rotating key...`);
+            keyManager.markRateLimited('deepseek');
+            return tryDeepSeek(prompt, maxTokens, temperature, taskType);
         }
 
         console.warn(`[Premium AI] DeepSeek error:`, data);
@@ -379,12 +382,13 @@ async function tryMockFallback(_prompt: string, taskType: string): Promise<AIRes
 }
 
 async function tryHuggingFace(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
+    const apiKey = keyManager.getKey('huggingface');
+    if (!apiKey) return null;
+
     const model = HF_MODELS[taskType as keyof typeof HF_MODELS] || HF_MODELS.chat;
 
     console.log(`[Premium AI] 🔄 Fallback: Trying Hugging Face (${model})...`);
 
-    // Use local proxy if in development to avoid CORS
-    // In production, you would need a real backend proxy
     const baseUrl = import.meta.env.DEV ? '/api/hf' : 'https://router.huggingface.co';
 
     try {
@@ -393,7 +397,7 @@ async function tryHuggingFace(prompt: string, maxTokens: number, temperature: nu
             {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${HUGGINGFACE_API_KEY}`,
+                    "Authorization": `Bearer ${apiKey}`,
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
@@ -416,15 +420,17 @@ async function tryHuggingFace(prompt: string, maxTokens: number, temperature: nu
             return { success: true, data: data.summary_text, model: 'huggingface', cached: false };
         }
 
+        if (response.status === 429) {
+            keyManager.markRateLimited('huggingface');
+            return tryHuggingFace(prompt, maxTokens, temperature, taskType);
+        }
+
         console.warn(`[Premium AI] Hugging Face error:`, data);
         return null;
 
     } catch (e: unknown) {
-        if (e instanceof Error) {
-            console.warn(`[Premium AI] Hugging Face fetch failed:`, e.message);
-        } else {
-            console.warn(`[Premium AI] Hugging Face fetch failed:`, String(e));
-        }
+        const message = e instanceof Error ? e.message : String(e);
+        console.warn(`[Premium AI] Hugging Face fetch failed:`, message);
         return null;
     }
 }
