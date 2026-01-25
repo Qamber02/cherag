@@ -90,7 +90,7 @@ export default function ExamEngineTab({
         }
     };
 
-    const handleExamComplete = (score: number, answers: any) => {
+    const handleExamComplete = (score: number, _answers: any) => {
         console.log('Exam completed with score:', score);
         setIsTakingExam(false);
         // Here we could save the result to DB/history

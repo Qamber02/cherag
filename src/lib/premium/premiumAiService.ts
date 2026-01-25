@@ -4,10 +4,15 @@ import { generateCacheKey, getFromCache, saveToCache } from '../cacheService';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 
 // OpenRouter model for chat
 const MOLMO_MODEL = 'allenai/molmo-2-8b:free';
+
+const OPENROUTER_KEYS = [
+    import.meta.env.VITE_OPENROUTER_API_KEY,
+    import.meta.env.VITE_OPENROUTER_API_KEY_2,
+    import.meta.env.VITE_OPENROUTER_API_KEY_3
+].filter(Boolean);
 
 // Security: Input sanitization
 function sanitizeInput(text: string, maxLength: number = 10000): string {
@@ -130,7 +135,7 @@ export async function callPremiumAI(
     }
 
     // 2. Try OpenRouter (Molmo)
-    if (OPENROUTER_API_KEY && preferredProvider !== 'deepseek') {
+    if (OPENROUTER_KEYS.length > 0 && preferredProvider !== 'deepseek') {
         try {
             const openRouterResult = await tryOpenRouter(sanitizedPrompt, maxTokens, temperature);
             if (openRouterResult) {
@@ -222,11 +227,6 @@ async function tryGeminiModels(prompt: string, maxTokens: number, temperature: n
     return null;
 }
 
-const OPENROUTER_KEYS = [
-    import.meta.env.VITE_OPENROUTER_API_KEY,
-    import.meta.env.VITE_OPENROUTER_API_KEY_2,
-    import.meta.env.VITE_OPENROUTER_API_KEY_3
-].filter(Boolean);
 
 async function tryOpenRouter(prompt: string, maxTokens: number, temperature: number): Promise<AIResponse | null> {
     if (OPENROUTER_KEYS.length === 0) return null;

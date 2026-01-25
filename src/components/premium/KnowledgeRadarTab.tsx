@@ -16,7 +16,6 @@ import {
     X,
     Lock,
     Play,
-    CheckCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

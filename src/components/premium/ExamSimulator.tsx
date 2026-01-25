@@ -3,13 +3,10 @@ import { useState, useEffect } from 'react';
 import {
     Clock,
     CheckCircle2,
-    XCircle,
     ChevronRight,
     ChevronLeft,
     Flag,
-    AlertCircle,
     Save,
-    RotateCcw
 } from 'lucide-react';
 import type { ExamQuestion } from '../../lib/premium';
 
@@ -143,8 +140,8 @@ export default function ExamSimulator({
 
                         return (
                             <div key={idx} className={`bg-card border rounded-xl p-6 ${q.type === 'mcq'
-                                    ? (isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5')
-                                    : 'border-border'
+                                ? (isCorrect ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5')
+                                : 'border-border'
                                 }`}>
                                 <div className="flex gap-4">
                                     <div className="shrink-0 w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-foreground">
@@ -165,8 +162,8 @@ export default function ExamSimulator({
                                             <div>
                                                 <div className="text-xs text-muted-foreground mb-1">Your Answer</div>
                                                 <div className={`p-3 rounded-lg border ${q.type === 'mcq'
-                                                        ? isCorrect ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
-                                                        : 'border-border bg-secondary text-foreground'
+                                                    ? isCorrect ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
+                                                    : 'border-border bg-secondary text-foreground'
                                                     }`}>
                                                     {userAnswer || '(No answer)'}
                                                 </div>
@@ -262,8 +259,8 @@ export default function ExamSimulator({
                                             key={idx}
                                             onClick={() => handleAnswer(letter)}
                                             className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected
-                                                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                                                    : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                                                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                                                : 'border-border hover:border-primary/50 hover:bg-secondary/50'
                                                 }`}
                                         >
                                             <div className="flex items-start gap-3">

@@ -10,23 +10,7 @@ export async function clearUserData(userId: string): Promise<void> {
     console.log('[DataService] Clearing data for user:', userId);
 
     // List of tables to clear
-    // Order matters if there are foreign key constraints (delete children first)
-    const tables = [
-        'flashcards',
-        'quizzes',
-        'video_segments', // if exists
-        'study_sessions', // often has metrics
-        'knowledge_graph_nodes', // if exists
-        'verified_videos', // user specific? No, this is shared cache usually. 
-        // Wait, verified_videos is global cache. Do not delete!
-        // We only delete USER SPECIFIC data.
-
-        // Actually, we should check the schema.
-        // But assuming standard tables:
-        'documents', // Deleting documents usually cascades to chunks, flashcards etc if configured.
-        'user_settings', // Maybe?
-        'chat_history', // if exists
-    ];
+    // We'll try a few known tables from previous context
 
     try {
         // 1. Delete Documents (should cascade delete chunks, flashcards, etc.)

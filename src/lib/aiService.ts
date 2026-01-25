@@ -4,7 +4,6 @@ import { generateCacheKey, getFromCache, saveToCache } from './cacheService';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const HUGGINGFACE_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
 import { getPreference } from './preferencesService';
@@ -112,7 +111,7 @@ async function callOpenRouter(prompt: string): Promise<string | null> {
 }
 
 // Call DeepSeek
-async function callDeepSeek(prompt: string, taskType: string = 'general'): Promise<string | null> {
+async function callDeepSeek(prompt: string, _taskType: string = 'general'): Promise<string | null> {
     if (!DEEPSEEK_API_KEY) return null;
 
     try {
@@ -229,7 +228,7 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
 }
 
 // Mock Fallback for when all APIs fail
-async function tryMockFallback(prompt: string, taskType: string): Promise<string> {
+async function tryMockFallback(_prompt: string, taskType: string): Promise<string> {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
 

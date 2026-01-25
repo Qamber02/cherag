@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FileText, Loader2, Edit3, Check, X, Sliders, Copy, Download, ChevronDown, FileDown } from 'lucide-react';
+import { FileText, Loader2, Edit3, Check, Sliders, Copy, Download, ChevronDown, FileDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { downloadAsMarkdown, downloadAsPDF, downloadAsDOCX } from '../lib/downloadUtils';
 
