@@ -177,6 +177,8 @@ export async function callPremiumAI(
 
 // --- Helpers ---
 
+import { keyManager } from '../keyManager';
+
 async function tryGeminiModels(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
     for (const model of PREMIUM_GEMINI_MODELS) {
         let attempts = 0;
