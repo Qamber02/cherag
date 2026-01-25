@@ -328,7 +328,7 @@ async function tryDeepSeek(prompt: string, maxTokens: number, temperature: numbe
 }
 
 // Mock Fallback for when all APIs fail (Demo Mode)
-async function tryMockFallback(prompt: string, taskType: string): Promise<AIResponse> {
+async function tryMockFallback(_prompt: string, taskType: string): Promise<AIResponse> {
     console.warn(`[Premium AI] ⚠️ All APIs failed. Falling back to MOCK mode for demo purposes.`);
 
     // Simulate network delay
