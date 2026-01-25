@@ -25,16 +25,34 @@ const RATE_LIMITS: Record<string, RateLimitConfig> = {
     default: { maxTokens: 8, refillRate: 8 / 60, refillInterval: 1000 },        // Default: 8 per minute
 };
 
+import { keyManager } from './keyManager';
+
 class RateLimiter {
     private buckets: Map<string, TokenBucket> = new Map();
 
     private getBucket(endpoint: string): TokenBucket {
         if (!this.buckets.has(endpoint)) {
             const config = RATE_LIMITS[endpoint] || RATE_LIMITS.default;
+
+            // SCALE LIMITS: Use the maximum key count to scale capacity
+            // If we have 5 OpenRouter keys, we can handle 5x the load
+            const geminiCount = keyManager.getKeyCount('gemini');
+            const openRouterCount = keyManager.getKeyCount('openrouter');
+            const deepSeekCount = keyManager.getKeyCount('deepseek'); // usually 1
+
+            // Use the max count, but at least 1
+            const scaleFactor = Math.max(1, geminiCount, openRouterCount, deepSeekCount);
+
+            console.log(`[RateLimiter] Scaling ${endpoint} limits by ${scaleFactor}x (Keys: G=${geminiCount}, O=${openRouterCount})`);
+
             this.buckets.set(endpoint, {
-                tokens: config.maxTokens,
+                tokens: config.maxTokens * scaleFactor,
                 lastRefill: Date.now(),
-                config,
+                config: {
+                    ...config,
+                    maxTokens: config.maxTokens * scaleFactor,
+                    refillRate: config.refillRate * scaleFactor
+                },
             });
         }
         return this.buckets.get(endpoint)!;

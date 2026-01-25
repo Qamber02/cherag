@@ -144,6 +144,13 @@ class KeyManager {
             }))
         };
     }
+
+    /**
+     * Get the total number of configured keys for a provider
+     */
+    public getKeyCount(provider: AIProvider): number {
+        return this.keys[provider]?.length || 0;
+    }
 }
 
 export const keyManager = new KeyManager();
