@@ -323,8 +323,8 @@ export default function Dashboard({ session }: DashboardProps) {
 
                     {/* Exam Engine Tab - Page Scroll */}
                     {renderTab('exam', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
+                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
+                            <div className="glass-card rounded-2xl h-full overflow-hidden">
                                 <ExamEngineTab
                                     userId={session.user.id}
                                     context={context}
@@ -332,7 +332,7 @@ export default function Dashboard({ session }: DashboardProps) {
                                 />
                             </div>
                         </div>
-                    ), true, true)}
+                    ), true, false)}
 
                     {/* Teach AI Tab - Internal Scroll */}
                     {renderTab('teaching', (
