@@ -231,21 +231,21 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                 )}
             </div>
 
-            {/* Input Area */}
-            <div className="p-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 z-10 shrink-0">
+            {/* Input Area - Touch Optimized */}
+            <div className="p-3 md:p-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 z-10 shrink-0">
                 <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex items-center gap-2">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Ask Cherág about your documents..."
-                        className="w-full px-6 py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-primary/50 rounded-full shadow-lg focus:shadow-primary/20 focus:outline-none transition-all text-sm placeholder:text-gray-400 pr-14"
+                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-primary/50 rounded-full shadow-lg focus:shadow-primary/20 focus:outline-none transition-all text-base placeholder:text-gray-400 pr-14"
                         autoFocus
                     />
                     <button
                         type="submit"
                         disabled={isLoading || !input.trim()}
-                        className="absolute right-2 p-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full hover:shadow-lg disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-400 transition-all group"
+                        className="absolute right-2 w-11 h-11 md:w-12 md:h-12 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full hover:shadow-lg disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-400 transition-all group flex items-center justify-center active:scale-95"
                     >
                         <Send className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                     </button>

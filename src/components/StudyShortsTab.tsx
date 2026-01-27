@@ -1,7 +1,7 @@
 // StudyShortsTab - Video reels viewer with infinite scroll
 // Powered by ReelPlayer Engine
 import { useRef, useState, useEffect, useMemo, useLayoutEffect, useCallback } from 'react';
-import { RefreshCw, Sparkles, Loader2, Search, X } from 'lucide-react';
+import { RefreshCw, Sparkles, Loader2, Search, X, Home, RotateCcw } from 'lucide-react';
 import type { Video } from '../hooks/useStudyShorts';
 import type { VideoClip } from '../types/videoIntelligence.types';
 import ReelPlayer from './premium/ReelPlayer';
@@ -17,6 +17,8 @@ interface StudyShortsTabProps {
     hasMore?: boolean;
     onGenerate: (topic?: string) => void;
     onLoadMore?: () => void;
+    onReset?: () => void;
+    onExit?: () => void;
     hasUnknownContext: boolean;
 }
 
@@ -27,6 +29,8 @@ export default function StudyShortsTab({
     hasMore = true,
     onGenerate,
     onLoadMore,
+    onReset,
+    onExit,
     hasUnknownContext
 }: StudyShortsTabProps) {
     const [searchTopic, setSearchTopic] = useState('');
@@ -128,7 +132,9 @@ export default function StudyShortsTab({
         if (feedItems.length > 0 && scrollContainerRef.current && !hasInitializedScroll) {
             // Ensure we start at the top (first video)
             scrollContainerRef.current.scrollTop = 0;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCurrentIndex(0);
+             
             setHasInitializedScroll(true);
         }
     }, [feedItems.length, hasInitializedScroll]);
@@ -136,6 +142,7 @@ export default function StudyShortsTab({
     // Reset scroll state when videos change completely (new search)
     useEffect(() => {
         if (videos.length === 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setHasInitializedScroll(false);
         }
     }, [videos.length]);
@@ -244,6 +251,28 @@ export default function StudyShortsTab({
         >
             {/* Floating Controls */}
             <div className="fixed top-16 md:top-20 right-3 md:right-8 z-50 flex flex-col gap-2 md:gap-3">
+                {/* Home/Exit Button - Always visible for clear exit */}
+                {onExit && (
+                    <button
+                        onClick={onExit}
+                        className="p-3 bg-black/70 backdrop-blur-md text-white rounded-full hover:bg-white/20 active:bg-white/30 transition-all border border-white/20 shadow-lg"
+                        title="Back to Dashboard"
+                    >
+                        <Home className="w-5 h-5" />
+                    </button>
+                )}
+
+                {/* Restart Button - Clear videos and go back to initial state */}
+                {onReset && (
+                    <button
+                        onClick={onReset}
+                        className="p-3 bg-amber-500/80 backdrop-blur-md text-white rounded-full hover:bg-amber-400 active:bg-amber-600 transition-all border border-white/20 shadow-lg"
+                        title="Start Over - Generate New Shorts"
+                    >
+                        <RotateCcw className="w-5 h-5" />
+                    </button>
+                )}
+
                 <button
                     onClick={() => onGenerate()}
                     disabled={isLoading}

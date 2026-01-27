@@ -35,7 +35,7 @@ export function rankClips(
 ): RankedClip[] {
     const rankedClips: RankedClip[] = clips.map(clip => {
         const score = calculateClipScore(clip, signals, config);
-        const reason = generateRankingReason(clip, signals, score);
+        const reason = generateRankingReason(clip, signals);
 
         return {
             ...clip,
@@ -128,8 +128,7 @@ function calculateClipScore(
  */
 function generateRankingReason(
     clip: VideoClip,
-    signals: ClipRankingSignals,
-    _score: number
+    signals: ClipRankingSignals
 ): string {
     const concept = clip.concept.toLowerCase();
     const mastery = signals.userMastery[concept] ?? 0.5;
@@ -231,7 +230,7 @@ export function balanceDifficulty(
     const result: RankedClip[] = [];
     const perDifficulty = Math.ceil(targetCount / byDifficulty.size);
 
-    for (const [_, diffClips] of byDifficulty) {
+    for (const [_difficulty, diffClips] of byDifficulty) {
         result.push(...diffClips.slice(0, perDifficulty));
     }
 

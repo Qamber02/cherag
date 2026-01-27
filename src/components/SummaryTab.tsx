@@ -61,10 +61,11 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
     };
 
     return (
-        <div className="flex flex-col h-full p-6 overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Document Summary</h2>
-                <div className="flex items-center gap-2">
+        <div className="flex flex-col h-full p-4 md:p-6 overflow-y-auto">
+            {/* Header - stacks on mobile */}
+            <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between md:mb-6">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Document Summary</h2>
+                <div className="flex flex-wrap items-center gap-2">
                     {summary && !isEditing && (
                         <>
                             <button
@@ -125,10 +126,10 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                             </div>
                             <button
                                 onClick={handleStartEdit}
-                                className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+                                className="flex items-center space-x-1 md:space-x-2 px-2 md:px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors text-sm"
                             >
                                 <Edit3 className="w-4 h-4" />
-                                <span>Edit</span>
+                                <span className="hidden sm:inline">Edit</span>
                             </button>
                         </>
                     )}
@@ -136,7 +137,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         <div className="relative">
                             <button
                                 onClick={() => setShowOptions(!showOptions)}
-                                className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+                                className="flex items-center space-x-2 px-2 md:px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
                             >
                                 <Sliders className="w-4 h-4" />
                             </button>
@@ -212,10 +213,11 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         <button
                             onClick={() => onGenerate()}
                             disabled={isLoading}
-                            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            className="flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
                         >
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                            <span>{summary ? 'Regenerate' : 'Generate'} Summary</span>
+                            <span className="hidden sm:inline">{summary ? 'Regenerate' : 'Generate'} Summary</span>
+                            <span className="sm:hidden">{summary ? 'Redo' : 'Go'}</span>
                         </button>
                     )}
                 </div>

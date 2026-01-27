@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { History, FileText, Layers, FileQuestion, Play, MessageSquare, Clock } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface ActivityItem {
     id: string;
@@ -14,7 +15,7 @@ interface HistoryTabProps {
     userId: string;
 }
 
-const activityIcons: Record<string, any> = {
+const activityIcons: Record<string, LucideIcon> = {
     summary: FileText,
     flashcard: Layers,
     quiz: FileQuestion,
@@ -36,11 +37,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
     const [filter, setFilter] = useState<string>('all');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    useEffect(() => {
-        fetchActivities();
-    }, [userId, filter]);
-
-    const fetchActivities = async () => {
+    const fetchActivities = useCallback(async () => {
         // Only show full loading on initial load, not on filter change
         if (isInitialLoad) {
             setIsLoading(true);
@@ -60,8 +57,13 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
         const { data } = await query;
         setActivities(data || []);
         setIsLoading(false);
+         
         setIsInitialLoad(false);
-    };
+    }, [userId, filter, isInitialLoad]);
+
+    useEffect(() => {
+        fetchActivities();
+    }, [fetchActivities]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);

@@ -147,6 +147,7 @@ export async function extractClipsFromVideo(
         console.log(`[ClipExtractor] Extracted ${finalClips.length} clips for ${videoId}`);
 
         return {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             clips: finalClips as any[],
             video_id: videoId,
             total_clips: finalClips.length,
@@ -179,6 +180,7 @@ function createFallbackClip(videoId: string, videoTitle: string): ClipExtraction
     };
 
     return {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         clips: [fallbackClip as any],
         video_id: videoId,
         total_clips: 1,
@@ -294,6 +296,7 @@ export async function getAllClips(): Promise<VideoClip[]> {
                 metadata: {
                     video_title: 'CSS in 100 Seconds',
                     channel: 'Fireship',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any,
                 created_at: new Date().toISOString(),
             },
@@ -309,6 +312,7 @@ export async function getAllClips(): Promise<VideoClip[]> {
                 metadata: {
                     video_title: 'JavaScript in 100 Seconds',
                     channel: 'Fireship',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any,
                 created_at: new Date().toISOString(),
             },
@@ -324,6 +328,7 @@ export async function getAllClips(): Promise<VideoClip[]> {
                 metadata: {
                     video_title: 'React in 100 Seconds',
                     channel: 'Fireship',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } as any,
                 created_at: new Date().toISOString(),
             },
@@ -334,6 +339,7 @@ export async function getAllClips(): Promise<VideoClip[]> {
     }
 
     // Convert Study Shorts to clip format
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const virtualClips: VideoClip[] = studyShorts.map((short: any, index: number) => ({
         id: `virtual-${short.id || index}`,
         video_id: short.video_id || extractVideoId(short.video_url) || '',

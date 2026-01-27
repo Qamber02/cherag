@@ -466,7 +466,7 @@ function rankVideos(videos: VerifiedVideo[]): VerifiedVideo[] {
 // ============================================================================
 // 7. CACHE MANAGEMENT
 // ============================================================================
-async function getCachedVideos(supabase: any, topic: string): Promise<VerifiedVideo[]> { // eslint-disable-line @typescript-eslint/no-explicit-any // eslint-disable-line @typescript-eslint/no-explicit-any
+async function getCachedVideos(supabase: any, topic: string): Promise<VerifiedVideo[]> { // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
         const { data } = await supabase
             .from('verified_videos')

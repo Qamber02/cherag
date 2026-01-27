@@ -32,10 +32,11 @@ export default function DashboardHome({
 
     return (
         <div className="w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
-                {/* Upload Drop Zone */}
+            {/* Mobile-first grid: 1 column default, 2 on md, 3 on lg */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-4 md:px-6 lg:px-8 section-spacing">
+                {/* Upload Drop Zone - Touch Optimized */}
                 <div
-                    className="glass-card-premium rounded-3xl p-8 cursor-pointer hover:shadow-2xl transition-all col-span-1 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden"
+                    className="glass-card-premium rounded-2xl md:rounded-3xl p-6 md:p-8 cursor-pointer hover:shadow-2xl transition-all col-span-1 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden active:scale-[0.99]"
                     onClick={() => fileInputRef.current?.click()}
                     role="button"
                     tabIndex={0}
@@ -51,19 +52,19 @@ export default function DashboardHome({
                         accept=".pdf,.docx,.doc,.txt,.md"
                         onChange={handleFileChange}
                     />
-                    <div className="flex flex-col items-center text-center py-8 relative z-10">
-                        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-sm transition-transform group-hover:scale-110 ${isParsing ? 'bg-blue-100 dark:bg-blue-900 animate-pulse' : 'bg-white dark:bg-gray-800'}`}>
-                            <Upload className={`w-10 h-10 ${isParsing ? 'text-blue-500' : 'text-gray-400 group-hover:text-primary transition-colors'}`} />
+                    <div className="flex flex-col items-center text-center py-4 md:py-8 relative z-10">
+                        <div className={`w-16 h-16 md:w-20 md:h-20 rounded-2xl md:rounded-3xl flex items-center justify-center mb-4 md:mb-6 shadow-sm transition-transform group-hover:scale-110 ${isParsing ? 'bg-blue-100 dark:bg-blue-900 animate-pulse' : 'bg-white dark:bg-gray-800'}`}>
+                            <Upload className={`w-8 h-8 md:w-10 md:h-10 ${isParsing ? 'text-blue-500' : 'text-gray-400 group-hover:text-primary transition-colors'}`} />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
+                        <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
                             {isParsing ? 'Processing AI Models...' : 'Upload Study Material'}
                         </h3>
-                        <p className="text-base text-gray-500 dark:text-gray-400 mb-6 max-w-[240px] leading-relaxed">
-                            Drag & drop PDFs or click to browse. We'll generate the rest.
+                        <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mb-4 md:mb-6 max-w-[280px] leading-relaxed">
+                            Drag & drop PDFs or tap to browse. We'll generate the rest.
                         </p>
                         <button
-                            tabIndex={-1} // Prevent double tab stop
-                            className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:border-primary/50 group-hover:text-primary transition-all"
+                            tabIndex={-1}
+                            className="btn-touch btn-ghost px-6 py-3 border-2 border-dashed border-gray-200 dark:border-gray-700 text-sm font-bold text-gray-600 dark:text-gray-300 group-hover:border-primary/50 group-hover:text-primary"
                         >
                             Select Documents
                         </button>
@@ -73,7 +74,7 @@ export default function DashboardHome({
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{files.length} file(s) uploaded</p>
                             {files.slice(0, 2).map(file => (
                                 <div key={file.id} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 mb-1">
-                                    <FileText className="w-4 h-4 text-blue-500" />
+                                    <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
                                     <span className="truncate">{file.filename}</span>
                                 </div>
                             ))}
@@ -82,12 +83,12 @@ export default function DashboardHome({
                 </div>
 
                 {/* Recent Summary Card */}
-                <div className="glass-card rounded-2xl p-6 col-span-1">
+                <div className="glass-card rounded-2xl p-4 md:p-6 col-span-1">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Recent Summaries</h3>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Recent Summaries</h3>
                         <button
                             onClick={() => onNavigate('summary')}
-                            className="text-amber-600 hover:text-amber-700 text-sm font-medium flex items-center gap-1"
+                            className="min-h-[44px] px-3 text-amber-600 hover:text-amber-700 text-sm font-medium flex items-center gap-1 active:scale-95 transition-all"
                         >
                             View All <ArrowRight className="w-4 h-4" />
                         </button>
@@ -100,7 +101,7 @@ export default function DashboardHome({
                             </div>
                             <button
                                 onClick={() => onNavigate('summary')}
-                                className="w-full py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                className="btn-touch w-full py-3 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-[0.98]"
                             >
                                 Read More
                             </button>
@@ -155,16 +156,16 @@ export default function DashboardHome({
                     )}
                 </div>
 
-                {/* Quick Actions */}
-                <div className="glass-card-premium rounded-3xl p-8 col-span-1 lg:col-span-2 xl:col-span-1">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Quick Actions</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                {/* Quick Actions - Touch Optimized */}
+                <div className="glass-card-premium rounded-2xl md:rounded-3xl p-6 md:p-8 col-span-1 md:col-span-2 xl:col-span-1">
+                    <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4 md:mb-6">Quick Actions</h3>
+                    <div className="grid grid-cols-1 gap-3 md:gap-4">
                         <button
                             onClick={() => onNavigate('quizzes')}
-                            className="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-purple-200 hover:shadow-lg hover:-translate-y-1 transition-all text-left group"
+                            className="min-h-[72px] p-4 md:p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-purple-200 hover:shadow-lg active:scale-[0.98] transition-all text-left group"
                         >
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
+                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform flex-shrink-0">
                                     <Sparkles className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
@@ -175,10 +176,10 @@ export default function DashboardHome({
                         </button>
                         <button
                             onClick={() => onNavigate('videos')}
-                            className="p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-red-200 hover:shadow-lg hover:-translate-y-1 transition-all text-left group"
+                            className="min-h-[72px] p-4 md:p-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-red-200 hover:shadow-lg active:scale-[0.98] transition-all text-left group"
                         >
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform">
+                                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:scale-110 transition-transform flex-shrink-0">
                                     <Play className="w-6 h-6 text-white ml-1" />
                                 </div>
                                 <div>

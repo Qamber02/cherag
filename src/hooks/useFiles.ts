@@ -31,6 +31,7 @@ export function useFiles(user: User | null) {
 
             if (fetchError) throw fetchError;
             setFiles(data || []);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Error fetching files:', err);
             setError(err.message || 'Failed to fetch files');
@@ -84,6 +85,7 @@ export function useFiles(user: User | null) {
             });
 
             setFiles(prev => [doc, ...prev]);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Upload error:', err);
             setError(err.message || 'Failed to upload file');
@@ -101,6 +103,7 @@ export function useFiles(user: User | null) {
         try {
             const { error: deleteError } = await supabase.from('documents').delete().eq('id', id);
             if (deleteError) throw deleteError;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Delete error', err);
             setError(err.message || 'Failed to delete file');

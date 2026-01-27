@@ -157,5 +157,13 @@ export function useStudyShorts(user: User | null, context: string) {
         }
     };
 
-    return { videos, generateShorts, loadMore, isLoading, isLoadingMore, hasMore };
+    // Reset to initial state (clear all videos)
+    const resetVideos = () => {
+        setVideos([]);
+        setLastQuery('');
+        setNextPageToken(null);
+        setHasMore(true);
+    };
+
+    return { videos, generateShorts, loadMore, resetVideos, isLoading, isLoadingMore, hasMore };
 }

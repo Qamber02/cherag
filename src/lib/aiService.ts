@@ -91,8 +91,8 @@ async function callOpenRouter(prompt: string): Promise<string | null> {
         }
 
         console.warn(`[AI] OpenRouter error:`, response.status);
-    } catch (err) {
-        console.warn(`[AI] OpenRouter failed:`, err);
+    } catch (_err) {
+        console.warn(`[AI] OpenRouter failed:`, _err);
     }
     return null;
 }
@@ -137,8 +137,8 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
 
         console.warn(`[AI] DeepSeek error:`, data);
         return null;
-    } catch (e) {
-        console.warn(`[AI] DeepSeek failed:`, e);
+    } catch (_e) {
+        console.warn(`[AI] DeepSeek failed:`, _e);
         return null;
     }
 }
@@ -227,7 +227,7 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
     console.log('[AI] All Gemini models failed, trying Hugging Face...');
     try {
         return await callHuggingFace(prompt, taskType);
-    } catch (e) {
+    } catch (_e) {
         console.warn('[AI] Hugging Face failed, trying mock fallback...');
     }
 
@@ -410,8 +410,8 @@ export async function generateImageWithGemini(prompt: string): Promise<string | 
 
         console.warn('[AI] No image in Gemini response');
         return null;
-    } catch (err) {
-        console.warn('[AI] Gemini image generation failed:', err);
+    } catch (_err) {
+        console.warn('[AI] Gemini image generation failed:', _err);
         return null;
     }
 }
@@ -508,7 +508,7 @@ ${sanitized}`;
         }
 
         return parsed;
-    } catch (err) {
+    } catch (_err) {
         // If parsing fails, create simple flashcards from text
         console.warn('Failed to parse flashcards JSON, creating fallback');
         return [{
@@ -559,7 +559,7 @@ ${sanitized}`;
         }
 
         return parsed;
-    } catch (err) {
+    } catch (_err) {
         console.warn('Failed to parse quizzes JSON');
         throw new Error('Failed to generate quizzes. Please try again.');
     }
@@ -567,6 +567,7 @@ ${sanitized}`;
 
 
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function generateMindMap(context: string): Promise<{ title: string, children: any[] }> {
     await rateLimiter.waitForToken('mindmap');
 
@@ -583,7 +584,7 @@ ${sanitized}`;
 
     try {
         return JSON.parse(cleaned);
-    } catch (err) {
+    } catch (_err) {
         // Fallback structure
         return {
             title: "Study Content",
@@ -689,7 +690,9 @@ Keywords:`;
         // Filter out irrelevant content by checking titles
         const topicWords = searchTopic.toLowerCase().split(' ').filter(w => w.length > 2);
 
+         
         const videos: VideoResult[] = (data.items || [])
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((item: any) => ({
                 id: item.id.videoId,
                 title: item.snippet.title,
@@ -706,8 +709,9 @@ Keywords:`;
             result: videos,
             nextPageToken: data.nextPageToken || null
         };
-    } catch (err: any) {
-        console.error('Video generation error:', err);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (_err: any) {
+        console.error('Video generation error:', _err);
         return { result: [], nextPageToken: null };
     }
 }

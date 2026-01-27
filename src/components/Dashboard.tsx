@@ -18,6 +18,7 @@ import {
     ConceptRemixTab,
     MentalModelTab
 } from './premium';
+import { useVideoContext } from './premium/VideoContext';
 import { usePremiumFeatures } from '../hooks/usePremiumFeatures';
 import { Suspense, lazy } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -64,7 +65,7 @@ export default function Dashboard({ session }: DashboardProps) {
 
     const { messages, sendMessage, isLoading: isChatLoading } = useChat(session.user);
     const { flashcards, generateFlashcards, clearFlashcards, isLoading: isFlashcardsLoading } = useFlashcards(session.user, context);
-    const { videos, generateShorts, loadMore, isLoading: isVideosLoading, isLoadingMore, hasMore } = useStudyShorts(session.user, context);
+    const { videos, generateShorts, loadMore, resetVideos, isLoading: isVideosLoading, isLoadingMore, hasMore } = useStudyShorts(session.user, context);
 
     // Premium Features Hook
     const {
@@ -123,10 +124,15 @@ export default function Dashboard({ session }: DashboardProps) {
         }
     };
 
+    // VideoContext for pausing videos on tab change
+    const { setActiveTab: setVideoContextTab } = useVideoContext() || {};
+
     const handleTabChange = (tab: string) => {
         setActiveTab(tab as Tab);
         // Save to preferences for persistence
         setPreference('lastActiveTab', tab);
+        // Notify VideoContext to pause videos when leaving videos tab
+        setVideoContextTab?.(tab);
     };
 
     // Helper to render tabs with preservation or conditional mounting
@@ -395,6 +401,8 @@ export default function Dashboard({ session }: DashboardProps) {
                                 hasMore={hasMore}
                                 onGenerate={generateShorts}
                                 onLoadMore={loadMore}
+                                onReset={resetVideos}
+                                onExit={() => handleTabChange('dashboard')}
                                 hasUnknownContext={files.length > 0}
                             />
                         </div>
@@ -423,51 +431,51 @@ export default function Dashboard({ session }: DashboardProps) {
                     ), true, true)}
                 </main>
 
-                {/* Mobile Bottom Navigation */}
+                {/* Mobile Bottom Navigation - Touch Optimized */}
                 <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-background via-background/95 to-background/80 backdrop-blur-xl border-t border-border z-50 safe-area-bottom shadow-lg">
-                    <div className="flex items-center justify-around h-16 px-2">
+                    <div className="flex items-center justify-around h-[72px] px-1 gap-1">
                         <button
                             onClick={() => handleTabChange('dashboard')}
-                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'dashboard'
-                                ? 'text-primary bg-primary/10'
-                                : 'text-muted-foreground hover:text-primary'}`}
+                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'dashboard'
+                                ? 'text-primary bg-primary/15 shadow-sm'
+                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
                         >
-                            <LayoutDashboard className="w-5 h-5" />
-                            <span className="text-[10px] mt-1 font-semibold">Home</span>
+                            <LayoutDashboard className="w-6 h-6" />
+                            <span className="text-[11px] mt-1 font-semibold">Home</span>
                         </button>
                         <button
                             onClick={() => handleTabChange('chat')}
-                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'chat'
-                                ? 'text-primary bg-primary/10'
-                                : 'text-muted-foreground hover:text-primary'}`}
+                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'chat'
+                                ? 'text-primary bg-primary/15 shadow-sm'
+                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
                         >
-                            <MessageCircle className="w-5 h-5" />
-                            <span className="text-[10px] mt-1 font-semibold">Chat</span>
+                            <MessageCircle className="w-6 h-6" />
+                            <span className="text-[11px] mt-1 font-semibold">Chat</span>
                         </button>
                         <button
                             onClick={() => handleTabChange('flashcards')}
-                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'flashcards'
-                                ? 'text-primary bg-primary/10'
-                                : 'text-muted-foreground hover:text-primary'}`}
+                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'flashcards'
+                                ? 'text-primary bg-primary/15 shadow-sm'
+                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
                         >
-                            <Layers className="w-5 h-5" />
-                            <span className="text-[10px] mt-1 font-semibold">Cards</span>
+                            <Layers className="w-6 h-6" />
+                            <span className="text-[11px] mt-1 font-semibold">Cards</span>
                         </button>
                         <button
                             onClick={() => handleTabChange('quizzes')}
-                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all ${activeTab === 'quizzes'
-                                ? 'text-primary bg-primary/10'
-                                : 'text-muted-foreground hover:text-primary'}`}
+                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'quizzes'
+                                ? 'text-primary bg-primary/15 shadow-sm'
+                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
                         >
-                            <FileQuestion className="w-5 h-5" />
-                            <span className="text-[10px] mt-1 font-semibold">Quiz</span>
+                            <FileQuestion className="w-6 h-6" />
+                            <span className="text-[11px] mt-1 font-semibold">Quiz</span>
                         </button>
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="flex flex-col items-center justify-center flex-1 py-2 rounded-xl text-muted-foreground hover:text-primary transition-all"
+                            className="flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl text-muted-foreground hover:text-primary hover:bg-muted/50 transition-all active:scale-95"
                         >
-                            <MoreHorizontal className="w-5 h-5" />
-                            <span className="text-[10px] mt-1 font-semibold">More</span>
+                            <MoreHorizontal className="w-6 h-6" />
+                            <span className="text-[11px] mt-1 font-semibold">More</span>
                         </button>
                     </div>
                 </nav>

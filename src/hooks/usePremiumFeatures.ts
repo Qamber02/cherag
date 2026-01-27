@@ -207,7 +207,7 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
         setIsLoading(true);
         try {
             // Get learning profile
-            let profile = await getLearningProfile(userId);
+            const profile = await getLearningProfile(userId);
 
             const result = await generateDailyPlan({
                 goals: [], // Would come from user settings

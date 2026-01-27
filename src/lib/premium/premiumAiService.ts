@@ -63,6 +63,7 @@ export async function callPremiumAI(
         maxTokens = 2000,
         temperature = 0.5,
         useCache = true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         preferredProvider = getPreference('aiModel') as any || 'auto'
     } = options;
 
@@ -98,7 +99,7 @@ export async function callPremiumAI(
                 if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), deepseekResult.data, taskType);
                 return deepseekResult;
             }
-        } catch (e) {
+        } catch (_e) {
             console.warn('[Premium AI] Preferred (DeepSeek) failed, falling back...');
         }
     } else if (preferredProvider === 'gemini') {
@@ -108,7 +109,7 @@ export async function callPremiumAI(
                 if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), geminiResult.data, taskType);
                 return geminiResult;
             }
-        } catch (e) {
+        } catch (_e) {
             console.warn('[Premium AI] Preferred (Gemini) failed, falling back...');
         }
     }
@@ -122,7 +123,7 @@ export async function callPremiumAI(
                 if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), deepseekResult.data, taskType);
                 return deepseekResult;
             }
-        } catch (e) {
+        } catch (_e) {
             console.warn('[Premium AI] DeepSeek failed, checking next fallback...');
         }
     }
@@ -135,7 +136,7 @@ export async function callPremiumAI(
                 if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), openRouterResult.data, taskType);
                 return openRouterResult;
             }
-        } catch (e) {
+        } catch (_e) {
             console.warn('[Premium AI] OpenRouter failed, checking next fallback...');
         }
     }
@@ -147,7 +148,7 @@ export async function callPremiumAI(
             if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), geminiResult.data, taskType);
             return geminiResult;
         }
-    } catch (e) {
+    } catch (_e) {
         console.warn('[Premium AI] Gemini loop exhausted or failed, checking fallbacks...');
     }
 
@@ -159,7 +160,7 @@ export async function callPremiumAI(
                 if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), hfResult.data, taskType);
                 return hfResult;
             }
-        } catch (e) {
+        } catch (_e) {
             console.warn('[Premium AI] Hugging Face failed.');
         }
     }
@@ -168,7 +169,7 @@ export async function callPremiumAI(
     try {
         const mockResult = await tryMockFallback(sanitizedPrompt, taskType);
         return mockResult;
-    } catch (e) {
+    } catch (_e) {
         console.error('[Premium AI] Mock fallback failed (should never happen).');
     }
 
@@ -531,7 +532,7 @@ export function parseJSONResponse<T>(response: string): T {
         // Attempt 1: Fix trailing commas
         try {
             return JSON.parse(cleaned.replace(/,\s*([\]}])/g, '$1'));
-        } catch (e2) {
+        } catch (_e2) {
             // Attempt 2: Truncated JSON repair
             try {
                 // If it looks like an array start but no end
@@ -563,7 +564,7 @@ export function parseJSONResponse<T>(response: string): T {
                 }
 
                 throw e;
-            } catch (e3) {
+            } catch (_e3) {
                 console.error('All JSON repair attempts failed.');
                 console.error('Original:', cleaned);
                 throw e;
@@ -575,15 +576,19 @@ export function parseJSONResponse<T>(response: string): T {
 /**
  * Premium prompt chain executor
  */
+ 
 export async function executePromptChain<T>(
     prompts: Array<{
         id: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         prompt: string | ((prev: any) => string);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         parse: (response: string) => any;
         cacheKey?: string;
     }>,
     taskType: string
 ): Promise<T> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let previousResult: any = null;
 
     for (const step of prompts) {
@@ -721,12 +726,14 @@ export async function analyzeSyllabus(syllabus: string): Promise<SyllabusAnalysi
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function generateStressTest(concept: string, currentLevel: number = 1): Promise<any> {
     const response = await callPremiumAI(
         EXAM_ENGINE_PROMPTS.stressTest(concept, currentLevel),
         `stress_test_${concept}_${currentLevel}`,
         { maxTokens: 4096 }
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return parseJSONResponse<any>(response.data);
 }
 

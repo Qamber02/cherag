@@ -61,8 +61,8 @@ class KeyManager {
         if (!providerKeys || providerKeys.length === 0) return null;
 
         // Check if current key is valid
-        let currentIndex = this.activeKeyIndex[provider];
-        let currentKey = providerKeys[currentIndex];
+        const currentIndex = this.activeKeyIndex[provider];
+        const currentKey = providerKeys[currentIndex];
 
         // If current key is rate limited, check if it should be reset
         if (currentKey.isRateLimited) {

@@ -271,6 +271,7 @@ export async function batchProcessInteractions(
         userId: string;
         clipId: string;
         action: 'watch' | 'skip' | 'replay' | 'like' | 'pause';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         metadata?: any;
     }>
 ): Promise<void> {

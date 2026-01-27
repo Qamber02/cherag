@@ -31,9 +31,16 @@ serve(async (req) => {
             chunks.push(content.slice(i, i + chunkSize));
         }
 
+        interface EmbeddingItem {
+            document_id: string;
+            content: string;
+            embedding: number[];
+            chunk_index: number;
+        }
+
         // 2. Generate Embeddings (Batch if possible, but Gemini limit is 100 calls/min?)
         // text-embedding-004 supports batching content.
-        const embeddingsMap = [];
+        const embeddingsMap: EmbeddingItem[] = [];
 
         // Process in batches of 20 to be safe
         const batchSize = 20;

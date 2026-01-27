@@ -365,13 +365,13 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                             onClick={() => !showResult && handleAnswer(letter)}
                                             disabled={showResult}
                                             className={`
-                                                relative w-full p-4 md:p-5 text-left rounded-xl border-2 transition-all duration-200 group
+                                                relative w-full min-h-[56px] p-4 md:p-5 text-left rounded-xl border-2 transition-all duration-200 group active:scale-[0.98]
                                                 ${stateClass}
                                             `}
                                         >
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-3 md:gap-4">
                                                 <span className={`
-                                                    w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors shrink-0
+                                                    w-9 h-9 md:w-8 md:h-8 rounded-lg flex items-center justify-center font-bold text-sm transition-colors shrink-0
                                                     ${isSelected || (showResult && isCorrect) ? 'bg-white text-gray-900 shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-white'}
                                                 `}>
                                                     {letter}
@@ -422,12 +422,12 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                     {showResult && (
                         <button
                             onClick={nextQuestion}
-                            className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                            className="min-h-[48px] px-6 md:px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl hover:shadow-lg active:scale-[0.98] transition-all flex items-center gap-2"
                         >
                             {currentIndex < quizzes.length - 1 ? (
-                                <>Next Question <ArrowRight className="w-5 h-5" /></>
+                                <>Next <ArrowRight className="w-5 h-5" /></>
                             ) : (
-                                <>See Results <Sparkles className="w-5 h-5" /></>
+                                <>Results <Sparkles className="w-5 h-5" /></>
                             )}
                         </button>
                     )}
