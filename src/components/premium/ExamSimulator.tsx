@@ -1,14 +1,26 @@
 // Exam Simulator Component
-import { useState, useEffect } from 'react';
+// FIX: Added localStorage persistence, forward-only navigation, and mobile improvements
+import { useState, useEffect, useCallback } from 'react';
 import {
     Clock,
     CheckCircle2,
     ChevronRight,
-    ChevronLeft,
     Flag,
     Save,
+    SkipForward,
 } from 'lucide-react';
 import type { ExamQuestion } from '../../lib/premium';
+
+// localStorage key for exam state persistence
+const EXAM_STATE_KEY = 'cherag_exam_state';
+
+interface ExamState {
+    answers: Record<number, string>;
+    currentQuestionIndex: number;
+    timeLeft: number;
+    flagged: Record<number, boolean>;
+    questionsHash: string; // To detect if questions changed
+}
 
 interface ExamSimulatorProps {
     questions: ExamQuestion[];
@@ -17,21 +29,90 @@ interface ExamSimulatorProps {
     onCancel: () => void;
 }
 
+// Generate a simple hash to detect if questions changed
+const getQuestionsHash = (questions: ExamQuestion[]): string => {
+    return questions.map(q => q.question.slice(0, 20)).join('|').slice(0, 100);
+};
+
 export default function ExamSimulator({
     questions,
     durationMinutes,
     onComplete,
     onCancel
 }: ExamSimulatorProps) {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<Record<number, string>>({});
-    const [flagged, setFlagged] = useState<Record<number, boolean>>({});
-    const [timeLeft, setTimeLeft] = useState(durationMinutes * 60);
+    // FIX: Initialize state from localStorage if available
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
+        try {
+            const saved = localStorage.getItem(EXAM_STATE_KEY);
+            if (saved) {
+                const state: ExamState = JSON.parse(saved);
+                if (state.questionsHash === getQuestionsHash(questions)) {
+                    return state.currentQuestionIndex;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return 0;
+    });
+
+    const [answers, setAnswers] = useState<Record<number, string>>(() => {
+        try {
+            const saved = localStorage.getItem(EXAM_STATE_KEY);
+            if (saved) {
+                const state: ExamState = JSON.parse(saved);
+                if (state.questionsHash === getQuestionsHash(questions)) {
+                    return state.answers;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return {};
+    });
+
+    const [flagged, setFlagged] = useState<Record<number, boolean>>(() => {
+        try {
+            const saved = localStorage.getItem(EXAM_STATE_KEY);
+            if (saved) {
+                const state: ExamState = JSON.parse(saved);
+                if (state.questionsHash === getQuestionsHash(questions)) {
+                    return state.flagged;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return {};
+    });
+
+    const [timeLeft, setTimeLeft] = useState(() => {
+        try {
+            const saved = localStorage.getItem(EXAM_STATE_KEY);
+            if (saved) {
+                const state: ExamState = JSON.parse(saved);
+                if (state.questionsHash === getQuestionsHash(questions)) {
+                    return state.timeLeft;
+                }
+            }
+        } catch (e) { /* ignore */ }
+        return durationMinutes * 60;
+    });
+
     const [isFinished, setIsFinished] = useState(false);
     const [score, setScore] = useState(0);
 
     const currentQuestion = questions[currentQuestionIndex];
 
+    // FIX: Persist exam state to localStorage whenever it changes
+    useEffect(() => {
+        if (isFinished) return;
+
+        const state: ExamState = {
+            answers,
+            currentQuestionIndex,
+            timeLeft,
+            flagged,
+            questionsHash: getQuestionsHash(questions),
+        };
+        localStorage.setItem(EXAM_STATE_KEY, JSON.stringify(state));
+    }, [answers, currentQuestionIndex, timeLeft, flagged, questions, isFinished]);
+
+    // Timer effect
     useEffect(() => {
         if (isFinished) return;
 
@@ -57,39 +138,43 @@ export default function ExamSimulator({
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    const handleAnswer = (value: string) => {
+    // FIX: Auto-advance to next question after answering MCQ (forward-only progression)
+    const handleAnswer = useCallback((value: string) => {
         setAnswers(prev => ({ ...prev, [currentQuestionIndex]: value }));
-    };
+
+        // Auto-advance for MCQ questions after a brief delay for visual feedback
+        if (currentQuestion?.type === 'mcq' && currentQuestionIndex < questions.length - 1) {
+            setTimeout(() => {
+                setCurrentQuestionIndex(prev => prev + 1);
+            }, 300);
+        }
+    }, [currentQuestionIndex, currentQuestion?.type, questions.length]);
 
     const toggleFlag = () => {
         setFlagged(prev => ({ ...prev, [currentQuestionIndex]: !prev[currentQuestionIndex] }));
     };
 
-    const finishExam = () => {
+    // FIX: Clear localStorage on exam finish to prevent stale state
+    const finishExam = useCallback(() => {
         let calculatedScore = 0;
         questions.forEach((q, idx) => {
             if (q.type === 'mcq') {
-                // strict match for MCQ letters
-                // usually response is just "A" or "B"
                 const userAnswer = answers[idx] || "";
                 if (userAnswer.trim().toUpperCase() === q.correct_answer.trim().toUpperCase()) {
                     calculatedScore++;
                 } else if (q.correct_answer.length > 1 && userAnswer === q.correct_answer) {
-                    // unexpected full text match case
                     calculatedScore++;
                 }
-            } else {
-                // Manual grading or fuzzy match? For now, assume correct if not empty?
-                // No, that's bad. Let's just track MCQs for score, or rely on user review.
-                // We'll simplisticly count it if they typed something of significant length?
-                // Actually, let's just score 0 for now and let them review it.
             }
         });
 
         const finalScore = Math.round((calculatedScore / questions.length) * 100);
         setScore(finalScore);
         setIsFinished(true);
-    };
+
+        // Clear saved state after exam completion
+        localStorage.removeItem(EXAM_STATE_KEY);
+    }, [questions, answers]);
 
     const getQuestionStatus = (index: number) => {
         if (index === currentQuestionIndex) return 'current';
@@ -326,34 +411,36 @@ export default function ExamSimulator({
                 </div>
             </div>
 
-            {/* Footer */}
+            {/* Footer - FIX: Forward-only navigation with mobile-friendly touch targets */}
             <div className="border-t border-border p-4 flex items-center justify-between shrink-0 bg-card">
-                <button
-                    onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                    disabled={currentQuestionIndex === 0}
-                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium text-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                </button>
-
-                <div className="flex gap-2 lg:hidden">
-                    <button onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))} className="p-2 bg-secondary rounded-lg">
-                        <ChevronLeft className="w-4 h-4" />
+                {/* Skip button for non-MCQ questions (MCQ auto-advances) */}
+                {currentQuestion?.type !== 'mcq' ? (
+                    <button
+                        onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
+                        disabled={currentQuestionIndex === questions.length - 1}
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-muted-foreground hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+                    >
+                        <SkipForward className="w-4 h-4" />
+                        Skip Question
                     </button>
-                    <span className="px-3 py-2 bg-secondary rounded-lg text-sm font-medium">
+                ) : (
+                    <div className="text-sm text-muted-foreground px-4">
+                        Select an answer to continue
+                    </div>
+                )}
+
+                {/* Mobile progress indicator */}
+                <div className="flex gap-2 lg:hidden">
+                    <span className="px-4 py-3 bg-secondary rounded-lg text-sm font-medium min-h-[48px] flex items-center">
                         {currentQuestionIndex + 1} / {questions.length}
                     </span>
-                    <button onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))} className="p-2 bg-secondary rounded-lg">
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
                 </div>
 
                 <div className="flex gap-4">
                     {currentQuestionIndex === questions.length - 1 ? (
                         <button
                             onClick={finishExam}
-                            className="flex items-center gap-2 px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:translate-y-[-1px]"
+                            className="flex items-center gap-2 px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:translate-y-[-1px] min-h-[48px] active:scale-95"
                         >
                             Finish Exam
                             <CheckCircle2 className="w-4 h-4" />
@@ -361,7 +448,7 @@ export default function ExamSimulator({
                     ) : (
                         <button
                             onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:translate-y-[-1px]"
+                            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 shadow-sm shadow-primary/20 transition-all hover:translate-y-[-1px] min-h-[48px] active:scale-95"
                         >
                             Next Question
                             <ChevronRight className="w-4 h-4" />

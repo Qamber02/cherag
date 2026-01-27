@@ -24,6 +24,7 @@ import { Loader2 } from 'lucide-react';
 
 // Lazy Load Heavy Components
 const KnowledgeRadarTab = lazy(() => import('./premium').then(module => ({ default: module.KnowledgeRadarTab })));
+
 const MindMapTab = lazy(() => import('./MindMapTab'));
 const QuizzesTab = lazy(() => import('./QuizzesTab'));
 const StudyShortsTab = lazy(() => import('./StudyShortsTab'));
@@ -47,7 +48,7 @@ interface DashboardProps {
     session: Session;
 }
 
-type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'radar' | 'confidence' | 'exam' | 'teaching' | 'compress' | 'remix' | 'mental' | 'videos' | 'history' | 'settings';
+type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'radar' | 'confidence' | 'exam' | 'teaching' | 'compress' | 'remix' | 'mental' | 'videos' | 'reels' | 'history' | 'settings';
 
 export default function Dashboard({ session }: DashboardProps) {
     // Initialize from saved preference
@@ -398,6 +399,8 @@ export default function Dashboard({ session }: DashboardProps) {
                             />
                         </div>
                     ), true, true)}
+
+
 
                     {/* History Tab - Page Scroll */}
                     {renderTab('history', (

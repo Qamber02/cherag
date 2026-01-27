@@ -30,6 +30,7 @@ const navItems = [
 
     { id: 'mindmap', icon: Map, label: 'Roadmap' },
     { id: 'videos', icon: Play, label: 'Study Shorts' },
+
     { id: 'radar', icon: Radar, label: 'Knowledge Radar' },
     { id: 'exam', icon: Target, label: 'Exam Engine' },
     { id: 'teaching', icon: GraduationCap, label: 'Feynman Mode' },

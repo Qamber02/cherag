@@ -8,6 +8,7 @@ export { default as ConceptCompressionTab } from './ConceptCompressionTab';
 export { default as ConceptRemixTab } from './ConceptRemixTab';
 export { default as MentalModelTab } from './MentalModelTab';
 
+
 // Future exports (to be implemented)
 // export { default as LearningDNATab } from './LearningDNATab';
 // export { default as CognitiveMonitorTab } from './CognitiveMonitorTab';

@@ -7,6 +7,7 @@ import type { Session } from '@supabase/supabase-js'
 import { Loader2 } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import { ToastProvider } from './components/ui/ToastContext'
+import { VideoProvider } from './components/premium/VideoContext'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -46,11 +47,13 @@ function App() {
 
   return (
     <ToastProvider>
-      <Routes>
-        <Route path="/auth" element={session ? <Navigate to="/" /> : <AuthPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/" element={session ? <Dashboard session={session} /> : <Navigate to="/auth" />} />
-      </Routes>
+      <VideoProvider>
+        <Routes>
+          <Route path="/auth" element={session ? <Navigate to="/" /> : <AuthPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/" element={session ? <Dashboard session={session} /> : <Navigate to="/auth" />} />
+        </Routes>
+      </VideoProvider>
     </ToastProvider>
   )
 }
