@@ -1,7 +1,7 @@
 // Learning Reels - AI Prompt Templates
 // Prompts for clip extraction and recall generation
 
-import type { ClipExtractionPromptData, RecallGenerationPromptData } from '../../types/videoIntelligence.types';
+import type { ClipExtractionPromptData, RecallGenerationPromptData } from '../../../types/videoIntelligence.types';
 
 // ============================================
 // CLIP EXTRACTION PROMPT
@@ -136,23 +136,23 @@ Return ONLY valid JSON:
 // ============================================
 
 export const VIDEO_INTELLIGENCE_PROMPTS = {
-    EXTRACT_CLIPS: EXTRACT_CLIPS_PROMPT,
-    GENERATE_RECALL: GENERATE_RECALL_PROMPT,
+  EXTRACT_CLIPS: EXTRACT_CLIPS_PROMPT,
+  GENERATE_RECALL: GENERATE_RECALL_PROMPT,
 };
 
 // Default config for AI calls
 export const CLIP_EXTRACTION_CONFIG = {
-    maxTokens: 4000,
-    temperature: 0.3, // Low temp for structured output
-    useCache: true,
-    cacheTTL: 60 * 24 * 30, // 30 days - clips don't change
-    preferredProvider: 'auto' as const,
+  maxTokens: 4000,
+  temperature: 0.3, // Low temp for structured output
+  useCache: true,
+  cacheTTL: 60 * 24 * 30, // 30 days - clips don't change
+  preferredProvider: 'auto' as const,
 };
 
 export const RECALL_GENERATION_CONFIG = {
-    maxTokens: 500,
-    temperature: 0.5, // Slightly higher for question variety
-    useCache: true,
-    cacheTTL: 60 * 24 * 30, // 30 days
-    preferredProvider: 'auto' as const,
+  maxTokens: 500,
+  temperature: 0.5, // Slightly higher for question variety
+  useCache: true,
+  cacheTTL: 60 * 24 * 30, // 30 days
+  preferredProvider: 'auto' as const,
 };

@@ -87,7 +87,7 @@ export function useLearningReels(): UseLearningReelsReturn {
             const watchedIds = feed
                 .slice(0, currentIndex + 1)
                 .filter(item => item.type === 'clip')
-                .map(item => item.data.id);
+                .map(item => (item.data as import('../types/videoIntelligence.types').VideoClip).id);
 
             const newFeed = await refreshFeed(user.id, watchedIds);
 

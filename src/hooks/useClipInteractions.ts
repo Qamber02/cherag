@@ -4,11 +4,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import {
-    recordWatchInteraction,
-    recordSkipInteraction,
-    recordReplayInteraction,
-    recordLikeInteraction,
-    recordPauseInteraction,
     recordRecallAttempt,
     batchProcessInteractions,
 } from '../lib/premium/videoIntelligence/interactionAnalyzer';

@@ -10,12 +10,6 @@ import type { VideoClip, ClipExtractionResult, ClipExtractionPromptData } from '
 // YouTube Transcript Fetching
 // ============================================
 
-interface TranscriptSegment {
-    text: string;
-    start: number;
-    duration: number;
-}
-
 /**
  * Fetch YouTube transcript using youtube-transcript library
  * Falls back to mock data if API fails
@@ -46,15 +40,6 @@ async function fetchYouTubeTranscript(videoId: string): Promise<string> {
         // Return empty - will be handled gracefully
         return '';
     }
-}
-
-/**
- * Format transcript segments into readable text with timestamps
- */
-function formatTranscript(segments: TranscriptSegment[]): string {
-    return segments
-        .map(seg => `[${Math.floor(seg.start)}s] ${seg.text}`)
-        .join('\n');
 }
 
 // ============================================

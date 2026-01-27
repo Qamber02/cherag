@@ -26,6 +26,7 @@ export function useStudyShorts(user: User | null, context: string) {
         if (!user) return;
 
         async function loadSavedVideos() {
+            if (!user) return;
             try {
                 const { data, error } = await supabase
                     .from('study_shorts')

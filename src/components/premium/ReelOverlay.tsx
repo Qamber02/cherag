@@ -11,7 +11,7 @@ export default function ReelOverlay({
     watchProgress,
     onLike,
     onReplay,
-    showWhyTooltip = false,
+    // showWhyTooltip is available for future use
     whyReason = 'Recommended for you',
 }: ReelOverlayProps) {
     const [liked, setLiked] = useState(false);
@@ -23,8 +23,6 @@ export default function ReelOverlay({
             setLiked(true);
         }
     };
-
-    const progressDegrees = watchProgress * 360;
 
     return (
         <>

@@ -129,7 +129,7 @@ function calculateClipScore(
 function generateRankingReason(
     clip: VideoClip,
     signals: ClipRankingSignals,
-    score: number
+    _score: number
 ): string {
     const concept = clip.concept.toLowerCase();
     const mastery = signals.userMastery[concept] ?? 0.5;
