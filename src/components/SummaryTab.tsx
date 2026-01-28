@@ -61,7 +61,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
     };
 
     return (
-        <div className="flex flex-col h-full p-4 md:p-6 overflow-y-auto">
+        <div className="flex flex-col h-full p-3 md:p-6 overflow-y-auto">
             {/* Header - stacks on mobile */}
             <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between md:mb-6">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Document Summary</h2>
@@ -90,7 +90,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                 </button>
 
                                 {showDownloadMenu && (
-                                    <div className="absolute right-0 top-10 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 py-2 z-50 animate-fade-in">
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 py-2 z-50 animate-fade-in">
                                         <button
                                             onClick={() => {
                                                 downloadAsMarkdown(summary, 'summary');
@@ -142,9 +142,9 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                 <Sliders className="w-4 h-4" />
                             </button>
 
-                            {/* Options Dropdown */}
+                            {/* Options Dropdown - Mobile friendly */}
                             {showOptions && (
-                                <div className="absolute right-0 top-12 w-72 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 p-4 z-50">
+                                <div className="absolute right-0 md:right-0 left-0 md:left-auto top-full mt-2 w-full md:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 p-4 z-50">
                                     <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Customize Summary</h4>
 
                                     {/* Length Option */}
@@ -224,7 +224,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 p-8 relative overflow-hidden group">
+            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 p-4 md:p-8 relative overflow-hidden group">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
                         <div className="relative">

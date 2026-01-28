@@ -576,7 +576,7 @@ export function parseJSONResponse<T>(response: string): T {
 /**
  * Premium prompt chain executor
  */
- 
+
 export async function executePromptChain<T>(
     prompts: Array<{
         id: string;
@@ -920,29 +920,33 @@ export async function generateActiveLesson(
     const response = await callPremiumAI(
         ACTIVE_LEARNING_PROMPTS.microLesson(concept, context),
         `active_lesson_${concept}`,
-        { maxTokens: 4000 }
+        { maxTokens: 4000, useCache: false } // Always fresh to avoid repeating questions
     );
 
     const result = parseJSONResponse<MicroLessonResult>(response.data);
 
-    // Sanitize Quiz Data
+    // Sanitize Quiz Data & Resolve Index from Text
     if (result?.quiz?.options && Array.isArray(result.quiz.options)) {
-        // Ensure index is within bounds
-        const maxIdx = result.quiz.options.length - 1;
-        if (typeof result.quiz.correct_index !== 'number' || result.quiz.correct_index < 0 || result.quiz.correct_index > maxIdx) {
-            console.warn(`[Premium] Fixed out-of-bounds correct_index: ${result.quiz.correct_index} -> 0`);
-            result.quiz.correct_index = 0; // Default to A if broken
-        }
+        // Resolve index if text provided
+        if (result.quiz.correct_answer_text) {
+            const textIndex = result.quiz.options.findIndex(opt =>
+                opt.toLowerCase().trim() === result.quiz.correct_answer_text.toLowerCase().trim()
+            );
 
-        // Heuristic: If explanation explicitly mentions "Option B" or "Answer: B", try to match it
-        const explanationLower = result.quiz.explanation?.toLowerCase() || "";
-        if (explanationLower.includes("correct answer is b") || explanationLower.includes("option b")) {
-            if (result.quiz.correct_index !== 1 && result.quiz.options.length > 1) {
-                console.warn('[Premium] Re-aligning index to B based on explanation');
-                result.quiz.correct_index = 1;
+            if (textIndex !== -1) {
+                result.quiz.correct_index = textIndex;
+                console.log(`[Premium] Resolved answer index ${textIndex} from text match`);
+            } else {
+                console.warn(`[Premium] Could not match answer text "${result.quiz.correct_answer_text}" to options. Falling back to heuristic/default.`);
             }
         }
-        // Similar checks could be added for A, C, D but B/C confusion is most common
+
+        // Ensure index is within bounds (fallback if text match failed or index provided was bad)
+        const maxIdx = result.quiz.options.length - 1;
+        if (typeof result.quiz.correct_index !== 'number' || result.quiz.correct_index < 0 || result.quiz.correct_index > maxIdx) {
+            console.warn(`[Premium] Fixed out-of-bounds/missing correct_index: ${result.quiz.correct_index} -> 0`);
+            result.quiz.correct_index = 0; // Default to A if broken
+        }
     }
 
     return result;

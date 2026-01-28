@@ -98,9 +98,9 @@ export default function Sidebar({
                     )}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className={`p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isCollapsed ? 'absolute -right-3 top-8 bg-white shadow-md border border-gray-100 dark:bg-gray-800 dark:border-gray-700' : ''}`}
+                        className={`min-w-[36px] min-h-[36px] p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center justify-center ${isCollapsed ? 'absolute -right-4 top-8 bg-white shadow-md border border-gray-100 dark:bg-gray-800 dark:border-gray-700' : ''}`}
                     >
-                        {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-4 h-4" />}
+                        {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                     </button>
                 </div>
 
@@ -250,9 +250,9 @@ export default function Sidebar({
                         <h3 className="font-semibold text-lg text-foreground">Documents</h3>
                         <button
                             onClick={() => setShowFilePanel(false)}
-                            className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors"
+                            className="min-w-[36px] min-h-[36px] p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
                         >
-                            <X className="w-4 h-4 text-muted-foreground" />
+                            <X className="w-5 h-5 text-muted-foreground" />
                         </button>
                     </div>
 
@@ -329,10 +329,10 @@ export default function Sidebar({
                                             e.stopPropagation();
                                             onRemove(file.id);
                                         }}
-                                        className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 rounded-lg transition-all"
+                                        className="min-w-[36px] min-h-[36px] p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 rounded-lg transition-all flex items-center justify-center"
                                         title="Remove file"
                                     >
-                                        <X className="w-3.5 h-3.5" />
+                                        <X className="w-4 h-4" />
                                     </button>
                                 </div>
                             ))

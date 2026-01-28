@@ -103,7 +103,7 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                 {/* Header */}
                 <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
-                        <button onClick={exitStudyMode} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                        <button onClick={exitStudyMode} className="min-h-[44px] px-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center">
                             ← Back to Cards
                         </button>
                         <div className="flex items-center gap-4">
@@ -165,7 +165,7 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                         <button
                             onClick={prevCard}
                             disabled={currentIndex === 0}
-                            className="px-4 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30"
+                            className="min-h-[44px] min-w-[44px] px-4 py-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 flex items-center"
                         >
                             <ChevronLeft className="w-6 h-6 inline" /> Previous
                         </button>
@@ -181,7 +181,7 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                         <button
                             onClick={nextCard}
                             disabled={isLast}
-                            className="px-4 py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30"
+                            className="min-h-[44px] min-w-[44px] px-4 py-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-30 flex items-center"
                         >
                             Next <ChevronRight className="w-6 h-6 inline" />
                         </button>
@@ -206,7 +206,7 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                         <>
                             <button
                                 onClick={startStudyMode}
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
+                                className="flex items-center gap-2 px-4 py-3 min-h-[44px] bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg transition-all"
                             >
                                 <BookOpen className="w-4 h-4" />
                                 Study Mode
@@ -214,7 +214,7 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
                             <button
                                 onClick={onClear}
                                 disabled={isLoading}
-                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-200 dark:border-red-900"
+                                className="min-w-[44px] min-h-[44px] p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-200 dark:border-red-900 flex items-center justify-center"
                                 title="Clear All Cards"
                             >
                                 <Trash2 className="w-5 h-5" />

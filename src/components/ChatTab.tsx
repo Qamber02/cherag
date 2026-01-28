@@ -79,10 +79,10 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                     {onClearChat && (
                         <button
                             onClick={onClearChat}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            className="min-w-[44px] min-h-[44px] p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center"
                             title="Clear chat"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5" />
                         </button>
                     )}
                 </div>
@@ -186,26 +186,25 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                                         )}
                                     </div>
 
-                                    {/* Message Actions */}
                                     {msg.role === 'assistant' && (
-                                        <div className="absolute -bottom-3 left-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute -bottom-5 left-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100">
                                             <button
                                                 onClick={() => copyToClipboard(msg.content, msgId)}
-                                                className="p-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                                className="min-w-[36px] min-h-[36px] p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
                                                 title="Copy"
                                             >
                                                 {copiedId === msgId ? (
-                                                    <Check className="w-3 h-3 text-green-500" />
+                                                    <Check className="w-4 h-4 text-green-500" />
                                                 ) : (
-                                                    <Copy className="w-3 h-3 text-gray-400" />
+                                                    <Copy className="w-4 h-4 text-gray-400" />
                                                 )}
                                             </button>
                                             <button
                                                 onClick={() => onSendMessage(`Regenerate: ${messages[idx - 1]?.content || 'previous response'}`)}
-                                                className="p-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                                className="min-w-[36px] min-h-[36px] p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
                                                 title="Regenerate"
                                             >
-                                                <RotateCcw className="w-3 h-3 text-gray-400" />
+                                                <RotateCcw className="w-4 h-4 text-gray-400" />
                                             </button>
                                         </div>
                                     )}

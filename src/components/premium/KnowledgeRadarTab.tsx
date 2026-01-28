@@ -55,7 +55,7 @@ export default function KnowledgeRadarTab({
     onRecordAnswer,
 }: KnowledgeRadarTabProps) {
     const [selectedConcept, setSelectedConcept] = useState<ConceptNode | null>(null);
-    const [viewMode, setViewMode] = useState<'graph' | 'list' | 'gaps'>('graph');
+    const [viewMode, setViewMode] = useState<'list' | 'gaps'>('list');
 
     // Active Learning State
     const [lessonStep, setLessonStep] = useState<'overview' | 'loading' | 'learn' | 'quiz' | 'result'>('overview');
@@ -248,7 +248,7 @@ export default function KnowledgeRadarTab({
 
                 {/* View Mode Tabs */}
                 <div className="flex gap-2 mt-4">
-                    {(['graph', 'list', 'gaps'] as const).map((mode) => (
+                    {(['list', 'gaps'] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setViewMode(mode)}
@@ -257,7 +257,7 @@ export default function KnowledgeRadarTab({
                                 : 'bg-secondary hover:bg-secondary/80 text-foreground'
                                 }`}
                         >
-                            {mode === 'gaps' ? 'Knowledge Gaps' : mode}
+                            {mode === 'gaps' ? 'Knowledge Gaps' : 'Concepts'}
                         </button>
                     ))}
                 </div>
@@ -323,107 +323,59 @@ export default function KnowledgeRadarTab({
                             ))
                         )}
                     </div>
-                ) : viewMode === 'list' ? (
-                    // Optimal Learning Order
+                ) : (
+                    // Concepts List View (Optimal Learning Order)
                     <div className="space-y-2">
                         <h3 className="text-sm font-medium text-muted-foreground mb-4">
                             Optimal Learning Order
                         </h3>
-                        {learningOrder.map((concept, index) => (
-                            <div
-                                key={concept.id}
-                                onClick={() => setSelectedConcept(concept)}
-                                className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${selectedConcept?.id === concept.id
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-border bg-card hover:border-primary/50'
-                                    }`}
-                            >
-                                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm font-medium">
-                                    {index + 1}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium text-foreground">{concept.name}</span>
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${getComplexityBadge(concept.complexity)}`}>
-                                            {concept.complexity}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-1">
-                                        {concept.description}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-right">
-                                        <div className={`text-lg font-bold ${getMasteryColor(concept.mastery)}`}>
-                                            {Math.round(concept.mastery)}%
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">mastery</div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    // Graph View (Simplified for now)
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {knowledgeGraph.nodes.map((concept) => {
+                        {learningOrder.map((concept, index) => {
                             const prereqs = findPrerequisites(knowledgeGraph, concept.id);
-                            const dependents = findDependents(knowledgeGraph, concept.id);
                             const locked = isLocked(concept);
 
                             return (
                                 <div
                                     key={concept.id}
-                                    onClick={() => setSelectedConcept(concept)}
-                                    className={`p-4 rounded-xl border cursor-pointer transition-all relative overflow-hidden ${selectedConcept?.id === concept.id
-                                        ? 'border-primary bg-primary/5 shadow-lg'
+                                    onClick={() => !locked && setSelectedConcept(concept)}
+                                    className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${selectedConcept?.id === concept.id
+                                        ? 'border-primary bg-primary/5'
                                         : 'border-border bg-card hover:border-primary/50'
-                                        } ${locked ? 'opacity-75 grayscale-[0.5]' : ''}`}
+                                        } ${locked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 >
-                                    {locked && (
-                                        <div className="absolute top-2 right-2 text-muted-foreground/50">
-                                            <Lock className="w-5 h-5" />
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div>
-                                            <h3 className="font-semibold text-foreground">{concept.name}</h3>
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${locked ? 'bg-muted' : 'bg-secondary'}`}>
+                                        {locked ? <Lock className="w-4 h-4" /> : index + 1}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium text-foreground">{concept.name}</span>
                                             <span className={`text-xs px-2 py-0.5 rounded-full ${getComplexityBadge(concept.complexity)}`}>
                                                 {concept.complexity}
                                             </span>
+                                            {prereqs.length > 0 && locked && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    Requires: {prereqs.map(p => p.name).join(', ')}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className={`text-lg font-bold ${getMasteryColor(concept.mastery)}`}>
-                                            {Math.round(concept.mastery)}%
+                                        <p className="text-sm text-muted-foreground line-clamp-1">
+                                            {concept.description}
+                                        </p>
+                                        {/* Progress bar */}
+                                        <div className="mt-2 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full ${getMasteryBg(concept.mastery)} transition-all duration-500`}
+                                                style={{ width: `${concept.mastery}%` }}
+                                            />
                                         </div>
                                     </div>
-
-                                    {/* Mastery Bar */}
-                                    <div className="h-2 bg-secondary rounded-full overflow-hidden mb-3">
-                                        <div
-                                            className={`h-full ${getMasteryBg(concept.mastery)} transition-all duration-500`}
-                                            style={{ width: `${concept.mastery}%` }}
-                                        />
-                                    </div>
-
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                                        {concept.description}
-                                    </p>
-
-                                    {/* Dependencies */}
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                        {prereqs.length > 0 && (
-                                            <span>{prereqs.length} prerequisite{prereqs.length > 1 ? 's' : ''}</span>
-                                        )}
-                                        {dependents.length > 0 && (
-                                            <span>{dependents.length} dependent{dependents.length > 1 ? 's' : ''}</span>
-                                        )}
-                                        {concept.stressTested && (
-                                            <span className="flex items-center gap-1 text-emerald-500">
-                                                <CheckCircle2 className="w-3 h-3" /> Tested
-                                            </span>
-                                        )}
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                        <div className="text-right">
+                                            <div className={`text-lg font-bold ${getMasteryColor(concept.mastery)}`}>
+                                                {Math.round(concept.mastery)}%
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">mastery</div>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                                     </div>
                                 </div>
                             );
@@ -559,7 +511,7 @@ export default function KnowledgeRadarTab({
                                                 <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Not quite...</h3>
                                                 <p className="text-foreground font-medium mb-1">Correct Answer:</p>
                                                 <p className="text-muted-foreground mb-6">
-                                                    {lessonData.quiz.options[lessonData.quiz.correct_index]}
+                                                    {lessonData.quiz.options[lessonData.quiz.correct_index || 0]}
                                                     <br />
                                                     <span className="text-sm italic mt-2 block">{lessonData.quiz.explanation}</span>
                                                 </p>
@@ -575,11 +527,7 @@ export default function KnowledgeRadarTab({
                                 ) : (
                                     // Default Overview View
                                     <>
-                                        <p className="text-muted-foreground leading-relaxed mb-6">
-                                            {selectedConcept.description}
-                                        </p>
-
-                                        {/* Action Button */}
+                                        {/* Action Button - Moved to top for better visibility */}
                                         <div className="mb-6">
                                             {isLocked(selectedConcept) ? (
                                                 <div className="w-full py-3 bg-secondary/50 border border-secondary text-muted-foreground rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
@@ -596,6 +544,10 @@ export default function KnowledgeRadarTab({
                                                 </button>
                                             )}
                                         </div>
+
+                                        <p className="text-muted-foreground leading-relaxed mb-6">
+                                            {selectedConcept.description}
+                                        </p>
 
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <div className="bg-secondary/20 p-4 rounded-xl">

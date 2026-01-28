@@ -45,8 +45,25 @@ export default function ExamEngineTab({
     const [syllabus, setSyllabus] = useState<SyllabusAnalysisResult | null>(null);
     const [readiness, setReadiness] = useState<ReadinessResult | null>(null);
     const [mode, setMode] = useState<'probability' | 'simulation' | 'stress-test'>('probability');
-    const [examDays, setExamDays] = useState(7);
-    const [examHours, setExamHours] = useState(2);
+    const [examDays, setExamDays] = useState('7');
+    const [examHours, setExamHours] = useState('2');
+
+    // Validation handlers for numeric inputs
+    const handleDaysBlur = () => {
+        const num = parseInt(examDays, 10);
+        if (isNaN(num) || num < 1) setExamDays('1');
+        else if (num > 365) setExamDays('365');
+    };
+
+    const handleHoursBlur = () => {
+        const num = parseInt(examHours, 10);
+        if (isNaN(num) || num < 1) setExamHours('1');
+        else if (num > 8) setExamHours('8');
+    };
+
+    // Safe getters for numeric calculations
+    const getExamDaysNum = () => parseInt(examDays, 10) || 7;
+    const getExamHoursNum = () => parseInt(examHours, 10) || 2;
 
     // Exam Simulation State
     const [isTakingExam, setIsTakingExam] = useState(false);
@@ -143,7 +160,7 @@ export default function ExamEngineTab({
         return (
             <ExamSimulator
                 questions={examQuestions}
-                durationMinutes={examHours * 60}
+                durationMinutes={getExamHoursNum() * 60}
                 onComplete={handleExamComplete}
                 onCancel={() => setIsTakingExam(false)}
             />
@@ -187,23 +204,23 @@ export default function ExamEngineTab({
                     <div className="flex items-center gap-4">
                         <label className="text-sm text-muted-foreground w-32">Days until exam:</label>
                         <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             value={examDays}
-                            onChange={(e) => setExamDays(parseInt(e.target.value) || 7)}
+                            onChange={(e) => setExamDays(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handleDaysBlur}
                             className="flex-1 px-4 py-2 bg-secondary rounded-lg border border-border text-foreground"
-                            min={1}
-                            max={365}
                         />
                     </div>
                     <div className="flex items-center gap-4">
                         <label className="text-sm text-muted-foreground w-32">Exam duration:</label>
                         <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             value={examHours}
-                            onChange={(e) => setExamHours(parseInt(e.target.value) || 2)}
+                            onChange={(e) => setExamHours(e.target.value.replace(/[^0-9]/g, ''))}
+                            onBlur={handleHoursBlur}
                             className="flex-1 px-4 py-2 bg-secondary rounded-lg border border-border text-foreground"
-                            min={1}
-                            max={8}
                         />
                         <span className="text-sm text-muted-foreground">hours</span>
                     </div>
@@ -244,7 +261,7 @@ export default function ExamEngineTab({
                                 {syllabus?.exam_title || 'Exam Engine'}
                             </h1>
                             <p className="text-sm text-muted-foreground">
-                                {syllabus?.total_topics} topics • {examDays} days remaining
+                                {syllabus?.total_topics} topics • {getExamDaysNum()} days remaining
                             </p>
                         </div>
                     </div>
@@ -402,7 +419,7 @@ export default function ExamEngineTab({
                                 <div className="text-xs text-muted-foreground">Topics</div>
                             </div>
                             <div className="bg-card border border-border rounded-xl p-4 text-center">
-                                <div className="text-2xl font-bold text-foreground">{examHours * 60}</div>
+                                <div className="text-2xl font-bold text-foreground">{getExamHoursNum() * 60}</div>
                                 <div className="text-xs text-muted-foreground">Minutes</div>
                             </div>
                             <div className="bg-card border border-border rounded-xl p-4 text-center">

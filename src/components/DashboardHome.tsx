@@ -34,9 +34,9 @@ export default function DashboardHome({
         <div className="w-full">
             {/* Mobile-first grid: 1 column default, 2 on md, 3 on lg */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-4 md:px-6 lg:px-8 section-spacing">
-                {/* Upload Drop Zone - Touch Optimized */}
+                {/* Upload Drop Zone - Touch Optimized - Order 1 on all screens */}
                 <div
-                    className="glass-card-premium rounded-2xl md:rounded-3xl p-6 md:p-8 cursor-pointer hover:shadow-2xl transition-all col-span-1 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden active:scale-[0.99]"
+                    className="glass-card-premium rounded-2xl md:rounded-3xl p-5 md:p-8 cursor-pointer hover:shadow-2xl transition-all col-span-1 focus:outline-none focus:ring-2 focus:ring-primary/50 group relative overflow-hidden active:scale-[0.99] order-1"
                     onClick={() => fileInputRef.current?.click()}
                     role="button"
                     tabIndex={0}
@@ -82,8 +82,8 @@ export default function DashboardHome({
                     )}
                 </div>
 
-                {/* Recent Summary Card */}
-                <div className="glass-card rounded-2xl p-4 md:p-6 col-span-1">
+                {/* Recent Summary Card - Order 3 on mobile, 2 on desktop */}
+                <div className="glass-card rounded-2xl p-4 md:p-6 col-span-1 order-3 md:order-2">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">Recent Summaries</h3>
                         <button
@@ -120,9 +120,8 @@ export default function DashboardHome({
                     )}
                 </div>
 
-                {/* AI Flashcards Preview */}
-                {/* AI Flashcards Preview */}
-                <div className="glass-card-premium rounded-3xl p-8 col-span-1 flex flex-col">
+                {/* AI Flashcards Preview - Order 4 on mobile, 3 on desktop */}
+                <div className="glass-card-premium rounded-2xl md:rounded-3xl p-5 md:p-8 col-span-1 flex flex-col order-4 md:order-3">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
                             <Layers className="w-5 h-5 text-indigo-500" /> Flashcards
@@ -156,8 +155,8 @@ export default function DashboardHome({
                     )}
                 </div>
 
-                {/* Quick Actions - Touch Optimized */}
-                <div className="glass-card-premium rounded-2xl md:rounded-3xl p-6 md:p-8 col-span-1 md:col-span-2 xl:col-span-1">
+                {/* Quick Actions - Touch Optimized - Order 2 on mobile (priority!) */}
+                <div className="glass-card-premium rounded-2xl md:rounded-3xl p-5 md:p-8 col-span-1 md:col-span-2 xl:col-span-1 order-2 md:order-4">
                     <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-4 md:mb-6">Quick Actions</h3>
                     <div className="grid grid-cols-1 gap-3 md:gap-4">
                         <button
@@ -191,8 +190,8 @@ export default function DashboardHome({
                     </div>
                 </div>
 
-                {/* Study Shortcuts */}
-                <div className="glass-card-premium rounded-3xl p-8 col-span-1 lg:col-span-2">
+                {/* Study Shortcuts - Order 5 on all screens */}
+                <div className="glass-card-premium rounded-2xl md:rounded-3xl p-5 md:p-8 col-span-1 lg:col-span-2 order-5">
                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Key Concepts Extracted</h3>
                     {flashcards.length > 0 ? (
                         <div className="flex flex-wrap gap-3">

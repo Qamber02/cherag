@@ -306,17 +306,17 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                 handleGenerateQuizzes();
                             }}
                             disabled={isLoading || !hasContext}
-                            className="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors disabled:opacity-50"
+                            className="min-w-[44px] min-h-[44px] p-2.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center"
                             title={hasContext ? "Regenerate from document" : "Upload a document first"}
                         >
-                            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
                         </button>
                         <button
                             onClick={clearQuizzes}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            className="min-w-[44px] min-h-[44px] p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center"
                             title="Clear all quizzes"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5" />
                         </button>
                     </div>
                 </div>

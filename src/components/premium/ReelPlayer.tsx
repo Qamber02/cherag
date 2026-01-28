@@ -31,15 +31,15 @@ export default function ReelPlayer({
     // Add origin to fix localhost playback issues
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-    // Use saved URL ref to prevent unnecessary reloads
     // Use centralized video context
-    const { activePlayerId } = useVideoContext() || {};
+    const { activePlayerId, activeTab } = useVideoContext() || {};
 
     // Determine play state: 
-    // 1. Must be active prop from parent (scroll position)
-    // 2. Must match global active ID (single player enforcement)
-    // 3. AutoPlay must be enabled
-    const shouldPlay = isActive && (activePlayerId === clip.id || activePlayerId === null);
+    // 1. Must be on the videos tab (activeTab === 'videos' or null for initial)
+    // 2. Must be active prop from parent (scroll position)
+    // 3. Must match global active ID (single player enforcement) OR be the only active player
+    const isOnVideosTab = !activeTab || activeTab === 'videos';
+    const shouldPlay = isOnVideosTab && isActive && (activePlayerId === clip.id || activePlayerId === null);
 
     // Note: We use autoplay=0 initially and control via postMessage to prevent race conditions
     const youtubeUrlRef = useRef(`https://www.youtube.com/embed/${clip.video_id}?enablejsapi=1&version=3&playerapiid=ytplayer&autoplay=0&controls=1&rel=0&modestbranding=1&playsinline=1&start=${clip.start_time}&end=${clip.end_time}&origin=${origin}`);
