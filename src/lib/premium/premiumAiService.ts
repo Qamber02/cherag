@@ -915,10 +915,11 @@ import type { MicroLessonResult } from './prompts';
 
 export async function generateActiveLesson(
     concept: string,
-    context: string
+    context: string,
+    previousQuestions: string[] = []
 ): Promise<MicroLessonResult> {
     const response = await callPremiumAI(
-        ACTIVE_LEARNING_PROMPTS.microLesson(concept, context),
+        ACTIVE_LEARNING_PROMPTS.microLesson(concept, context, previousQuestions),
         `active_lesson_${concept}`,
         { maxTokens: 4000, useCache: false } // Always fresh to avoid repeating questions
     );
@@ -927,17 +928,26 @@ export async function generateActiveLesson(
 
     // Sanitize Quiz Data & Resolve Index from Text
     if (result?.quiz?.options && Array.isArray(result.quiz.options)) {
+        // Helper to normalize text (strip prefixes like "A.", "1.", whitespace, lowercase)
+        const normalize = (str: string) => str.replace(/^[A-D1-4][\.\)]\s*/i, '').trim().toLowerCase();
+
         // Resolve index if text provided
         if (result.quiz.correct_answer_text) {
-            const textIndex = result.quiz.options.findIndex(opt =>
-                opt.toLowerCase().trim() === result.quiz.correct_answer_text.toLowerCase().trim()
-            );
+            const target = normalize(result.quiz.correct_answer_text);
+
+            // 1. Try Exact Normalized Match
+            let textIndex = result.quiz.options.findIndex(opt => normalize(opt) === target);
+
+            // 2. If fail, try substring match (e.g. target is "Blue" and option is "It is Blue")
+            if (textIndex === -1) {
+                textIndex = result.quiz.options.findIndex(opt => normalize(opt).includes(target) || target.includes(normalize(opt)));
+            }
 
             if (textIndex !== -1) {
                 result.quiz.correct_index = textIndex;
-                console.log(`[Premium] Resolved answer index ${textIndex} from text match`);
+                console.log(`[Premium] Resolved answer index ${textIndex} from text match ("${target}")`);
             } else {
-                console.warn(`[Premium] Could not match answer text "${result.quiz.correct_answer_text}" to options. Falling back to heuristic/default.`);
+                console.warn(`[Premium] Could not match answer text "${result.quiz.correct_answer_text}" to options. Falling back to default.`);
             }
         }
 

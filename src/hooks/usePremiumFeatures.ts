@@ -60,7 +60,7 @@ interface UsePremiumFeaturesReturn {
     remixConceptsAction: (concepts: Array<{ name: string; description: string }>) => Promise<any>;
 
     // Active Learning
-    generateActiveLessonAction: (concept: string, context: string) => Promise<MicroLessonResult | null>;
+    generateActiveLessonAction: (concept: string, context: string, previousQuestions?: string[]) => Promise<MicroLessonResult | null>;
 
     // Session tracking
     startStudySession: () => void;
@@ -400,10 +400,10 @@ Student (AI):`;
         analyzeMentalModelAction,
 
         // Active Learning
-        generateActiveLessonAction: async (concept: string, context: string) => {
+        generateActiveLessonAction: async (concept: string, context: string, previousQuestions: string[] = []) => {
             setIsLoading(true);
             try {
-                return await generateActiveLesson(concept, context);
+                return await generateActiveLesson(concept, context, previousQuestions);
             } catch (err: any) {
                 setError(err.message);
                 return null;

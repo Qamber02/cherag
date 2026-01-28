@@ -5,10 +5,14 @@ export const ACTIVE_LEARNING_PROMPTS = {
   /**
    * Generate a micro-lesson for a specific concept
    */
-  microLesson: (concept: string, context: string) => `Create a short, engaging micro-lesson for the concept: "${concept}".
+  microLesson: (concept: string, context: string, previousQuestions: string[] = []) => `Create a short, engaging micro-lesson for the concept: "${concept}".
 
 Context from material:
 ${context.slice(0, 1000)}
+
+${previousQuestions.length > 0 ? `PREVIOUSLY ASKED QUESTIONS (DO NOT REUSE):
+${previousQuestions.map(q => `- ${q}`).join('\n')}
+` : ''}
 
 Return as JSON:
 {
@@ -19,9 +23,9 @@ Return as JSON:
     "key_takeaway": "One sentence summary to remember"
   },
   "quiz": {
-    "question": "A multiple-choice question to test understanding of the MAIN concept above",
+    "question": "A multiple-choice question to test understanding of the MAIN concept above. MUST BE DIFFERENT from previous questions.",
     "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correct_answer_text": "The exact text content of the correct option",
+    "correct_answer_text": "The exact text content of the correct option (copy-paste only the text, NO prefixes like 'A.')",
     "explanation": "Why the correct answer is right"
   }
 }
@@ -29,7 +33,9 @@ Return as JSON:
 RULES:
 - Keep it concisc! Total reading time under 1 minute.
 - Tone: Encouraging, like a smart tutor.
-- The quiz question should check if they understood the explanation.
+- VITAL: Do NOT reuse any question from the 'PREVIOUSLY ASKED' list.
+- VITAL: Focus on a DIFFERENT angle or sub-topic if previous questions exist.
+- Quiz Options: Return ONLY the text (e.g. 'Blue'), do NOT add 'A.' or '1.' prefixes.
 - copy the correct option text EXACTLY to correct_answer_text.
 - No markdown in values, only valid JSON.`,
 };

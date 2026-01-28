@@ -1,7 +1,7 @@
 // Knowledge Radar Tab
 // Interactive visualization of concept dependencies and knowledge gaps
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
     Radar,
     Target,
@@ -40,8 +40,19 @@ interface KnowledgeRadarTabProps {
     onAnalyze: (content: string) => Promise<any>;
     knowledgeGraph: KnowledgeGraph | null;
     isLoading: boolean;
-    onGenerateLesson: (concept: string, context: string) => Promise<MicroLessonResult | null>;
+    onGenerateLesson: (concept: string, context: string, previousQuestions?: string[]) => Promise<MicroLessonResult | null>;
     onRecordAnswer: (correct: boolean, timeMs: number, conceptId?: string) => void;
+}
+
+// FIXED: Proper lesson state machine
+type LessonState = 'idle' | 'loading' | 'question' | 'answered' | 'feedback' | 'explanation' | 'completed';
+
+interface LessonSession {
+    attemptCount: number;
+    correctCount: number;
+    totalTime: number;
+    questionHistory: string[];
+    currentQuestionId: string | null;
 }
 
 export default function KnowledgeRadarTab({
@@ -57,11 +68,21 @@ export default function KnowledgeRadarTab({
     const [selectedConcept, setSelectedConcept] = useState<ConceptNode | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'gaps'>('list');
 
-    // Active Learning State
-    const [lessonStep, setLessonStep] = useState<'overview' | 'loading' | 'learn' | 'quiz' | 'result'>('overview');
+    // FIXED: Proper state machine implementation
+    const [lessonState, setLessonState] = useState<LessonState>('idle');
     const [lessonData, setLessonData] = useState<MicroLessonResult | null>(null);
     const [quizSelected, setQuizSelected] = useState<number | null>(null);
     const [lessonStartTime, setLessonStartTime] = useState<number>(0);
+    const [isCorrect, setIsCorrect] = useState<boolean>(false);
+
+    // FIXED: Comprehensive session tracking
+    const [lessonSession, setLessonSession] = useState<LessonSession>({
+        attemptCount: 0,
+        correctCount: 0,
+        totalTime: 0,
+        questionHistory: [],
+        currentQuestionId: null,
+    });
 
     // Calculate derived data
     const coverage = useMemo(() => {
@@ -91,36 +112,152 @@ export default function KnowledgeRadarTab({
         return prereqs.some(p => p.mastery < 60);
     };
 
-    const handleStartLesson = async () => {
-        if (!selectedConcept) return;
-        setLessonStep('loading');
-        setLessonStartTime(Date.now());
-
-        const data = await onGenerateLesson(selectedConcept.name, context);
-        if (data) {
-            setLessonData(data);
-            setLessonStep('learn');
-        } else {
-            setLessonStep('overview'); // Fallback
-        }
-    };
-
-    const handleQuizSubmit = () => {
-        if (quizSelected === null || !lessonData || !selectedConcept) return;
-
-        const isCorrect = quizSelected === lessonData.quiz.correct_index;
-        const timeSpent = Date.now() - lessonStartTime;
-
-        onRecordAnswer(isCorrect, timeSpent, selectedConcept.id);
-        setLessonStep('result');
-    };
-
-    const handleCloseModal = () => {
-        setSelectedConcept(null);
-        setLessonStep('overview');
+    // FIXED: Reset all lesson state when starting fresh
+    const resetLessonState = useCallback(() => {
+        setLessonState('idle');
         setLessonData(null);
         setQuizSelected(null);
-    };
+        setIsCorrect(false);
+        setLessonSession({
+            attemptCount: 0,
+            correctCount: 0,
+            totalTime: 0,
+            questionHistory: [],
+            currentQuestionId: null,
+        });
+    }, []);
+
+    // FIXED: Proper lesson start with state machine
+    const handleStartLesson = useCallback(async () => {
+        if (!selectedConcept) return;
+
+        setLessonState('loading');
+        setLessonStartTime(Date.now());
+        setQuizSelected(null);
+        setIsCorrect(false);
+
+        try {
+            // Pass question history to avoid repeats
+            const data = await onGenerateLesson(
+                selectedConcept.name,
+                context,
+                lessonSession.questionHistory
+            );
+
+            if (data) {
+                setLessonData(data);
+                // FIXED: Track question to prevent repeats
+                setLessonSession(prev => ({
+                    ...prev,
+                    questionHistory: [...prev.questionHistory, data.quiz.question],
+                    currentQuestionId: data.quiz.question, // Use question as ID
+                    attemptCount: prev.attemptCount + 1,
+                }));
+                // FIXED: Move to explanation first, then question
+                setLessonState('explanation');
+            } else {
+                setLessonState('idle');
+            }
+        } catch (error) {
+            console.error('Failed to generate lesson:', error);
+            setLessonState('idle');
+        }
+    }, [selectedConcept, context, lessonSession.questionHistory, onGenerateLesson]);
+
+    // FIXED: Move from explanation to question
+    const handleStartQuiz = useCallback(() => {
+        if (lessonState === 'explanation') {
+            setLessonState('question');
+        }
+    }, [lessonState]);
+
+    // FIXED: Handle answer submission with proper state transitions
+    const handleQuizSubmit = useCallback(() => {
+        if (quizSelected === null || !lessonData || !selectedConcept) return;
+
+        const correct = quizSelected === lessonData.quiz.correct_index;
+        const timeSpent = Date.now() - lessonStartTime;
+
+        setIsCorrect(correct);
+
+        // FIXED: Record answer immediately
+        onRecordAnswer(correct, timeSpent, selectedConcept.id);
+
+        // FIXED: Update session stats
+        setLessonSession(prev => ({
+            ...prev,
+            correctCount: prev.correctCount + (correct ? 1 : 0),
+            totalTime: prev.totalTime + timeSpent,
+        }));
+
+        // FIXED: Transition to feedback state
+        setLessonState('feedback');
+    }, [quizSelected, lessonData, selectedConcept, lessonStartTime, onRecordAnswer]);
+
+    // FIXED: Handle "Next" button - load new question
+    const handleNext = useCallback(async () => {
+        if (!selectedConcept) return;
+
+        // Check if we should complete the lesson (e.g., after 5 questions)
+        const shouldComplete = lessonSession.attemptCount >= 5;
+
+        if (shouldComplete) {
+            setLessonState('completed');
+            return;
+        }
+
+        // FIXED: Reset question-specific state, keep session data
+        setQuizSelected(null);
+        setIsCorrect(false);
+        setLessonData(null);
+        setLessonState('loading');
+        setLessonStartTime(Date.now());
+
+        try {
+            // FIXED: Generate NEW question with updated history
+            const data = await onGenerateLesson(
+                selectedConcept.name,
+                context,
+                lessonSession.questionHistory
+            );
+
+            if (data) {
+                // FIXED: Ensure it's actually a new question
+                if (!lessonSession.questionHistory.includes(data.quiz.question)) {
+                    setLessonData(data);
+                    setLessonSession(prev => ({
+                        ...prev,
+                        questionHistory: [...prev.questionHistory, data.quiz.question],
+                        currentQuestionId: data.quiz.question,
+                        attemptCount: prev.attemptCount + 1,
+                    }));
+                    setLessonState('explanation');
+                } else {
+                    // If somehow we got a repeat, try again
+                    console.warn('Received duplicate question, retrying...');
+                    handleNext();
+                }
+            } else {
+                setLessonState('idle');
+            }
+        } catch (error) {
+            console.error('Failed to load next question:', error);
+            setLessonState('idle');
+        }
+    }, [selectedConcept, context, lessonSession, onGenerateLesson]);
+
+    // FIXED: Handle retry (wrong answer)
+    const handleRetry = useCallback(() => {
+        setQuizSelected(null);
+        setIsCorrect(false);
+        setLessonState('question');
+    }, []);
+
+    // FIXED: Close modal and reset everything
+    const handleCloseModal = useCallback(() => {
+        setSelectedConcept(null);
+        resetLessonState();
+    }, [resetLessonState]);
 
     // Get mastery color
     const getMasteryColor = (mastery: number): string => {
@@ -384,7 +521,7 @@ export default function KnowledgeRadarTab({
                 )}
             </div>
 
-            {/* Selected Concept Detail Modal / Active Learning Wizard */}
+            {/* FIXED: Selected Concept Detail Modal / Active Learning Wizard with proper state machine */}
             <AnimatePresence>
                 {selectedConcept && (
                     <motion.div
@@ -399,197 +536,275 @@ export default function KnowledgeRadarTab({
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[85vh] flex flex-col"
+                            className="bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[92vh] md:max-h-[90vh] flex flex-col"
                         >
-                            {/* Modal Header */}
-                            <div className="p-6 border-b border-border flex items-start justify-between bg-secondary/30">
-                                <div>
-                                    <h3 className="text-xl font-bold text-foreground mb-1">{selectedConcept.name}</h3>
-                                    <div className="flex items-center gap-2">
+                            {/* Modal Header - Compact */}
+                            <div className="p-4 md:p-5 border-b border-border flex items-start justify-between bg-secondary/30 shrink-0">
+                                <div className="min-w-0 flex-1 pr-2">
+                                    <h3 className="text-lg md:text-xl font-bold text-foreground mb-1 truncate">{selectedConcept.name}</h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${getComplexityBadge(selectedConcept.complexity)}`}>
                                             {selectedConcept.complexity}
                                         </span>
-                                        <div className={`text-sm font-bold ${getMasteryColor(selectedConcept.mastery)}`}>
-                                            {Math.round(selectedConcept.mastery)}% Mastery
+                                        <div className={`text-xs md:text-sm font-bold ${getMasteryColor(selectedConcept.mastery)}`}>
+                                            {Math.round(selectedConcept.mastery)}%
                                         </div>
+                                        {/* FIXED: Show progress indicator during lesson */}
+                                        {lessonState !== 'idle' && lessonSession.attemptCount > 0 && (
+                                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                Q{lessonSession.attemptCount} • {lessonSession.correctCount}✓
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <button
                                     onClick={handleCloseModal}
-                                    className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
+                                    className="p-1.5 md:p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
                                 >
                                     <X className="w-5 h-5 text-muted-foreground" />
                                 </button>
                             </div>
 
-                            {/* Modal Content - Wizard Steps */}
-                            <div className="p-6 overflow-y-auto flex-1">
-                                {lessonStep === 'loading' ? (
-                                    <div className="flex flex-col items-center justify-center h-64">
-                                        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
-                                        <p className="text-muted-foreground animate-pulse">Generating your personalized lesson...</p>
-                                    </div>
-                                ) : lessonStep === 'learn' && lessonData ? (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/20">
-                                            <h4 className="font-bold text-primary mb-2 flex items-center gap-2">
-                                                <Lightbulb className="w-4 h-4" /> Key Idea
-                                            </h4>
-                                            <p className="text-foreground text-lg font-medium">{lessonData.explanation.core_concept}</p>
-                                        </div>
-
-                                        <div className="prose prose-sm dark:prose-invert max-w-none">
-                                            <p className="lead italic text-muted-foreground">"{lessonData.explanation.hook}"</p>
-                                            <div className="my-4 pl-4 border-l-4 border-secondary">
-                                                <h5 className="font-semibold text-foreground mb-1">Think of it like this:</h5>
-                                                <p>{lessonData.explanation.analogy}</p>
-                                            </div>
-                                            <p className="font-medium text-foreground bg-secondary/30 p-2 rounded-lg inline-block">
-                                                💡 Takeaway: {lessonData.explanation.key_takeaway}
+                            {/* FIXED: Modal Content - State Machine Rendering with proper scroll */}
+                            <div className="overflow-y-auto flex-1 overscroll-contain">
+                                <div className="p-4 md:p-6">
+                                    {/* Loading State */}
+                                    {lessonState === 'loading' && (
+                                        <div className="flex flex-col items-center justify-center py-16 md:py-20">
+                                            <Loader2 className="w-10 h-10 md:w-12 md:h-12 animate-spin text-primary mb-3" />
+                                            <p className="text-sm md:text-base text-muted-foreground animate-pulse">
+                                                {lessonSession.attemptCount === 0
+                                                    ? 'Generating your personalized lesson...'
+                                                    : 'Loading next question...'}
                                             </p>
                                         </div>
+                                    )}
 
-                                        <button
-                                            onClick={() => setLessonStep('quiz')}
-                                            className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                                        >
-                                            Take Quick Quiz <ArrowRight className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                ) : lessonStep === 'quiz' && lessonData ? (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300">
-                                        <h4 className="text-lg font-bold text-foreground">Check Understanding</h4>
-                                        <p className="text-lg text-foreground">{lessonData.quiz.question}</p>
+                                    {/* Explanation State - FIXED: Auto-shown before question */}
+                                    {lessonState === 'explanation' && lessonData && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                            <div className="bg-primary/5 p-3 md:p-4 rounded-xl border border-primary/20">
+                                                <h4 className="font-bold text-primary text-sm md:text-base mb-2 flex items-center gap-2">
+                                                    <Lightbulb className="w-4 h-4" /> Key Idea
+                                                </h4>
+                                                <p className="text-foreground text-base md:text-lg font-medium">{lessonData.explanation.core_concept}</p>
+                                            </div>
 
-                                        <div className="space-y-2">
-                                            {lessonData.quiz.options.map((option, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => setQuizSelected(idx)}
-                                                    className={`w-full p-4 rounded-xl border text-left transition-all ${quizSelected === idx
-                                                        ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
-                                                        : 'border-border hover:bg-secondary/50'
-                                                        }`}
-                                                >
-                                                    <span className="font-bold mr-2 text-muted-foreground">{String.fromCharCode(65 + idx)}.</span>
-                                                    {option}
-                                                </button>
-                                            ))}
+                                            <div className="prose prose-sm dark:prose-invert max-w-none space-y-3">
+                                                <p className="text-sm md:text-base italic text-muted-foreground">"{lessonData.explanation.hook}"</p>
+                                                <div className="pl-3 md:pl-4 border-l-4 border-secondary">
+                                                    <h5 className="font-semibold text-sm md:text-base text-foreground mb-1">Think of it like this:</h5>
+                                                    <p className="text-sm md:text-base">{lessonData.explanation.analogy}</p>
+                                                </div>
+                                                <p className="text-sm md:text-base font-medium text-foreground bg-secondary/30 p-2 md:p-3 rounded-lg">
+                                                    💡 {lessonData.explanation.key_takeaway}
+                                                </p>
+                                            </div>
+
+                                            {/* FIXED: Clear CTA to move to quiz */}
+                                            <button
+                                                onClick={handleStartQuiz}
+                                                className="w-full py-2.5 md:py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm md:text-base"
+                                            >
+                                                Ready? Take the Quiz <ArrowRight className="w-5 h-5" />
+                                            </button>
                                         </div>
+                                    )}
 
-                                        <button
-                                            onClick={handleQuizSubmit}
-                                            disabled={quizSelected === null}
-                                            className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Submit Answer
-                                        </button>
-                                    </div>
-                                ) : lessonStep === 'result' && lessonData ? (
-                                    <div className="text-center py-8 animate-in zoom-in-95 duration-300">
-                                        {quizSelected === lessonData.quiz.correct_index ? (
-                                            <>
-                                                <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
-                                                </div>
-                                                <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-2">Correct!</h3>
-                                                <p className="text-muted-foreground mb-6">
-                                                    {lessonData.quiz.explanation}
-                                                </p>
-                                                <button
-                                                    onClick={handleCloseModal}
-                                                    className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors"
-                                                >
-                                                    Continue Learning
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                    <X className="w-10 h-10 text-red-600 dark:text-red-400" />
-                                                </div>
-                                                <h3 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Not quite...</h3>
-                                                <p className="text-foreground font-medium mb-1">Correct Answer:</p>
-                                                <p className="text-muted-foreground mb-6">
-                                                    {lessonData.quiz.options[lessonData.quiz.correct_index || 0]}
-                                                    <br />
-                                                    <span className="text-sm italic mt-2 block">{lessonData.quiz.explanation}</span>
-                                                </p>
-                                                <button
-                                                    onClick={() => setLessonStep('learn')}
-                                                    className="px-8 py-3 bg-secondary text-foreground rounded-xl font-bold hover:bg-secondary/80 transition-colors"
-                                                >
-                                                    Review Lesson
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                ) : (
-                                    // Default Overview View
-                                    <>
-                                        {/* Action Button - Moved to top for better visibility */}
-                                        <div className="mb-6">
-                                            {isLocked(selectedConcept) ? (
-                                                <div className="w-full py-3 bg-secondary/50 border border-secondary text-muted-foreground rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
-                                                    <Lock className="w-5 h-5" />
-                                                    <span>Locked - Master Prerequisites First</span>
-                                                </div>
+                                    {/* Question State - FIXED: Only show quiz, not explanation */}
+                                    {lessonState === 'question' && lessonData && (
+                                        <div className="space-y-4 md:space-y-5 animate-in fade-in slide-in-from-right-8 duration-300">
+                                            <h4 className="text-base md:text-lg font-bold text-foreground">Check Your Understanding</h4>
+                                            <p className="text-base md:text-lg text-foreground leading-relaxed">{lessonData.quiz.question}</p>
+
+                                            <div className="space-y-2">
+                                                {lessonData.quiz.options.map((option, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setQuizSelected(idx)}
+                                                        className={`w-full p-3 md:p-4 rounded-xl border text-left transition-all text-sm md:text-base ${quizSelected === idx
+                                                            ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                                                            : 'border-border hover:bg-secondary/50'
+                                                            }`}
+                                                    >
+                                                        <span className="font-bold mr-2 text-muted-foreground">{String.fromCharCode(65 + idx)}.</span>
+                                                        {option}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* FIXED: Proper submit button */}
+                                            <button
+                                                onClick={handleQuizSubmit}
+                                                disabled={quizSelected === null}
+                                                className="w-full py-2.5 md:py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                                            >
+                                                Submit Answer
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Feedback State - FIXED: Show result with Next/Retry buttons */}
+                                    {lessonState === 'feedback' && lessonData && (
+                                        <div className="text-center py-6 md:py-8 animate-in zoom-in-95 duration-300">
+                                            {isCorrect ? (
+                                                <>
+                                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                                                        <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <h3 className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400 mb-2">Correct!</h3>
+                                                    <p className="text-sm md:text-base text-muted-foreground mb-5 md:mb-6 px-2">
+                                                        {lessonData.quiz.explanation}
+                                                    </p>
+                                                    {/* FIXED: Always show Next button after correct answer */}
+                                                    <div className="flex gap-2 md:gap-3 w-full">
+                                                        <button
+                                                            onClick={handleCloseModal}
+                                                            className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-secondary text-foreground rounded-xl font-bold hover:bg-secondary/80 transition-colors text-sm md:text-base"
+                                                        >
+                                                            Finish
+                                                        </button>
+                                                        <button
+                                                            onClick={handleNext}
+                                                            className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
+                                                        >
+                                                            Next <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                                                        </button>
+                                                    </div>
+                                                </>
                                             ) : (
-                                                <button
-                                                    onClick={handleStartLesson}
-                                                    className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <Play className="w-5 h-5 fill-current" />
-                                                    Start Interactive Lesson
-                                                </button>
+                                                <>
+                                                    <div className="w-16 h-16 md:w-20 md:h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                                                        <X className="w-8 h-8 md:w-10 md:h-10 text-red-600 dark:text-red-400" />
+                                                    </div>
+                                                    <h3 className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Not quite...</h3>
+                                                    <p className="text-sm md:text-base text-foreground font-medium mb-1">Correct Answer:</p>
+                                                    <p className="text-sm md:text-base text-muted-foreground mb-5 md:mb-6 px-2">
+                                                        <span className="font-semibold text-foreground">{String.fromCharCode(65 + (lessonData.quiz.correct_index || 0))}. {lessonData.quiz.options[lessonData.quiz.correct_index || 0]}</span>
+                                                        <br />
+                                                        <span className="text-xs md:text-sm italic mt-2 block">{lessonData.quiz.explanation}</span>
+                                                    </p>
+                                                    {/* FIXED: Give options to retry current or move to next */}
+                                                    <div className="flex gap-2 md:gap-3 w-full">
+                                                        <button
+                                                            onClick={handleRetry}
+                                                            className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-secondary text-foreground rounded-xl font-bold hover:bg-secondary/80 transition-colors text-sm md:text-base"
+                                                        >
+                                                            Try Again
+                                                        </button>
+                                                        <button
+                                                            onClick={handleNext}
+                                                            className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm md:text-base"
+                                                        >
+                                                            Next <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                                                        </button>
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
+                                    )}
 
-                                        <p className="text-muted-foreground leading-relaxed mb-6">
-                                            {selectedConcept.description}
-                                        </p>
-
-                                        <div className="grid md:grid-cols-2 gap-6">
-                                            <div className="bg-secondary/20 p-4 rounded-xl">
-                                                <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                                                    <ArrowRight className="w-4 h-4 text-blue-500" />
-                                                    Prerequisites
-                                                </h4>
-                                                <div className="space-y-2">
-                                                    {findPrerequisites(knowledgeGraph, selectedConcept.id).length > 0 ? (
-                                                        findPrerequisites(knowledgeGraph, selectedConcept.id).map((p) => (
-                                                            <div key={p.id} className="flex items-center justify-between p-2 bg-card rounded-lg border border-border text-sm">
-                                                                <span className="font-medium text-foreground">{p.name}</span>
-                                                                <span className={`${getMasteryColor(p.mastery)} font-bold`}>{Math.round(p.mastery)}%</span>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-sm text-muted-foreground italic px-2">None required (Foundational)</div>
-                                                    )}
+                                    {/* Completed State - FIXED: Show session summary */}
+                                    {lessonState === 'completed' && (
+                                        <div className="text-center py-6 md:py-8">
+                                            <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                                                <CheckCircle2 className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                                            </div>
+                                            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">Lesson Complete!</h3>
+                                            <div className="bg-secondary/30 rounded-xl p-4 md:p-6 my-4 md:my-6 space-y-2 md:space-y-3">
+                                                <div className="flex justify-between items-center text-sm md:text-base">
+                                                    <span className="text-muted-foreground">Questions Answered:</span>
+                                                    <span className="font-bold text-foreground">{lessonSession.attemptCount}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-sm md:text-base">
+                                                    <span className="text-muted-foreground">Correct:</span>
+                                                    <span className="font-bold text-green-600 dark:text-green-400">
+                                                        {lessonSession.correctCount} ({Math.round((lessonSession.correctCount / lessonSession.attemptCount) * 100)}%)
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-sm md:text-base">
+                                                    <span className="text-muted-foreground">Total Time:</span>
+                                                    <span className="font-bold text-foreground">
+                                                        {Math.round(lessonSession.totalTime / 1000)}s
+                                                    </span>
                                                 </div>
                                             </div>
-
-                                            <div className="bg-secondary/20 p-4 rounded-xl">
-                                                <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                                                    <Lightbulb className="w-4 h-4 text-amber-500" />
-                                                    Unlocks Next
-                                                </h4>
-                                                <div className="space-y-2">
-                                                    {findDependents(knowledgeGraph, selectedConcept.id).length > 0 ? (
-                                                        findDependents(knowledgeGraph, selectedConcept.id).map((d) => (
-                                                            <div key={d.id} className="flex items-center justify-between p-2 bg-card rounded-lg border border-border text-sm">
-                                                                <span className="font-medium text-foreground">{d.name}</span>
-                                                                <span className={`${getMasteryColor(d.mastery)} font-bold`}>{Math.round(d.mastery)}%</span>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-sm text-muted-foreground italic px-2">End of current path</div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            <button
+                                                onClick={handleCloseModal}
+                                                className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold hover:brightness-110 transition-all text-sm md:text-base"
+                                            >
+                                                Back to Concepts
+                                            </button>
                                         </div>
-                                    </>
-                                )}
+                                    )}
+
+                                    {/* Idle State - Default Overview */}
+                                    {lessonState === 'idle' && (
+                                        <>
+                                            {/* Action Button */}
+                                            <div className="mb-4 md:mb-5">
+                                                {isLocked(selectedConcept) ? (
+                                                    <div className="w-full py-2.5 md:py-3 bg-secondary/50 border border-secondary text-muted-foreground rounded-xl flex items-center justify-center gap-2 cursor-not-allowed text-sm md:text-base">
+                                                        <Lock className="w-4 h-4 md:w-5 md:h-5" />
+                                                        <span>Locked - Master Prerequisites First</span>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleStartLesson}
+                                                        className="w-full py-2.5 md:py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
+                                                    >
+                                                        <Play className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+                                                        Start Interactive Lesson
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-4 md:mb-5">
+                                                {selectedConcept.description}
+                                            </p>
+
+                                            <div className="grid md:grid-cols-2 gap-4 md:gap-5">
+                                                <div className="bg-secondary/20 p-3 md:p-4 rounded-xl">
+                                                    <h4 className="text-xs md:text-sm font-bold text-foreground mb-2 md:mb-3 flex items-center gap-2">
+                                                        <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-500" />
+                                                        Prerequisites
+                                                    </h4>
+                                                    <div className="space-y-1.5 md:space-y-2">
+                                                        {findPrerequisites(knowledgeGraph, selectedConcept.id).length > 0 ? (
+                                                            findPrerequisites(knowledgeGraph, selectedConcept.id).map((p) => (
+                                                                <div key={p.id} className="flex items-center justify-between p-2 bg-card rounded-lg border border-border text-xs md:text-sm">
+                                                                    <span className="font-medium text-foreground truncate pr-2">{p.name}</span>
+                                                                    <span className={`${getMasteryColor(p.mastery)} font-bold whitespace-nowrap`}>{Math.round(p.mastery)}%</span>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className="text-xs md:text-sm text-muted-foreground italic px-2">None required</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-secondary/20 p-3 md:p-4 rounded-xl">
+                                                    <h4 className="text-xs md:text-sm font-bold text-foreground mb-2 md:mb-3 flex items-center gap-2">
+                                                        <Lightbulb className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-500" />
+                                                        Unlocks Next
+                                                    </h4>
+                                                    <div className="space-y-1.5 md:space-y-2">
+                                                        {findDependents(knowledgeGraph, selectedConcept.id).length > 0 ? (
+                                                            findDependents(knowledgeGraph, selectedConcept.id).map((d) => (
+                                                                <div key={d.id} className="flex items-center justify-between p-2 bg-card rounded-lg border border-border text-xs md:text-sm">
+                                                                    <span className="font-medium text-foreground truncate pr-2">{d.name}</span>
+                                                                    <span className={`${getMasteryColor(d.mastery)} font-bold whitespace-nowrap`}>{Math.round(d.mastery)}%</span>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className="text-xs md:text-sm text-muted-foreground italic px-2">End of path</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
