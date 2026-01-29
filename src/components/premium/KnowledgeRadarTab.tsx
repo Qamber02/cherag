@@ -42,6 +42,7 @@ interface KnowledgeRadarTabProps {
     isLoading: boolean;
     onGenerateLesson: (concept: string, context: string, previousQuestions?: string[]) => Promise<MicroLessonResult | null>;
     onRecordAnswer: (correct: boolean, timeMs: number, conceptId?: string) => void;
+    onCompleteLesson: (conceptId: string) => void;
 }
 
 // FIXED: Proper lesson state machine
@@ -64,6 +65,7 @@ export default function KnowledgeRadarTab({
     isLoading,
     onGenerateLesson,
     onRecordAnswer,
+    onCompleteLesson,
 }: KnowledgeRadarTabProps) {
     const [selectedConcept, setSelectedConcept] = useState<ConceptNode | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'gaps'>('list');
@@ -203,6 +205,7 @@ export default function KnowledgeRadarTab({
 
         if (shouldComplete) {
             setLessonState('completed');
+            onCompleteLesson(selectedConcept.id);
             return;
         }
 

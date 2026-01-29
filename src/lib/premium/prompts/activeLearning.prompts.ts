@@ -31,10 +31,11 @@ Return as JSON:
 }
 
 RULES:
-- Keep it concisc! Total reading time under 1 minute.
+- Keep it concise! Total reading time under 1 minute.
 - Tone: Encouraging, like a smart tutor.
 - VITAL: Do NOT reuse any question from the 'PREVIOUSLY ASKED' list.
 - VITAL: Focus on a DIFFERENT angle or sub-topic if previous questions exist.
+- VITAL: Vary the QUESTION TYPE (e.g. detailed application scenario, conceptual understanding, analyze a quote, identification).
 - Quiz Options: Return ONLY the text (e.g. 'Blue'), do NOT add 'A.' or '1.' prefixes.
 - copy the correct option text EXACTLY to correct_answer_text.
 - No markdown in values, only valid JSON.`,

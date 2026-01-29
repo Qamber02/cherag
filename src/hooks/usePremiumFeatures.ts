@@ -65,6 +65,7 @@ interface UsePremiumFeaturesReturn {
     // Session tracking
     startStudySession: () => void;
     recordAnswer: (correct: boolean, timeMs: number, conceptId?: string) => void;
+    completeLesson: (conceptId: string) => void;
     endStudySession: () => void;
 
     // Teaching Mode
@@ -282,7 +283,7 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
                         // Simple mastery update simulation for UI responsiveness
                         // Real calculation happens on server/analytics sync
                         const currentMastery = node.mastery || 0;
-                        const increment = correct ? 15 : -5; // +15% for correct, -5% for wrong
+                        const increment = correct ? 25 : -5; // +25% for correct (faster), -5% for wrong
                         const newMastery = Math.min(100, Math.max(0, currentMastery + increment));
 
                         return { ...node, mastery: newMastery };
@@ -290,6 +291,21 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
                     return node;
                 });
 
+                return { ...prevGraph, nodes: updatedNodes };
+            });
+        }
+    }, [knowledgeGraph]);
+
+    const completeLesson = useCallback((conceptId: string) => {
+        if (conceptId && knowledgeGraph) {
+            setKnowledgeGraph(prevGraph => {
+                if (!prevGraph) return null;
+                const updatedNodes = prevGraph.nodes.map(node => {
+                    if (node.id === conceptId) {
+                        return { ...node, mastery: 100 };
+                    }
+                    return node;
+                });
                 return { ...prevGraph, nodes: updatedNodes };
             });
         }
@@ -389,6 +405,7 @@ Student (AI):`;
         // Study Session
         startStudySession,
         recordAnswer,
+        completeLesson,
         endStudySession,
 
         // Teaching Mode

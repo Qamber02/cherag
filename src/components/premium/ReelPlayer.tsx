@@ -35,10 +35,10 @@ export default function ReelPlayer({
     const { activePlayerId, activeTab } = useVideoContext() || {};
 
     // Determine play state: 
-    // 1. Must be on the videos tab (activeTab === 'videos' or null for initial)
+    // 1. Must be EXPLICITLY on the videos tab.
     // 2. Must be active prop from parent (scroll position)
     // 3. Must match global active ID (single player enforcement) OR be the only active player
-    const isOnVideosTab = !activeTab || activeTab === 'videos';
+    const isOnVideosTab = activeTab === 'videos';
     const shouldPlay = isOnVideosTab && isActive && (activePlayerId === clip.id || activePlayerId === null);
 
     // Note: We use autoplay=0 initially and control via postMessage to prevent race conditions

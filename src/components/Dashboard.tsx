@@ -73,7 +73,8 @@ export default function Dashboard({ session }: DashboardProps) {
         isLoading: isPremiumLoading,
         analyzeContent,
         generateActiveLessonAction,
-        recordAnswer
+        recordAnswer,
+        completeLesson
     } = usePremiumFeatures(session.user.id);
 
     // Summary state
@@ -134,6 +135,13 @@ export default function Dashboard({ session }: DashboardProps) {
         // Notify VideoContext to pause videos when leaving videos tab
         setVideoContextTab?.(tab);
     };
+
+    // Sync initial active tab with VideoContext to prevent autoplay on load
+    useEffect(() => {
+        if (activeTab && setVideoContextTab) {
+            setVideoContextTab(activeTab);
+        }
+    }, [setVideoContextTab]); // Run once on mount when context is available
 
     // Helper to render tabs with preservation or conditional mounting
     const renderTab = (tabName: Tab, component: React.ReactNode, preserveState = true, isScrollable = true) => {
@@ -323,6 +331,7 @@ export default function Dashboard({ session }: DashboardProps) {
                                     isLoading={isPremiumLoading}
                                     onGenerateLesson={generateActiveLessonAction}
                                     onRecordAnswer={recordAnswer}
+                                    onCompleteLesson={completeLesson}
                                 />
                             </div>
                         </div>

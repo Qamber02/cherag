@@ -61,11 +61,11 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
     };
 
     return (
-        <div className="flex flex-col h-full p-3 md:p-6 overflow-y-auto">
+        <div className="flex flex-col h-full p-2 md:p-6 overflow-y-auto">
             {/* Header - stacks on mobile */}
-            <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-center md:justify-between md:mb-6">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Document Summary</h2>
-                <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-3 mb-3 md:flex-row md:items-center md:justify-between md:mb-6 shrink-0 relative">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white px-1">Document Summary</h2>
+                <div className="flex flex-wrap items-center gap-2 px-1">
                     {summary && !isEditing && (
                         <>
                             <button
@@ -73,20 +73,20 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                     navigator.clipboard.writeText(summary);
                                     // Could add toast notification here
                                 }}
-                                className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                                className="p-2.5 md:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors active:scale-95 touch-manipulation"
                                 title="Copy to clipboard"
                             >
-                                <Copy className="w-4 h-4" />
+                                <Copy className="w-5 h-5 md:w-4 md:h-4" />
                             </button>
                             {/* Download Dropdown */}
                             <div className="relative" ref={downloadMenuRef}>
                                 <button
                                     onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                                    className="flex items-center gap-1 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
+                                    className="flex items-center gap-1 p-2.5 md:p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors active:scale-95 touch-manipulation"
                                     title="Download summary"
                                 >
-                                    <Download className="w-4 h-4" />
-                                    <ChevronDown className="w-3 h-3" />
+                                    <Download className="w-5 h-5 md:w-4 md:h-4" />
+                                    <ChevronDown className="w-4 h-4 md:w-3 md:h-3" />
                                 </button>
 
                                 {showDownloadMenu && (
@@ -96,7 +96,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 downloadAsMarkdown(summary, 'summary');
                                                 setShowDownloadMenu(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
                                         >
                                             <FileDown className="w-4 h-4 text-gray-400" />
                                             <span>Markdown (.md)</span>
@@ -106,7 +106,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 downloadAsDOCX(summary, 'summary');
                                                 setShowDownloadMenu(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
                                         >
                                             <FileDown className="w-4 h-4 text-blue-500" />
                                             <span>Word (.docx)</span>
@@ -116,7 +116,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 downloadAsPDF(summary, 'summary');
                                                 setShowDownloadMenu(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
                                         >
                                             <FileDown className="w-4 h-4 text-red-500" />
                                             <span>PDF (.pdf)</span>
@@ -126,7 +126,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                             </div>
                             <button
                                 onClick={handleStartEdit}
-                                className="flex items-center space-x-1 md:space-x-2 px-2 md:px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors text-sm"
+                                className="flex items-center space-x-1 md:space-x-2 px-3 py-2.5 md:py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors text-sm active:scale-95 touch-manipulation"
                             >
                                 <Edit3 className="w-4 h-4" />
                                 <span className="hidden sm:inline">Edit</span>
@@ -134,17 +134,17 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         </>
                     )}
                     {hasUnknownContext && (
-                        <div className="relative">
+                        <div>
                             <button
                                 onClick={() => setShowOptions(!showOptions)}
-                                className="flex items-center space-x-2 px-2 md:px-3 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+                                className="flex items-center space-x-2 px-3 py-2.5 md:py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors active:scale-95 touch-manipulation"
                             >
                                 <Sliders className="w-4 h-4" />
                             </button>
 
-                            {/* Options Dropdown - Mobile friendly */}
+                            {/* Options Dropdown - Anchored to Header Right */}
                             {showOptions && (
-                                <div className="absolute right-0 md:right-0 left-0 md:left-auto top-full mt-2 w-full md:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 p-4 z-50">
+                                <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 p-4 z-50 origin-top-right">
                                     <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Customize Summary</h4>
 
                                     {/* Length Option */}
@@ -155,7 +155,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 <button
                                                     key={len}
                                                     onClick={() => setOptions({ ...options, length: len })}
-                                                    className={`flex-1 px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${options.length === len
+                                                    className={`flex-1 px-2 py-2.5 md:py-1.5 rounded-lg text-sm capitalize transition-colors touch-manipulation ${options.length === len
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
                                                         }`}
@@ -174,7 +174,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 <button
                                                     key={style}
                                                     onClick={() => setOptions({ ...options, style })}
-                                                    className={`flex-1 px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${options.style === style
+                                                    className={`flex-1 px-2 py-2.5 md:py-1.5 rounded-lg text-sm capitalize transition-colors touch-manipulation ${options.style === style
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
                                                         }`}
@@ -193,14 +193,14 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                             value={options.focus}
                                             onChange={(e) => setOptions({ ...options, focus: e.target.value })}
                                             placeholder="e.g., key concepts, definitions..."
-                                            className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 border-none outline-none text-sm"
+                                            className="w-full px-3 py-2.5 md:py-2 rounded-lg bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 border-none outline-none text-sm"
                                         />
                                     </div>
 
                                     <button
                                         onClick={handleGenerate}
                                         disabled={isLoading}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors active:scale-95 touch-manipulation"
                                     >
                                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                                         <span>Generate Summary</span>
@@ -213,7 +213,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         <button
                             onClick={() => onGenerate()}
                             disabled={isLoading}
-                            className="flex items-center space-x-1 md:space-x-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
+                            className="flex items-center space-x-1 md:space-x-2 px-4 py-2.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm active:scale-95 touch-manipulation font-medium shadow-sm"
                         >
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                             <span className="hidden sm:inline">{summary ? 'Regenerate' : 'Generate'} Summary</span>
@@ -264,9 +264,9 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                     </div>
                 ) : summary ? (
                     <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
-                        <article className="prose prose-lg prose-slate dark:prose-invert max-w-none 
+                        <article className="prose prose-sm md:prose-lg prose-slate dark:prose-invert max-w-none 
                             prose-headings:font-bold prose-headings:tracking-tight 
-                            prose-h1:text-3xl prose-h2:text-2xl 
+                            prose-h1:text-2xl md:prose-h1:text-3xl prose-h2:text-xl md:prose-h2:text-2xl 
                             prose-p:leading-relaxed prose-p:text-gray-600 dark:prose-p:text-gray-300
                             prose-li:text-gray-600 dark:prose-li:text-gray-300
                             prose-strong:text-gray-900 dark:prose-strong:text-white"

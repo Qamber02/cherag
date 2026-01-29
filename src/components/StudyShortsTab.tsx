@@ -134,7 +134,7 @@ export default function StudyShortsTab({
             scrollContainerRef.current.scrollTop = 0;
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setCurrentIndex(0);
-             
+
             setHasInitializedScroll(true);
         }
     }, [feedItems.length, hasInitializedScroll]);
@@ -178,10 +178,17 @@ export default function StudyShortsTab({
 
     const nextItem = () => {
         if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTo({
-                top: (currentIndex + 1) * scrollContainerRef.current.clientHeight,
-                behavior: 'smooth'
-            });
+            const targetIndex = currentIndex + 1;
+            // Only scroll if we have the next item
+            if (targetIndex < feedItems.length) {
+                scrollContainerRef.current.scrollTo({
+                    top: targetIndex * scrollContainerRef.current.clientHeight,
+                    behavior: 'smooth'
+                });
+            } else if (hasMore && !isLoadingMore) {
+                // If at end but more exist/waiting, trigger load manually to be safe
+                if (onLoadMore) onLoadMore();
+            }
         }
     };
 

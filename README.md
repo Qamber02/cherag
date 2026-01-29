@@ -6,6 +6,8 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 
 ### 🧠 Knowledge Intelligence
 *   **Knowledge Radar**: Visualizes concept dependencies and identifies "knowledge gaps" preventing you from understanding advanced topics.
+    *   **Dynamic Mastery**: Tracks your learning progress in real-time.
+    *   **Smart Progression**: Adapts lesson speed based on performance (5-question mastery cycles).
 *   **Confidence Meter**: Tracks your mastery over time using Spaced Repetition algorithms (SRS).
 *   **Mental Models**: Applies genius-level thinking frameworks (First Principles, Second Order Thinking, Pareto Principle) to your study topics.
 
@@ -14,6 +16,10 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 *   **Exam Simulator**: Generates realistic exam challenges based on your weak areas.
 *   **Concept Compression**: Simplified explanations for complex topics (ELI5, Analogy, Tweet-style).
 *   **Concept Remix**: Connects unrelated concepts to foster creative learning.
+
+### 📱 Mobile-First Experience
+*   **Fully Responsive**: optimized for all screen sizes, from mobile phones to large desktops.
+*   **Touch Optimizations**: Larger touch targets, swipeable interfaces, and bottom navigation for easy one-handed use.
 
 ### 🛠 Core Essentials
 *   **Intelligent Dashboard**: Upload lecture notes and documents. Supports PDF, DOCX, TXT, MD.
