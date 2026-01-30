@@ -27,8 +27,8 @@ export async function recordWatchInteraction(
         }
 
         await upsertInteraction(userId, clipId, {
-            watch_duration: watchDuration,
-            total_duration: totalDuration,
+            watch_duration: Math.round(watchDuration),
+            total_duration: Math.round(totalDuration),
             mastery_delta: masteryDelta,
             last_watched: new Date().toISOString(),
         });

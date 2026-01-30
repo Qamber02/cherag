@@ -129,6 +129,13 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
             return data.choices[0].message.content;
         }
 
+        // Handle specific error codes
+        if (response.status === 402 || data.error?.code === 402) {
+            console.warn(`[AI] DeepSeek Payment Required (402). Disabling provider for this session.`);
+            // Optionally remove key or mark as failed globally
+            return null; // Don't retry
+        }
+
         if (response.status === 429) {
             console.warn(`[AI] DeepSeek Rate Limit (429). Rotating key...`);
             keyManager.markRateLimited('deepseek');
@@ -136,7 +143,7 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
         }
 
         console.warn(`[AI] DeepSeek error:`, data);
-        return null;
+        return null; // Move to next provider
     } catch (_e) {
         console.warn(`[AI] DeepSeek failed:`, _e);
         return null;
@@ -572,7 +579,9 @@ export async function generateQuizzes(context: string, options: { count?: number
             : "Make questions of medium difficulty, focusing on application and understanding.";
 
     // Add seed instructions to the prompt to encourage variance at the model level too
-    const varianceInstruction = seed ? `Ensure questions are unique and different from previous sets. Random seed: ${seed}.` : '';
+    const varianceInstruction = seed
+        ? `Ensure questions are COMPLETELY different from any standard or previous questions. Random seed: ${seed}. Be creative and explore different angles of the topic.`
+        : 'Generate fresh, unique questions.';
 
     const prompt = `Generate ${count} multiple choice questions as a JSON array. 
 Format: [{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}]
@@ -584,6 +593,7 @@ CRITICAL RULES:
 4. Make questions educational and relevant to the content.
 5. Difficulty Level: ${difficulty}. ${difficultyPrompt}
 6. No markdown, ONLY valid JSON array
+7. UNIQUE CONTENT: Do not reuse common questions.
 ${varianceInstruction}
 
 Text:

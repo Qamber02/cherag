@@ -10,13 +10,13 @@ import {
 import type { UseClipInteractionsReturn } from '../types/videoIntelligence.types';
 
 /**
- * Validate if a string is a valid UUID format
- * Prevents "invalid input syntax for type uuid" errors when passing YouTube IDs
+ * Validate if a string is a valid Clip ID (UUID or YouTube ID)
  */
-function isValidUUID(id: string): boolean {
+function isValidClipId(id: string): boolean {
+    if (!id) return false;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const youtubeRegex = /^[a-zA-Z0-9_-]{11}$/; // Basic YouTube ID format
-    return uuidRegex.test(id) || youtubeRegex.test(id);
+    return uuidRegex.test(id) || youtubeRegex.test(id) || id.length > 5; // Relaxed check for text IDs
 }
 
 interface PendingInteraction {
@@ -72,7 +72,7 @@ export function useClipInteractions(): UseClipInteractionsReturn {
      * Record watch interaction
      */
     const recordWatch = useCallback((clipId: string, duration: number, totalDuration: number) => {
-        if (!user || !isValidUUID(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
 
         addToPending({
             userId: user.id,
@@ -87,7 +87,7 @@ export function useClipInteractions(): UseClipInteractionsReturn {
      * Record skip interaction
      */
     const recordSkip = useCallback((clipId: string) => {
-        if (!user || !isValidUUID(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
 
         addToPending({
             userId: user.id,
@@ -101,7 +101,7 @@ export function useClipInteractions(): UseClipInteractionsReturn {
      * Record replay interaction
      */
     const recordReplay = useCallback((clipId: string) => {
-        if (!user || !isValidUUID(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
 
         addToPending({
             userId: user.id,
@@ -115,7 +115,7 @@ export function useClipInteractions(): UseClipInteractionsReturn {
      * Record like interaction
      */
     const recordLike = useCallback((clipId: string) => {
-        if (!user || !isValidUUID(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
 
         addToPending({
             userId: user.id,
@@ -129,7 +129,7 @@ export function useClipInteractions(): UseClipInteractionsReturn {
      * Record pause interaction
      */
     const recordPause = useCallback((clipId: string) => {
-        if (!user || !isValidUUID(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
 
         addToPending({
             userId: user.id,
@@ -148,7 +148,7 @@ export function useClipInteractions(): UseClipInteractionsReturn {
         correct: boolean,
         timeTaken: number
     ) => {
-        if (!user || !isValidUUID(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
 
         // Recall attempts are synced immediately due to importance
         try {
