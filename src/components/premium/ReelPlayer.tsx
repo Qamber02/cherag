@@ -163,19 +163,26 @@ export default function ReelPlayer({
 
     return (
         <div className="h-full w-full max-w-full md:max-w-[min(100%,calc(100vh*9/16))] relative bg-zinc-900 mx-auto">
-            {/* YouTube iframe */}
-            <iframe
-                ref={iframeRef}
-                className="w-full h-full"
-                src={youtubeUrlRef.current}
-                title={clip.concept}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                onLoad={() => {
-                    // Fallback: assume ready after load + short delay if no message received
-                    setTimeout(() => setIsPlayerReady(true), 1000);
-                }}
-            />
+            {/* Safety Check for Missing ID */}
+            {!clip.video_id ? (
+                <div className="absolute inset-0 flex items-center justify-center text-white/50 text-sm">
+                    Unable to load video (Invalid ID)
+                </div>
+            ) : (
+                <iframe
+                    ref={iframeRef}
+                    className="w-full h-full"
+                    src={youtubeUrlRef.current}
+                    title={clip.concept}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    onLoad={() => {
+                        // Fallback: assume ready after load + short delay if no message received
+                        setTimeout(() => setIsPlayerReady(true), 1000);
+                    }}
+                />
+            )}
+
 
             {/* Overlay UI */}
             <ReelOverlay

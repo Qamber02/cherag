@@ -36,15 +36,17 @@ export function useStudyShorts(user: User | null, context: string) {
                     .limit(50);
 
                 if (!error && data && data.length > 0) {
-                    const mappedVideos: Video[] = data.map((v: any) => ({
-                        id: v.youtube_id || v.id,
-                        youtube_id: v.youtube_id,
-                        title: v.title,
-                        thumbnail: v.thumbnail,
-                        channel: v.channel,
-                        relevanceScore: v.relevance_score,
-                        duration: v.duration || '1:00'
-                    }));
+                    const mappedVideos: Video[] = data
+                        .filter((v: any) => v.youtube_id && v.youtube_id.length > 5) // Strict filter
+                        .map((v: any) => ({
+                            id: v.youtube_id, // Use youtube_id as stable ID
+                            youtube_id: v.youtube_id,
+                            title: v.title,
+                            thumbnail: v.thumbnail,
+                            channel: v.channel,
+                            relevanceScore: v.relevance_score,
+                            duration: v.duration || '1:00'
+                        }));
                     setVideos(mappedVideos);
                 }
             } catch (err) {

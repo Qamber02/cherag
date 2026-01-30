@@ -4,6 +4,8 @@
 import { supabase } from '../../supabaseClient';
 import type { ClipInteraction } from '../../../types/videoIntelligence.types';
 
+import { saveActivity } from '../../activityService';
+
 /**
  * Record watch interaction
  */
@@ -21,6 +23,15 @@ export async function recordWatchInteraction(
         if (completion > 0.8) {
             // Watched most of it - positive signal
             masteryDelta = 0.1;
+
+            // Log as significant activity if completed
+            await saveActivity({
+                user_id: userId,
+                activity_type: 'video',
+                title: `Watched Video Clip`,
+                content_preview: `Completed ${Math.round(completion * 100)}% of video.`,
+                metadata: { clipId, completion, watchDuration }
+            });
         } else if (completion < 0.3) {
             // Skipped quickly - neutral/negative
             masteryDelta = -0.05;
