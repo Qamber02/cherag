@@ -16,12 +16,19 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks - large libraries in their own bundle
+          // React Core - critical for startup
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-pdf': ['pdfjs-dist'],
+
+          // UI Libraries - used across most pages
           'vendor-ui': ['lucide-react', 'framer-motion'],
-          'vendor-export': ['jspdf', 'docx', 'mammoth'],
+
+          // Supabase - needed for auth/data
+          'vendor-supabase': ['@supabase/supabase-js'],
+
+          // PDF/DOCX parsers are lazy-loaded in code, but we can explicit them here if we want 
+          // to ensure they are definitely separate. However, minimal chunks is usually better.
+          // Leaving them out of manualChunks usually lets Vite create a dynamic import chunk.
+          // We will remove 'vendor-export' and 'vendor-pdf' to let them be dynamic chunks.
         },
       },
     },

@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './lib/supabaseClient'
-import AuthPage from './components/AuthPage'
-import ResetPasswordPage from './components/ResetPasswordPage'
 import type { Session } from '@supabase/supabase-js'
 import { Loader2 } from 'lucide-react'
-import Dashboard from './components/Dashboard'
 import { ToastProvider } from './components/ui/ToastContext'
 import { VideoProvider } from './components/premium/VideoContext'
+
+// Lazy load pages for better performance
+const AuthPage = lazy(() => import('./components/AuthPage'));
+const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -48,11 +50,13 @@ function App() {
   return (
     <ToastProvider>
       <VideoProvider>
-        <Routes>
-          <Route path="/auth" element={session ? <Navigate to="/" /> : <AuthPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/" element={session ? <Dashboard session={session} /> : <Navigate to="/auth" />} />
-        </Routes>
+        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+          <Routes>
+            <Route path="/auth" element={session ? <Navigate to="/" /> : <AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/" element={session ? <Dashboard session={session} /> : <Navigate to="/auth" />} />
+          </Routes>
+        </Suspense>
       </VideoProvider>
     </ToastProvider>
   )

@@ -114,7 +114,19 @@ create index idx_verified_videos_topic on verified_videos(topic);
 -- Index for semantic similarity search
 create index on verified_videos using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 
+
+
 -- RLS POLICIES -----------------------------------------
+
+-- Channel Trust
+alter table channel_trust enable row level security;
+create policy "Authenticated users can view channel trust" on channel_trust for select using (auth.role() = 'authenticated');
+-- No insert/update policy implies Service Role only (Admin)
+
+-- Verified Videos
+alter table verified_videos enable row level security;
+create policy "Authenticated users can view verified videos" on verified_videos for select using (auth.role() = 'authenticated');
+-- No insert/update policy implies Service Role only (Admin)
 
 -- Profiles
 alter table profiles enable row level security;

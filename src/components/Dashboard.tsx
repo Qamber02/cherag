@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { Search, User, Menu, LayoutDashboard, MessageCircle, Layers, FileQuestion, MoreHorizontal } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -61,7 +61,8 @@ export default function Dashboard({ session }: DashboardProps) {
 
     // Hooks
     const { files, isParsing, uploadFile, removeFile } = useFiles(session.user);
-    const context = files.map(f => f.content).join('\n\n');
+    // Memoize context to prevent expensive re-calculation on every render (e.g. typing search)
+    const context = useMemo(() => files.map(f => f.content).join('\n\n'), [files]);
 
     const { messages, sendMessage, isLoading: isChatLoading } = useChat(session.user);
     const { flashcards, generateFlashcards, clearFlashcards, isLoading: isFlashcardsLoading } = useFlashcards(session.user, context);

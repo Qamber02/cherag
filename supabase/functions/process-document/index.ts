@@ -13,11 +13,35 @@ serve(async (req) => {
     }
 
     try {
-        const { document_id, content } = await req.json()
+        const { document_id, content, chunk_offset = 0 } = await req.json()
         const geminiKey = Deno.env.get('GEMINI_API_KEY')
         if (!geminiKey) throw new Error('Missing GEMINI_API_KEY')
 
+        // 0. Verify User (Security)
+        const authHeader = req.headers.get('Authorization')
+        if (!authHeader) throw new Error('Missing Authorization header')
+
         const supabaseClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+            { global: { headers: { Authorization: authHeader } } }
+        )
+
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+        if (authError || !user) throw new Error('Unauthorized')
+
+        // Verify document ownership
+        const { data: doc, error: docError } = await supabaseClient
+            .from('documents')
+            .select('user_id')
+            .eq('id', document_id)
+            .single()
+
+        if (docError || !doc || doc.user_id !== user.id) {
+            throw new Error('Unauthorized: Document access denied')
+        }
+
+        const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use Service Role for DB writes
         )
@@ -76,14 +100,14 @@ serve(async (req) => {
                         document_id,
                         content: text,
                         embedding: data.embeddings[idx].values,
-                        chunk_index: i + idx
+                        chunk_index: chunk_offset + i + idx
                     });
                 });
             }
         }
 
         // 3. Store in DB
-        const { error } = await supabaseClient
+        const { error } = await supabaseAdmin
             .from('document_chunks')
             .insert(embeddingsMap);
 

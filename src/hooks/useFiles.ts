@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { parseFile } from '../lib/fileParser';
+import { parseFileStream } from '../lib/fileParser';
 import type { User } from '@supabase/supabase-js';
 
 export interface Document {
@@ -49,18 +49,10 @@ export function useFiles(user: User | null) {
         setIsParsing(true);
         setError(null);
         try {
-            // 1. Parse content locally
-            const content = await parseFile(file);
-
-            // 2. Upload to Storage (Optional backup)
+            // 1. Create DB Record First (Metadata)
+            // We store a placeholder content or empty string initially.
             const filePath = `${user.id}/${Date.now()}_${file.name}`;
-            const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file);
-            if (uploadError) {
-                console.warn('Storage upload failed:', uploadError);
-                // Continue even if storage fails, as we store content in DB
-            }
 
-            // 3. Insert into DB
             const { data: doc, error: dbError } = await supabase
                 .from('documents')
                 .insert({
@@ -69,22 +61,58 @@ export function useFiles(user: User | null) {
                     file_type: file.name.split('.').pop() || 'txt',
                     file_path: filePath,
                     file_size: file.size,
-                    content: content
+                    content: '' // Will update with preview later
                 })
                 .select()
                 .single();
 
             if (dbError) throw dbError;
 
-            // 4. Trigger RAG Processing (Async)
-            // Fire and forget to avoid blocking UI, or await if critical
-            supabase.functions.invoke('process-document', {
-                body: { document_id: doc.id, content: content }
-            }).then(({ error: invokeError }) => {
-                if (invokeError) console.error('RAG processing error:', invokeError);
+            // 2. Upload to Storage (Backup & Source of Truth)
+            // Supabase client handles large TUS uploads automatically
+            const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file);
+            if (uploadError) {
+                console.warn('Storage upload failed:', uploadError);
+            }
+
+            // 3. Stream Parse & Process
+            // We'll accumulate a preview string (first 20KB)
+            let previewContent = '';
+            let buffer = '';
+            let currentChunkIndex = 0; // Track global chunk index for RAG
+            const BATCH_SIZE = 500 * 1024; // 0.5 MB per Edge Function call (safe limit)
+
+            await parseFileStream(file, async (chunk: string, _progress: number) => {
+                buffer += chunk;
+
+                // Collect preview
+                if (previewContent.length < 20000) {
+                    previewContent += chunk.slice(0, 20000 - previewContent.length);
+                }
+
+                // If buffer exceeds batch size, send to RAG processing
+                if (buffer.length >= BATCH_SIZE) {
+                    await processBatch(doc.id, buffer, currentChunkIndex);
+                    // Estimate valid sub-chunks created by Edge Function (approx 1 per 1000 chars)
+                    currentChunkIndex += Math.ceil(buffer.length / 900);
+                    buffer = ''; // Clear buffer
+                }
             });
 
-            setFiles(prev => [doc, ...prev]);
+            // Process remaining buffer
+            if (buffer.length > 0) {
+                await processBatch(doc.id, buffer, currentChunkIndex);
+            }
+
+            // 4. Update DB with Preview Content
+            await supabase
+                .from('documents')
+                .update({ content: previewContent })
+                .eq('id', doc.id);
+
+            // Update local state (Optimistic: we have the doc with preview)
+            setFiles(prev => [{ ...doc, content: previewContent }, ...prev]);
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Upload error:', err);
@@ -92,6 +120,17 @@ export function useFiles(user: User | null) {
             alert(`Failed to upload file: ${err.message || 'Unknown error'}`);
         } finally {
             setIsParsing(false);
+        }
+    };
+
+    const processBatch = async (documentId: string, text: string, startIndex: number) => {
+        // Retry logic could be added here
+        const { error } = await supabase.functions.invoke('process-document', {
+            body: { document_id: documentId, content: text, chunk_offset: startIndex }
+        });
+        if (error) {
+            console.error('RAG batch processing error:', error);
+            // Optionally throw to stop processing, or continue best-effort
         }
     };
 

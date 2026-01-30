@@ -1,13 +1,5 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import mammoth from 'mammoth';
-
-// Configure PDF.js worker
-// Use local worker to avoid CDN issues and strict CSP
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-
-// Security: Maximum file size (10MB)
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// Security: Maximum file size (Increased to 200MB)
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 // Security: Allowed MIME types with their expected extensions
 const ALLOWED_TYPES: Record<string, string[]> = {
@@ -20,9 +12,21 @@ const ALLOWED_TYPES: Record<string, string[]> = {
 };
 
 export const parseFile = async (file: File): Promise<string> => {
+    // Legacy support for small files or if full content is strictly needed
+    let content = '';
+    await parseFileStream(file, async (chunk) => {
+        content += chunk + '\n';
+    });
+    return content.trim();
+};
+
+export const parseFileStream = async (
+    file: File,
+    onChunk: (chunk: string, progress: number) => Promise<void>
+): Promise<void> => {
     // Security: Validate file size
     if (file.size > MAX_FILE_SIZE) {
-        throw new Error('File too large. Maximum size is 10MB.');
+        throw new Error('File too large. Maximum size is 200MB.');
     }
 
     // Security: Validate MIME type matches extension
@@ -40,46 +44,122 @@ export const parseFile = async (file: File): Promise<string> => {
     const fileType = file.type;
 
     if (fileType === 'application/pdf') {
-        return parsePDF(file);
+        return parsePDFStream(file, onChunk);
     } else if (
         fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
         fileType === 'application/msword'
     ) {
-        return parseDOCX(file);
+        // DOCX doesn't support easy streaming, fall back to full parse then chunk
+        const fullText = await parseDOCX(file);
+        // Split into reasonable chunks (e.g. 50kb) to simulate streaming
+        const chunkSize = 50 * 1024;
+        for (let i = 0; i < fullText.length; i += chunkSize) {
+            await onChunk(fullText.slice(i, i + chunkSize), (i + chunkSize) / fullText.length);
+        }
     } else if (fileType === 'text/plain' || fileType === 'text/markdown' || file.name.endsWith('.md')) {
-        return parseText(file);
+        return parseTextStream(file, onChunk);
     } else {
         throw new Error('Unsupported file type');
     }
 };
 
-const parsePDF = async (file: File): Promise<string> => {
+const parsePDFStream = async (
+    file: File,
+    onChunk: (chunk: string, progress: number) => Promise<void>
+): Promise<void> => {
+    // Dynamically import pdfjs-dist
+    const pdfjsLib = await import('pdfjs-dist');
+    // Dynamically import worker
+    const pdfWorker = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+    // Helper for OCR (lazy loaded)
+    const performOCR = async (canvas: HTMLCanvasElement): Promise<string> => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const Tesseract = await import('tesseract.js');
+        const { data: { text } } = await Tesseract.default.recognize(
+            canvas,
+            'eng',
+            // { logger: m => console.log('[OCR]', m) }
+        );
+        return text;
+    };
+
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = '';
 
+    // Process page by page to avoid OOM
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const strings = content.items.map((item: any) => item.str);
-        text += strings.join(' ') + '\\n';
-    }
+        let pageText = strings.join(' ') + '\n';
 
-    return text.trim();
+        // OCR FALLBACK: If text is sparse (< 50 chars), assume it's an image/scanned page
+        if (pageText.trim().length < 50) {
+            console.log(`[FileParser] Page ${i} has insufficient text (${pageText.length} chars). Attempting OCR...`);
+
+            try {
+                const viewport = page.getViewport({ scale: 2.0 }); // 2x scale for better recognition
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                if (context) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await page.render({ canvasContext: context, viewport: viewport } as any).promise;
+                    const ocrText = await performOCR(canvas);
+                    if (ocrText.trim().length > 0) {
+                        pageText = `[OCR Page ${i}]\n${ocrText}\n`;
+                    }
+                }
+            } catch (err) {
+                console.warn(`[FileParser] OCR Failed for page ${i}`, err);
+                // Fallback to empty string if OCR fails, don't crash
+            }
+        }
+
+        await onChunk(pageText, i / pdf.numPages);
+
+        // Help GC
+        page.cleanup();
+    }
 };
 
 const parseDOCX = async (file: File): Promise<string> => {
+    // Dynamically import mammoth
+    const mammoth = (await import('mammoth')).default;
+
+    // Mammoth needs array buffer, might be heavy for 200MB file but text is usually small.
+    // If strict 200MB limit for DOCX is needed, we'd need a different parser.
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     return result.value.trim();
 };
 
-const parseText = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.onerror = (e) => reject(e);
-        reader.readAsText(file);
-    });
+const parseTextStream = async (
+    file: File,
+    onChunk: (chunk: string, progress: number) => Promise<void>
+): Promise<void> => {
+    const stream = file.stream();
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let totalRead = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        totalRead += value.byteLength;
+        const chunk = decoder.decode(value, { stream: true });
+        await onChunk(chunk, totalRead / file.size);
+    }
 };
+
+
+

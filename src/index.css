@@ -681,3 +681,42 @@
 .backface-hidden {
   backface-visibility: hidden;
 }
+
+/* Performance Optimizations */
+* {
+  /* Improve scrolling performance */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hardware accelerate commonly animated elements */
+.glass-sidebar,
+.glass-card,
+.glass-card-premium {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  /* Force GPU layer */
+}
+
+/* Reduce blur radius on low-end devices (heuristic via media query or default to lighter blur) */
+@media (prefers-reduced-motion: reduce) {
+
+  .glass-sidebar,
+  .glass-card,
+  .glass-card-premium {
+    backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .dark .glass-sidebar,
+  .dark .glass-card,
+  .dark .glass-card-premium {
+    background: rgba(17, 24, 39, 0.95) !important;
+  }
+
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
