@@ -30,6 +30,9 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
     const [topicInput, setTopicInput] = useState('');
     const [isTopicMode, setIsTopicMode] = useState(false);
 
+    const [questionCount, setQuestionCount] = useState(5);
+    const [difficulty, setDifficulty] = useState<string>('medium');
+
     useEffect(() => {
         fetchQuizzes();
     }, [userId]);
@@ -55,7 +58,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         setIsLoading(true);
 
         try {
-            const generated = await generateQuizzes(quizContext);
+            const generated = await generateQuizzes(quizContext, { count: questionCount, difficulty, seed: Date.now() });
             if (!generated || generated.length === 0) throw new Error("No quizzes generated");
 
             // Save to DB
@@ -145,59 +148,91 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
     // Empty State
     if (quizzes.length === 0 && !isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-50 dark:bg-gray-900/50">
+            <div className="flex flex-col items-center justify-center h-full p-4 md:p-8 text-center bg-gray-50 dark:bg-gray-900/50">
                 <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25 animate-float">
                     <FileQuestion className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">AI Quizzes</h2>
                 <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm">
-                    Test your knowledge with AI-generated multiple choice questions.
+                    Customize your study session and test your knowledge.
                 </p>
 
-                {isTopicMode || (!hasContext && quizzes.length === 0) ? (
-                    <div className="w-full max-w-md animate-fade-in-up">
+                {/* Settings Controls */}
+                <div className="w-full max-w-md bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6 animate-fade-in-up">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Difficulty</label>
+                            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                                {['easy', 'medium', 'hard'].map(d => (
+                                    <button
+                                        key={d}
+                                        onClick={() => setDifficulty(d)}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md capitalize transition-all ${difficulty === d
+                                            ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-300 shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        {d}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Questions</label>
+                            <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                                {[5, 10, 15].map(qn => (
+                                    <button
+                                        key={qn}
+                                        onClick={() => setQuestionCount(qn)}
+                                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${questionCount === qn
+                                            ? 'bg-white dark:bg-gray-600 text-purple-600 dark:text-purple-300 shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        {qn}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {isTopicMode || (!hasContext && quizzes.length === 0) ? (
                         <div className="flex gap-2">
                             <input
                                 type="text"
                                 placeholder="Enter a topic (e.g., Quantum Physics)..."
                                 value={topicInput}
                                 onChange={(e) => setTopicInput(e.target.value)}
-                                className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                                className="flex-1 px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm"
                                 onKeyDown={(e) => e.key === 'Enter' && handleGenerateQuizzes()}
                             />
                             <button
                                 onClick={handleGenerateQuizzes}
                                 disabled={!topicInput.trim() || isLoading}
-                                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:shadow-lg disabled:opacity-50 transition-all"
+                                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:shadow-lg disabled:opacity-50 transition-all text-sm"
                             >
                                 Start
                             </button>
                         </div>
-                        <button
-                            onClick={() => setIsTopicMode(false)}
-                            className="text-xs text-gray-400 mt-2 hover:text-gray-600"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-3">
-                        <button
-                            onClick={handleGenerateQuizzes}
-                            disabled={!hasContext && !topicInput}
-                            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-xl hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2 justify-center"
-                        >
-                            <Sparkles className="w-5 h-5" />
-                            <span>Generate from Document</span>
-                        </button>
-                        <button
-                            onClick={() => setIsTopicMode(true)}
-                            className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-                        >
-                            Search Specific Topic
-                        </button>
-                    </div>
-                )}
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={handleGenerateQuizzes}
+                                disabled={!hasContext && !topicInput}
+                                className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2 justify-center text-sm"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                <span>Generate from Document</span>
+                            </button>
+                            <button
+                                onClick={() => setIsTopicMode(true)}
+                                className="w-full px-6 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all text-sm"
+                            >
+                                Search Specific Topic
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
@@ -254,25 +289,42 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                         ))}
                     </div>
 
-                    <div className="flex gap-3 md:gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                         <button
                             onClick={() => {
                                 setQuizzes([]);
                                 setCurrentIndex(0);
                                 setShowResult(false);
                             }}
-                            className="flex-1 py-2.5 md:py-3 px-4 md:px-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-white font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm md:text-base"
+                            className="w-full sm:flex-1 py-3 sm:py-2.5 md:py-3 px-4 md:px-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-white font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-sm md:text-base order-2 sm:order-1"
                         >
                             Close
                         </button>
+
+                        {score < quizzes.length && (
+                            <button
+                                onClick={() => {
+                                    const wrong = quizzes.filter(q => q.user_answer !== q.correct_answer);
+                                    setQuizzes(wrong.map(q => ({ ...q, user_answer: null, answered: false })));
+                                    setCurrentIndex(0);
+                                    setShowResult(false);
+                                    setSelectedAnswer(null);
+                                }}
+                                className="w-full sm:flex-1 py-3 sm:py-2.5 md:py-3 px-4 md:px-6 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium rounded-xl hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors text-sm md:text-base flex items-center justify-center gap-2 order-1 sm:order-2"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                                Review ({quizzes.length - score})
+                            </button>
+                        )}
+
                         <button
                             onClick={handleGenerateQuizzes}
                             disabled={isLoading}
-                            className="flex-1 py-2.5 md:py-3 px-4 md:px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm md:text-base"
+                            className="w-full sm:flex-1 py-3 sm:py-2.5 md:py-3 px-4 md:px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm md:text-base order-1 sm:order-3"
                         >
                             <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
                             <span className="hidden sm:inline">New Quiz</span>
-                            <span className="sm:hidden">New</span>
+                            <span className="inline sm:hidden">New Quiz</span>
                         </button>
                     </div>
                 </div>
@@ -285,12 +337,20 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50">
             {/* Header / Progress */}
             <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 md:px-8 shadow-sm z-10">
-                <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Topic Quiz</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Test your knowledge</p>
+                <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 md:gap-4">
+                    <div className="min-w-0 shrink">
+                        <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">Topic Quiz</h2>
+                        <div className="flex items-center gap-2">
+                            <span className={`px-1.5 py-0.5 md:px-2 rounded text-[10px] uppercase font-bold tracking-wide whitespace-nowrap ${difficulty === 'hard' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                                difficulty === 'easy' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                }`}>
+                                {difficulty}
+                            </span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Test your knowledge</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4 flex-1 justify-end max-w-sm">
+                    <div className="flex items-center gap-2 md:gap-4 flex-1 justify-end max-w-sm min-w-0">
                         <div className="flex-1 h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 ease-out"

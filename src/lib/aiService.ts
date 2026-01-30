@@ -418,6 +418,33 @@ export async function generateImageWithGemini(prompt: string): Promise<string | 
 
 // Task-specific functions with validation and rate limiting
 
+// Helper to extract JSON from AI response
+function extractJson(text: string): string {
+    // Remove markdown code blocks first
+    let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    // Try to find array `[...]`
+    const startArray = cleaned.indexOf('[');
+    const endArray = cleaned.lastIndexOf(']');
+
+    // Try to find object `{...}`
+    const startObject = cleaned.indexOf('{');
+    const endObject = cleaned.lastIndexOf('}');
+
+    // Determine which outer structure appears first
+    if (startArray !== -1 && (startObject === -1 || startArray < startObject)) {
+        if (endArray !== -1 && endArray > startArray) {
+            return cleaned.substring(startArray, endArray + 1);
+        }
+    } else if (startObject !== -1) {
+        if (endObject !== -1 && endObject > startObject) {
+            return cleaned.substring(startObject, endObject + 1);
+        }
+    }
+
+    return cleaned;
+}
+
 export async function generateSummary(context: string, options?: { length?: string; style?: string; focus?: string }): Promise<string> {
     const sanitized = sanitizeInput(context);
 
@@ -494,7 +521,7 @@ Text:
 ${sanitized}`;
 
     const result = await callGeminiWithFallback(prompt, 'flashcards');
-    const cleaned = result.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleaned = extractJson(result);
 
     try {
         const parsed = JSON.parse(cleaned);
@@ -518,11 +545,18 @@ ${sanitized}`;
     }
 }
 
-export async function generateQuizzes(context: string): Promise<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>> {
+export async function generateQuizzes(context: string, options: { count?: number; difficulty?: string; seed?: number } = {}): Promise<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>> {
     const sanitized = sanitizeInput(context);
+    const count = options.count || 5;
+    const difficulty = options.difficulty || 'medium';
+    // Use seed to make cache key unique if provided
+    const seed = options.seed || ''; // Empty string if no seed, uses standard caching
 
-    // Check cache first
-    const cacheKey = generateCacheKey(sanitized, 'quizzes');
+    // Check cache first - include options and seed in key
+    const cacheKey = generateCacheKey(`${sanitized}-${count}-${difficulty}-${seed}`, 'quizzes');
+
+    // If a seed is provided, we might still want to check if we have THIS specific random iteration cached (unlikely but safe)
+    // Or we could strictly bypass cache. Using it in the key is safer/standard.
     const cached = getFromCache<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>>(cacheKey);
     if (cached) {
         console.log('[AI] Using cached quizzes');
@@ -531,21 +565,32 @@ export async function generateQuizzes(context: string): Promise<Array<{ question
 
     await rateLimiter.waitForToken('quizzes');
 
-    const prompt = `Generate 5 multiple choice questions as a JSON array. 
+    const difficultyPrompt = difficulty === 'hard'
+        ? "Make questions challenging, focusing on analysis, synthesis, and deep understanding."
+        : difficulty === 'easy'
+            ? "Make questions straightforward, focusing on basic definitions and core concepts."
+            : "Make questions of medium difficulty, focusing on application and understanding.";
+
+    // Add seed instructions to the prompt to encourage variance at the model level too
+    const varianceInstruction = seed ? `Ensure questions are unique and different from previous sets. Random seed: ${seed}.` : '';
+
+    const prompt = `Generate ${count} multiple choice questions as a JSON array. 
 Format: [{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}]
 
 CRITICAL RULES:
 1. correct_answer must be just the letter (A, B, C, or D)
 2. VARY the correct answers - do NOT make all answers the same letter! Mix A, B, C, and D throughout the quiz.
 3. Each option should start with its letter like "A) answer text"
-4. Make questions educational and relevant to the content
-5. No markdown, ONLY valid JSON array
+4. Make questions educational and relevant to the content.
+5. Difficulty Level: ${difficulty}. ${difficultyPrompt}
+6. No markdown, ONLY valid JSON array
+${varianceInstruction}
 
 Text:
 ${sanitized}`;
 
     const result = await callGeminiWithFallback(prompt, 'quizzes');
-    const cleaned = result.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleaned = extractJson(result);
 
     try {
         const parsed = JSON.parse(cleaned);
@@ -560,12 +605,10 @@ ${sanitized}`;
 
         return parsed;
     } catch (_err) {
-        console.warn('Failed to parse quizzes JSON');
+        console.warn('Failed to parse quizzes JSON. Raw:', result);
         throw new Error('Failed to generate quizzes. Please try again.');
     }
 }
-
-
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function generateMindMap(context: string): Promise<{ title: string, children: any[] }> {
@@ -580,7 +623,7 @@ Text:
 ${sanitized}`;
 
     const result = await callGeminiWithFallback(prompt, 'general');
-    const cleaned = result.replace(/```json/g, '').replace(/```/g, '').trim();
+    const cleaned = extractJson(result);
 
     try {
         return JSON.parse(cleaned);
@@ -690,7 +733,7 @@ Keywords:`;
         // Filter out irrelevant content by checking titles
         const topicWords = searchTopic.toLowerCase().split(' ').filter(w => w.length > 2);
 
-         
+
         const videos: VideoResult[] = (data.items || [])
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((item: any) => ({
