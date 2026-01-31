@@ -56,7 +56,9 @@ export function getFromCache<T>(key: string): T | null {
             return null;
         }
 
-        console.log(`[Cache] HIT: ${key.slice(0, 30)}...`);
+        if (import.meta.env.DEV) {
+            console.log(`[Cache] HIT: ${key.slice(0, 30)}...`);
+        }
         return entry.data;
     } catch {
         return null;
@@ -77,12 +79,16 @@ export function saveToCache<T>(key: string, data: T, type: string = 'default'): 
         };
 
         localStorage.setItem(key, JSON.stringify(entry));
-        console.log(`[Cache] SAVE: ${key.slice(0, 30)}... (TTL: ${config.ttl / 60000}min)`);
+        if (import.meta.env.DEV) {
+            console.log(`[Cache] SAVE: ${key.slice(0, 30)}... (TTL: ${config.ttl / 60000}min)`);
+        }
 
         // Cleanup old entries if too many
         cleanupCache(type, config.maxEntries);
     } catch (err) {
-        console.warn('[Cache] Save failed:', err);
+        if (import.meta.env.DEV) {
+            console.warn('[Cache] Save failed:', err);
+        }
     }
 }
 
@@ -140,7 +146,9 @@ export function clearCache(type?: string): void {
         }
 
         keysToRemove.forEach(key => localStorage.removeItem(key));
-        console.log(`[Cache] Cleared ${keysToRemove.length} entries`);
+        if (import.meta.env.DEV) {
+            console.log(`[Cache] Cleared ${keysToRemove.length} entries`);
+        }
     } catch {
         // Ignore errors
     }

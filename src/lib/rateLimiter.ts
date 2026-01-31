@@ -43,7 +43,7 @@ class RateLimiter {
             // Use the max count, but at least 1
             const scaleFactor = Math.max(1, geminiCount, openRouterCount, deepSeekCount);
 
-            console.log(`[RateLimiter] Scaling ${endpoint} limits by ${scaleFactor}x (Keys: G=${geminiCount}, O=${openRouterCount})`);
+            if (import.meta.env.DEV) console.log(`[RateLimiter] Scaling ${endpoint} limits by ${scaleFactor}x (Keys: G=${geminiCount}, O=${openRouterCount})`);
 
             this.buckets.set(endpoint, {
                 tokens: config.maxTokens * scaleFactor,

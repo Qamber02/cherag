@@ -58,7 +58,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         setIsLoading(true);
 
         try {
-            const generated = await generateQuizzes(quizContext, { count: questionCount, difficulty, seed: Date.now() });
+            const generated = await generateQuizzes(quizContext, { count: questionCount, difficulty, seed: Date.now(), forceRefresh: true });
             if (!generated || generated.length === 0) throw new Error("No quizzes generated");
 
             // Save to DB

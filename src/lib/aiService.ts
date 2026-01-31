@@ -56,7 +56,7 @@ async function callOpenRouter(prompt: string): Promise<string | null> {
     if (!apiKey) return null;
 
     try {
-        console.log(`[AI] Trying OpenRouter molmo-2-8b:free...`);
+        if (import.meta.env.DEV) console.log(`[AI] Trying OpenRouter molmo-2-8b:free...`);
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -78,7 +78,7 @@ async function callOpenRouter(prompt: string): Promise<string | null> {
             const data = await response.json();
             const content = data.choices?.[0]?.message?.content;
             if (content) {
-                console.log(`[AI] ✅ Success with OpenRouter`);
+                if (import.meta.env.DEV) console.log(`[AI] ✅ Success with OpenRouter`);
                 return content;
             }
         }
@@ -92,7 +92,7 @@ async function callOpenRouter(prompt: string): Promise<string | null> {
 
         console.warn(`[AI] OpenRouter error:`, response.status);
     } catch (_err) {
-        console.warn(`[AI] OpenRouter failed:`, _err);
+        if (import.meta.env.DEV) console.warn(`[AI] OpenRouter failed:`, _err);
     }
     return null;
 }
@@ -103,7 +103,7 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
     if (!apiKey) return null;
 
     try {
-        console.log(`[AI] Trying DeepSeek (deepseek-chat)...`);
+        if (import.meta.env.DEV) console.log(`[AI] Trying DeepSeek (deepseek-chat)...`);
         const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
             headers: {
@@ -125,7 +125,7 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
         const data = await response.json();
 
         if (response.ok && data.choices?.[0]?.message?.content) {
-            console.log(`[AI] ✅ Success with DeepSeek`);
+            if (import.meta.env.DEV) console.log(`[AI] ✅ Success with DeepSeek`);
             return data.choices[0].message.content;
         }
 
@@ -145,7 +145,7 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
         console.warn(`[AI] DeepSeek error:`, data);
         return null; // Move to next provider
     } catch (_e) {
-        console.warn(`[AI] DeepSeek failed:`, _e);
+        if (import.meta.env.DEV) console.warn(`[AI] DeepSeek failed:`, _e);
         return null;
     }
 }
@@ -194,7 +194,7 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
             if (!apiKey) break; // Should not happen unless config missing
 
             try {
-                console.log(`[AI] Trying Gemini model: ${model}`);
+                if (import.meta.env.DEV) console.log(`[AI] Trying Gemini model: ${model}`);
                 const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
                     {
@@ -209,7 +209,7 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
                 const data: GeminiResponse = await response.json();
 
                 if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    console.log(`[AI] ✅ Success with ${model}`);
+                    if (import.meta.env.DEV) console.log(`[AI] ✅ Success with ${model}`);
                     return data.candidates[0].content.parts[0].text;
                 }
 
@@ -224,14 +224,14 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
                 throw new Error(data.error?.message || 'Gemini error');
             } catch (err: unknown) {
                 const errorMessage = err instanceof Error ? err.message : String(err);
-                console.warn(`[AI] Failed with ${model}:`, errorMessage);
+                if (import.meta.env.DEV) console.warn(`[AI] Failed with ${model}:`, errorMessage);
                 break; // Break inner loop, try next model
             }
         }
     }
 
     // 5. Hugging Face Fallback
-    console.log('[AI] All Gemini models failed, trying Hugging Face...');
+    if (import.meta.env.DEV) console.log('[AI] All Gemini models failed, trying Hugging Face...');
     try {
         return await callHuggingFace(prompt, taskType);
     } catch (_e) {
@@ -239,7 +239,7 @@ async function callGeminiWithFallback(prompt: string, taskType: string = 'genera
     }
 
     // 6. Final Fallback: Mock Data (Demo Mode)
-    console.warn('[AI] ⚠️ All APIs failed. Using MOCK fallback.');
+    if (import.meta.env.DEV) console.warn('[AI] ⚠️ All APIs failed. Using MOCK fallback.');
     return await tryMockFallback(prompt, taskType);
 }
 
@@ -459,7 +459,7 @@ export async function generateSummary(context: string, options?: { length?: stri
     const cacheKey = generateCacheKey(sanitized + JSON.stringify(options || {}), 'summary');
     const cached = getFromCache<string>(cacheKey);
     if (cached) {
-        console.log('[AI] Using cached summary');
+        if (import.meta.env.DEV) console.log('[AI] Using cached summary');
         return cached;
     }
 
@@ -516,7 +516,7 @@ export async function generateFlashcards(context: string): Promise<Array<{ quest
     const cacheKey = generateCacheKey(sanitized, 'flashcards');
     const cached = getFromCache<Array<{ question: string, answer: string }>>(cacheKey);
     if (cached) {
-        console.log('[AI] Using cached flashcards');
+        if (import.meta.env.DEV) console.log('[AI] Using cached flashcards');
         return cached;
     }
 
@@ -552,22 +552,22 @@ ${sanitized}`;
     }
 }
 
-export async function generateQuizzes(context: string, options: { count?: number; difficulty?: string; seed?: number } = {}): Promise<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>> {
+export async function generateQuizzes(context: string, options: { count?: number; difficulty?: string; seed?: number; forceRefresh?: boolean } = {}): Promise<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>> {
     const sanitized = sanitizeInput(context);
     const count = options.count || 5;
     const difficulty = options.difficulty || 'medium';
-    // Use seed to make cache key unique if provided
-    const seed = options.seed || ''; // Empty string if no seed, uses standard caching
+    const seed = options.seed || (options.forceRefresh ? Date.now() : '');
 
-    // Check cache first - include options and seed in key
-    const cacheKey = generateCacheKey(`${sanitized}-${count}-${difficulty}-${seed}`, 'quizzes');
+    // FIX: Prepend parameters to cache key to avoid truncation of unique identifiers
+    const cacheKey = generateCacheKey(`${count}-${difficulty}-${seed}-${sanitized}`, 'quizzes');
 
-    // If a seed is provided, we might still want to check if we have THIS specific random iteration cached (unlikely but safe)
-    // Or we could strictly bypass cache. Using it in the key is safer/standard.
-    const cached = getFromCache<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>>(cacheKey);
-    if (cached) {
-        console.log('[AI] Using cached quizzes');
-        return cached;
+    // Check cache first ONLY if not forcing refresh
+    if (!options.forceRefresh) {
+        const cached = getFromCache<Array<{ question: string, options: string[], correct_answer: string, explanation: string }>>(cacheKey);
+        if (cached) {
+            if (import.meta.env.DEV) console.log('[AI] Using cached quizzes');
+            return cached;
+        }
     }
 
     await rateLimiter.waitForToken('quizzes');
@@ -578,10 +578,10 @@ export async function generateQuizzes(context: string, options: { count?: number
             ? "Make questions straightforward, focusing on basic definitions and core concepts."
             : "Make questions of medium difficulty, focusing on application and understanding.";
 
-    // Add seed instructions to the prompt to encourage variance at the model level too
+    // Improved variance prompt
     const varianceInstruction = seed
-        ? `Ensure questions are COMPLETELY different from any standard or previous questions. Random seed: ${seed}. Be creative and explore different angles of the topic.`
-        : 'Generate fresh, unique questions.';
+        ? `Ensure questions are COMPLETELY different from any standard or previous questions. Random seed: ${seed}. Be creative, avoid common examples, and explore different angles of the topic.`
+        : 'Generate fresh, unique questions. Avoid repeating common textbook examples.';
 
     const prompt = `Generate ${count} multiple choice questions as a JSON array. 
 Format: [{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}]
@@ -615,7 +615,7 @@ ${sanitized}`;
 
         return parsed;
     } catch (_err) {
-        console.warn('Failed to parse quizzes JSON. Raw:', result);
+        if (import.meta.env.DEV) console.warn('Failed to parse quizzes JSON. Raw:', result);
         throw new Error('Failed to generate quizzes. Please try again.');
     }
 }
