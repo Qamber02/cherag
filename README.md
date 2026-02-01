@@ -1,4 +1,4 @@
-# Cherág - AI Study Partner (Premium Edition)
+# Cherág - AI Study Partner 
 
 Cherág is an advanced AI-powered study companion designed to help students learn more effectively. By analyzing uploaded course materials (PDFs, docs, notes), it generates personalized study aids, tracks your mastery, and uses cognitive frameworks to deepen understanding.
 
