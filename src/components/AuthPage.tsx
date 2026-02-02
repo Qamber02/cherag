@@ -15,6 +15,34 @@ export default function AuthPage() {
     const [message, setMessage] = useState<string | null>(null);
     const navigate = useNavigate();
 
+    // Password strength validation
+    const validatePassword = (pwd: string): string | null => {
+        if (pwd.length < 8) return 'Password must be at least 8 characters';
+        if (!/[A-Z]/.test(pwd)) return 'Password must contain at least one uppercase letter';
+        if (!/[a-z]/.test(pwd)) return 'Password must contain at least one lowercase letter';
+        if (!/[0-9]/.test(pwd)) return 'Password must contain at least one number';
+        return null;
+    };
+
+    // Sanitize error messages to prevent internal error disclosure
+    const sanitizeErrorMessage = (errorMessage: string): string => {
+        const msg = errorMessage.toLowerCase();
+        if (msg.includes('invalid login credentials') || msg.includes('invalid password')) {
+            return 'Invalid email or password';
+        }
+        if (msg.includes('email not confirmed')) {
+            return 'Please verify your email before signing in';
+        }
+        if (msg.includes('user already registered')) {
+            return 'An account with this email already exists';
+        }
+        if (msg.includes('rate limit') || msg.includes('too many')) {
+            return 'Too many attempts. Please try again later';
+        }
+        // Default safe message
+        return 'An error occurred. Please try again.';
+    };
+
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -27,6 +55,14 @@ export default function AuthPage() {
                 if (error) throw error;
                 navigate('/');
             } else if (mode === 'signup') {
+                // Validate password strength before signup
+                const pwdError = validatePassword(password);
+                if (pwdError) {
+                    setError(pwdError);
+                    setLoading(false);
+                    return;
+                }
+
                 const { error } = await supabase.auth.signUp({
                     email,
                     password,
@@ -43,8 +79,10 @@ export default function AuthPage() {
                 if (error) throw error;
                 setMessage('Password reset link sent to your email!');
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            console.error('[Auth]', message); // Log for debugging
+            setError(sanitizeErrorMessage(message));
         } finally {
             setLoading(false);
         }

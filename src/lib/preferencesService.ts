@@ -83,7 +83,8 @@ export function setPreference<K extends keyof UserPreferences>(
  * Set a cookie
  */
 export function setCookie(name: string, value: string, maxAge: number = COOKIE_MAX_AGE): void {
-    document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; SameSite=Lax`;
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; SameSite=Lax${secure}`;
 }
 
 /**

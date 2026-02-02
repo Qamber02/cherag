@@ -7,7 +7,7 @@ import { getPreference } from './preferencesService';
 // OpenRouter model for chat
 const MOLMO_MODEL = 'allenai/molmo-2-8b:free';
 
-// Security: Input sanitization
+// Security: Input sanitization (improved - more comprehensive)
 function sanitizeInput(text: string, maxLength: number = 10000): string {
     if (!text || typeof text !== 'string') {
         return '';
@@ -15,9 +15,12 @@ function sanitizeInput(text: string, maxLength: number = 10000): string {
 
     // Remove potential XSS and injection attempts
     return text
-        .replace(/<script[^>]*>.*?<\/script>/gi, '')
-        .replace(/javascript:/gi, '')
-        .replace(/onerror=/gi, '')
+        .replace(/<[^>]*>/gi, '') // Remove ALL HTML tags
+        .replace(/javascript\s*:/gi, '') // Handle spaces in javascript:
+        .replace(/vbscript\s*:/gi, '') // Block VBScript
+        .replace(/data\s*:/gi, '') // Block data: URIs
+        .replace(/on\w+\s*=/gi, '') // Remove ALL event handlers (onclick, onerror, etc.)
+        .replace(/expression\s*\(/gi, '') // Block CSS expressions
         .slice(0, maxLength)
         .trim();
 }
@@ -85,9 +88,12 @@ async function callOpenRouter(prompt: string): Promise<string | null> {
 
         if (response.status === 429) {
             console.warn(`[AI] OpenRouter Rate Limit (429). Rotating key...`);
-            keyManager.markRateLimited('openrouter');
-            // Recursive retry with new key
-            return callOpenRouter(prompt);
+            const newKey = keyManager.markRateLimited('openrouter');
+            // Only retry if a new key is available (prevent infinite recursion)
+            if (newKey) {
+                return callOpenRouter(prompt);
+            }
+            return null; // All keys exhausted
         }
 
         console.warn(`[AI] OpenRouter error:`, response.status);
@@ -138,8 +144,12 @@ async function callDeepSeek(prompt: string, _taskType: string = 'general'): Prom
 
         if (response.status === 429) {
             console.warn(`[AI] DeepSeek Rate Limit (429). Rotating key...`);
-            keyManager.markRateLimited('deepseek');
-            return callDeepSeek(prompt, _taskType);
+            const newKey = keyManager.markRateLimited('deepseek');
+            // Only retry if a new key is available (prevent infinite recursion)
+            if (newKey) {
+                return callDeepSeek(prompt, _taskType);
+            }
+            return null; // All keys exhausted
         }
 
         console.warn(`[AI] DeepSeek error:`, data);
@@ -361,8 +371,12 @@ async function callHuggingFace(prompt: string, taskType: string): Promise<string
 
         if (response.status === 429 || data.error?.includes('Rate limit')) {
             console.warn(`[AI] HuggingFace Rate Limit (429). Rotating key...`);
-            keyManager.markRateLimited('huggingface');
-            return callHuggingFace(prompt, taskType);
+            const newKey = keyManager.markRateLimited('huggingface');
+            // Only retry if a new key is available (prevent infinite recursion)
+            if (newKey) {
+                return callHuggingFace(prompt, taskType);
+            }
+            throw new Error('All HuggingFace API keys exhausted');
         }
 
         throw new Error('Unexpected Hugging Face response format');

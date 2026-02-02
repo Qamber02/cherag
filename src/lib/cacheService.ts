@@ -37,7 +37,8 @@ export function generateCacheKey(content: string, type: string): string {
         hash = ((hash << 5) - hash) + char;
         hash = hash & hash; // Convert to 32-bit integer
     }
-    return `${CACHE_PREFIX}${type}_${Math.abs(hash).toString(36)}`;
+    // Include content length to reduce collisions for similar content
+    return `${CACHE_PREFIX}${type}_${Math.abs(hash).toString(36)}_${content.length}`;
 }
 
 /**
