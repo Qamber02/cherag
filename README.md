@@ -1,27 +1,27 @@
-# Cherág - AI Study Partner (Premium Edition)
+# Cherág - AI Study Partner 
 
 Cherág is an advanced AI-powered study companion designed to help students learn more effectively. By analyzing uploaded course materials (PDFs, docs, notes), it generates personalized study aids, tracks your mastery, and uses cognitive frameworks to deepen understanding.
 
 ##  Key Features
 
-### 🧠 Knowledge Intelligence
+###  Knowledge Intelligence
 *   **Knowledge Radar**: Visualizes concept dependencies and identifies "knowledge gaps" preventing you from understanding advanced topics.
     *   **Dynamic Mastery**: Tracks your learning progress in real-time.
     *   **Smart Progression**: Adapts lesson speed based on performance (5-question mastery cycles).
 *   **Confidence Meter**: Tracks your mastery over time using Spaced Repetition algorithms (SRS).
 *   **Mental Models**: Applies genius-level thinking frameworks (First Principles, Second Order Thinking, Pareto Principle) to your study topics.
 
-### 🎓 Active Learning Modes
+###  Active Learning Modes
 *   **Teach-AI (Feynman Mode)**: The AI acts as a "curious student" that asks you questions. You learn by teaching it, exposing your own blind spots.
 *   **Exam Simulator**: Generates realistic exam challenges based on your weak areas.
 *   **Concept Compression**: Simplified explanations for complex topics (ELI5, Analogy, Tweet-style).
 *   **Concept Remix**: Connects unrelated concepts to foster creative learning.
 
-### 📱 Mobile-First Experience
+###  Mobile-First Experience
 *   **Fully Responsive**: optimized for all screen sizes, from mobile phones to large desktops.
 *   **Touch Optimizations**: Larger touch targets, swipeable interfaces, and bottom navigation for easy one-handed use.
 
-### 🛠 Core Essentials
+### Core Essentials
 *   **Intelligent Dashboard**: Upload lecture notes and documents. Supports PDF, DOCX, TXT, MD.
 *   **AI Chat Assistant**: Ask questions about your materials with context-aware answers.
 *   **Smart Flashcards**: Auto-generated flashcards.
