@@ -98,7 +98,7 @@ Edit `src/lib/aiService.ts` line 10:
 
 ```typescript
 // Railway API Base URL
-const API_BASE = 'https://your-railway-url.up.railway.app';
+const API_BASE = 'https://cherag.up.railway.app';
 ```
 
 ## Step 2.2: Push Update

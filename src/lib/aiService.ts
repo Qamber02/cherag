@@ -5,7 +5,7 @@
 import { supabase } from './supabaseClient';
 
 // Railway API Base URL
-const API_BASE = 'https://api-cherag.up.railway.app';
+const API_BASE = 'https://cherag.up.railway.app';
 
 // =============================================================================
 // Types
