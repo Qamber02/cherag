@@ -1,123 +1,109 @@
-# Cherág - AI Study Partner 
+# Cherág - AI Study Partner
 
-Cherág is an advanced AI-powered study companion designed to help students learn more effectively. By analyzing uploaded course materials (PDFs, docs, notes), it generates personalized study aids, tracks your mastery, and uses cognitive frameworks to deepen understanding.
-
-##  Key Features
-
-###  Knowledge Intelligence
-*   **Knowledge Radar**: Visualizes concept dependencies and identifies "knowledge gaps" preventing you from understanding advanced topics.
-    *   **Dynamic Mastery**: Tracks your learning progress in real-time.
-    *   **Smart Progression**: Adapts lesson speed based on performance (5-question mastery cycles).
-*   **Confidence Meter**: Tracks your mastery over time using Spaced Repetition algorithms (SRS).
-*   **Mental Models**: Applies genius-level thinking frameworks (First Principles, Second Order Thinking, Pareto Principle) to your study topics.
-
-###  Active Learning Modes
-*   **Teach-AI (Feynman Mode)**: The AI acts as a "curious student" that asks you questions. You learn by teaching it, exposing your own blind spots.
-*   **Exam Simulator**: Generates realistic exam challenges based on your weak areas.
-*   **Concept Compression**: Simplified explanations for complex topics (ELI5, Analogy, Tweet-style).
-*   **Concept Remix**: Connects unrelated concepts to foster creative learning.
-
-###  Mobile-First Experience
-*   **Fully Responsive**: optimized for all screen sizes, from mobile phones to large desktops.
-*   **Touch Optimizations**: Larger touch targets, swipeable interfaces, and bottom navigation for easy one-handed use.
-
-### Core Essentials
-*   **Intelligent Dashboard**: Upload lecture notes and documents. Supports PDF, DOCX, TXT, MD.
-*   **AI Chat Assistant**: Ask questions about your materials with context-aware answers.
-*   **Smart Flashcards**: Auto-generated flashcards.
-*   **Quiz Generator**: Multiple-choice quizzes with detailed explanations.
-*   **Visual Learning**: Interactive Mind Maps and Flowcharts (Mermaid.js).
-*   **Study Shorts**: Curated, verified YouTube video recommendations.
-*   **Activity History**: Tracks your summaries, roadmaps, and learning progress.
+Cherág is an advanced AI-powered study companion designed to help students learn more effectively. It uses a **FastAPI backend** to orchestrate multiple AI models (Gemini, DeepSeek, OpenRouter) and a **React frontend** for a premium user experience.
 
 ---
 
-##  Tech Stack
+## 🏗️ Architecture
 
-*   **Frontend**: React (v19), TypeScript, Vite
-*   **Styling**: TailwindCSS, Lucide React (Icons), Framer Motion
-*   **Backend / Database**: Supabase (PostgreSQL, Edge Functions, Auth, Realtime)
-*   **AI Services**:
-    *   **Google Gemini 2.0 Flash** (Primary Intelligence)
-    *   **OpenRouter** (Diagram Generation via Molmo)
-    *   **Hugging Face** (Fallback inference)
-*   **Visualization**: React Flow, Mermaid.js, Recharts
+*   **Frontend**: React (v19) + Vite + TailwindCSS (Deployed on **Cloudflare Pages**)
+*   **Backend**: Python FastAPI (Deployed on **Railway**)
+*   **Database**: Supabase (PostgreSQL + Auth)
+*   **AI Orchestration**: Server-side processing with secure API key management, rate-limit handling, and multi-model fallback.
 
 ---
 
-##  Prerequisites
+## 🚀 Quick Start (Local Development)
 
-*   Node.js (v18 or higher)
-*   npm
-*   A Supabase project
-*   Google Gemini API Key
-*   (Optional) YouTube Data API Keys, OpenRouter Key, Hugging Face Key
+### Prerequisites
+*   Node.js (v18+)
+*   Python 3.10+
+*   Supabase Project
 
-##  Installation
+### 1. Setup Backend (FastAPI)
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/cherag.git
-    cd cherag
-    ```
+The backend handles all AI logic and protects your API keys.
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+```powershell
+# Navigate to project root
+cd cherag
 
-3.  **Environment Configuration**
-    Create a `.env` file in the root directory:
+# Install Python dependencies
+pip install -r requirements.txt
 
-    ```env
-    # Supabase (Required)
-    VITE_SUPABASE_URL=your_supabase_url
-    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Create .env file with your keys
+# (See .env.example for template)
+# Add: GEMINI_API_KEY, OPENROUTER_API_KEY, DEEPSEEK_API_KEY, SUPABASE_JWT_SECRET, etc.
 
-    # AI Keys (Required)
-    VITE_GEMINI_API_KEY=your_gemini_api_key
+# Run the server
+uvicorn main:app --reload
+```
+*Backend runs at `http://localhost:8000`*
 
-    # Optional Features
-    VITE_YOUTUBE_API_KEY=your_youtube_key   # For "Study Shorts"
-    VITE_OPENROUTER_API_KEY=your_openrouter # For complex diagrams
-    VITE_HUGGINGFACE_API_KEY=your_hf_key    # For redundant fallbacks
-    ```
+### 2. Setup Frontend (React)
 
-4.  **Database Setup**
-    Run the migration scripts in your Supabase SQL Editor:
-    - `supabase/migrations/20260124_premium_schema.sql` (Premium Features)
-    - `supabase/migrations/20260125_activity_history.sql` (History Tracking)
+The frontend communicates with the local backend during development.
 
-5.  **Run the development server**
-    ```bash
-    npm run dev
-    ```
+```powershell
+# Open a new terminal
+cd cherag
 
-##  Project Structure
+# Install dependencies
+npm install
+
+# Create .env file for frontend
+# Add: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+# Run the dev server
+npm run dev
+```
+*Frontend runs at `http://localhost:5173`*
+
+---
+
+## 🌍 Deployment
+
+We use a split deployment strategy for maximum performance and security.
+
+### 1. Backend Deployment (Railway)
+Hosting the FastAPI server.
+👉 **[Read the Railway Setup Guide](docs/RAILWAY_SETUP.md)**
+
+### 2. Frontend Deployment (Cloudflare Pages)
+Hosting the React SPA.
+👉 **[Read the Cloudflare Setup Guide](docs/CLOUDFLARE_SETUP.md)**
+
+---
+
+## 🔑 Key Features
+
+### Knowledge Intelligence
+*   **Knowledge Radar**: Visualizes concept dependencies and tracks mastery.
+*   **Multi-Model AI**: Automatically switches between Gemini, DeepSeek, and OpenRouter based on availability and task complexity.
+*   **Smart Fallback**: If one AI provider is rate-limited, the system seamlessly tries another.
+
+### Active Learning Modes
+*   **Teach-AI (Feynman Mode)**: You learn by teaching the AI.
+*   **Exam Simulator**: Realistic exam generation based on your weak spots.
+*   **Video Intelligence**: Finds and analyzes relevant YouTube videos without ads.
+
+---
+
+## 📂 Project Structure
 
 ```
-src/
-├── components/          # UI Components
-│   ├── premium/         # New Premium Features (Radar, Mental Models, etc.)
-│   ├── Dashboard.tsx    # Main App Layout
+├── main.py                  # FastAPI Backend Entry Point
+├── requirements.txt         # Backend Dependencies
+├── Procfile                 # Deployment Command
+├── src/
+│   ├── components/          # React UI Components
+│   ├── lib/
+│   │   ├── aiService.ts     # Client proxy to Backend API
+│   │   └── ...
 │   └── ...
-├── lib/
-│   ├── premium/         # Premium Logic (Graph algorithms, Analytics)
-│   ├── aiService.ts     # Core AI Gateway
-│   └── activityService.ts # History & Persistence
-├── hooks/               # Custom Hooks (usePremiumFeatures, useFiles)
-└── supabase/
-    ├── functions/       # Deno Edge Functions (ai-gateway, process-doc)
-    └── migrations/      # SQL Schema definitions
+├── docs/                    # Deployment Guides
+└── public/                  # Static Assets & _redirects
 ```
 
-##  Authentication
-
-Authentication is handled via Supabase Auth. The app supports email/password login and sign-up with session persistence.
-
-##  License
-
+## 📜 License
 MIT License
-
-## Project URL
-https://cherag.pages.dev/auth
