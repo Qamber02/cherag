@@ -97,6 +97,13 @@ class ChatRequest(BaseModel):
     context: str
     query: str
 
+class RoadmapRequest(BaseModel):
+    context: str
+
+class NodeExplanationRequest(BaseModel):
+    title: str
+    description: str
+
 class Flashcard(BaseModel):
     question: str
     answer: str
@@ -673,6 +680,97 @@ Question: {sanitized_query}"""
 
     result = await call_ai_with_fallback(prompt)
     return {"response": result}
+
+@app.post("/generate-roadmap")
+async def generate_roadmap(
+    request: RoadmapRequest,
+    user: dict = Depends(verify_jwt)
+) -> dict:
+    """Generate a learning roadmap from content."""
+    sanitized = sanitize_input(request.context, 3000)
+    
+    prompt = f"""Create a learning roadmap from this content as JSON.
+
+CONTENT:
+{sanitized}
+
+OUTPUT FORMAT (JSON only):
+{{
+  "id": "main",
+  "title": "Main Topic",
+  "type": "main",
+  "description": "Brief overview",
+  "children": [
+    {{
+      "id": "t1",
+      "title": "Topic 1",
+      "type": "topic",
+      "description": "Description",
+      "children": [
+        {{"id": "s1", "title": "Subtopic", "type": "subtopic", "description": "Detail"}}
+      ]
+    }}
+  ]
+}}
+
+RULES:
+- 3-5 main topics
+- 2-3 subtopics each
+- Short titles (2-4 words)
+- Brief descriptions
+
+OUTPUT ONLY JSON:"""
+
+    result = await call_ai_with_fallback(prompt)
+    cleaned = extract_json(result)
+    
+    try:
+        import json
+        parsed = json.loads(cleaned)
+        return {"roadmap": parsed}
+    except Exception:
+        # Fallback structure
+        return {"roadmap": {
+            "id": "main",
+            "title": "Study Roadmap",
+            "type": "main",
+            "description": "Your learning path",
+            "children": [
+                {"id": "t1", "title": "Topic 1", "type": "topic", "description": "First concept", "children": []},
+                {"id": "t2", "title": "Topic 2", "type": "topic", "description": "Second concept", "children": []}
+            ]
+        }}
+
+@app.post("/get-node-explanation")
+async def get_node_explanation(
+    request: NodeExplanationRequest,
+    user: dict = Depends(verify_jwt)
+) -> dict:
+    """Explain a specific node in the roadmap."""
+    sanitized_title = sanitize_input(request.title, 200)
+    sanitized_desc = sanitize_input(request.description, 500)
+    
+    prompt = f"""Explain "{sanitized_title}" for a student learning this topic.
+
+Context: {sanitized_desc}
+
+Provide a clear, well-structured explanation with:
+
+## Overview
+A clear 2-paragraph explanation of what this is and why it matters.
+
+## Key Points
+- First important point about this topic
+- Second key concept to understand
+- Third essential aspect
+
+## Why It Matters
+Brief explanation of practical importance.
+
+Use proper formatting with headers and bullet points."""
+
+    result = await call_ai_with_fallback(prompt)
+    return {"explanation": result}
 
 # =============================================================================
 # Run Server

@@ -64,11 +64,12 @@ export function useChat(user: User | null) {
             await supabase.from('messages').insert({
                 chat_id: chatId || user.id, // simplified
                 role: 'user',
-                content,
-                user_id: user.id
+                content
             });
 
+            // Use new aiService (FastAPI Backend)
             const { chatWithAI } = await import('../lib/aiService');
+            // Legacy import removed
             const response = await chatWithAI(context, content);
 
             const aiMsg: Message = {
@@ -84,12 +85,11 @@ export function useChat(user: User | null) {
             await supabase.from('messages').insert({
                 chat_id: chatId || user.id,
                 role: 'assistant',
-                content: response,
-                user_id: user.id
+                content: response
             });
 
-        } catch (err: any) {
-            console.error(err);
+        } catch (err: unknown) {
+            console.error('[Chat Error]', err);
             // Add error message to chat
             const errorMsg: Message = {
                 id: crypto.randomUUID(),

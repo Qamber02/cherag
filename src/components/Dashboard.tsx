@@ -95,6 +95,7 @@ export default function Dashboard({ session }: DashboardProps) {
         if (!context) return;
         setIsSummaryLoading(true);
         try {
+            // Use secure server-side AI generation
             const { generateSummary } = await import('../lib/aiService');
             const result = await generateSummary(context, options);
             setSummary(result);

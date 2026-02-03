@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2 } from 'lucide-react';
+// Server Action for secure server-side AI generation
+// import { generateQuizzes } from '@/app/actions/ai';
 import { generateQuizzes } from '../lib/aiService';
 import ReactMarkdown from 'react-markdown';
 
@@ -58,7 +60,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         setIsLoading(true);
 
         try {
-            const generated = await generateQuizzes(quizContext, { count: questionCount, difficulty, seed: Date.now(), forceRefresh: true });
+            const generated = await generateQuizzes(quizContext, { count: questionCount, difficulty: difficulty as 'easy' | 'medium' | 'hard', seed: Date.now(), forceRefresh: true });
             if (!generated || generated.length === 0) throw new Error("No quizzes generated");
 
             // Save to DB

@@ -97,22 +97,25 @@ export function useStudyShorts(user: User | null, context: string) {
         setNextPageToken(null);
 
         try {
+            // Use secure server-side video search via aiService
+            // const { searchEducationalVideos } = await import('@/app/actions/videos');
             const { generateVideos } = await import('../lib/aiService');
+
             // Use context as topic if no explicit topic
             const query = topic || context.slice(0, 200) || 'educational';
             setLastQuery(query);
 
-            const { result, nextPageToken: token } = await generateVideos(query);
+            const { result: apiVideos, nextPageToken: token } = await generateVideos(query);
             setNextPageToken(token);
 
-            const mappedVideos: Video[] = result.map((v: any) => ({
+            const mappedVideos: Video[] = apiVideos.map((v) => ({
                 id: v.id,
                 youtube_id: v.id,
                 title: v.title,
                 thumbnail: v.thumbnail,
                 channel: v.channel,
                 relevanceScore: v.relevanceScore,
-                duration: '1:00'
+                duration: v.duration || '1:00'
             }));
 
             setVideos(mappedVideos);
@@ -130,20 +133,21 @@ export function useStudyShorts(user: User | null, context: string) {
         if (!user || isLoadingMore || !hasMore || !nextPageToken) return;
         setIsLoadingMore(true);
         try {
+            // Use Server Action for secure server-side video search
             const { generateVideos } = await import('../lib/aiService');
-            const { result, nextPageToken: token } = await generateVideos(lastQuery, nextPageToken);
+            const { result: apiVideos, nextPageToken: token } = await generateVideos(lastQuery, nextPageToken);
 
             setNextPageToken(token);
             if (!token) setHasMore(false);
 
-            const mappedVideos: Video[] = result.map((v: any) => ({
+            const mappedVideos: Video[] = apiVideos.map((v) => ({
                 id: v.id,
                 youtube_id: v.id,
                 title: v.title,
                 thumbnail: v.thumbnail,
                 channel: v.channel,
                 relevanceScore: v.relevanceScore,
-                duration: '1:00'
+                duration: v.duration || '1:00'
             }));
 
             setVideos(prev => [...prev, ...mappedVideos]);

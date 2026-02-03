@@ -37,6 +37,14 @@ export interface MindMapNode {
     children?: MindMapNode[];
 }
 
+export interface RoadmapNode {
+    id: string;
+    title: string;
+    description?: string;
+    type: 'main' | 'topic' | 'subtopic';
+    children?: RoadmapNode[];
+}
+
 // =============================================================================
 // Authentication Helper
 // =============================================================================
@@ -179,6 +187,34 @@ export async function chatWithAI(
     });
 
     return response.response;
+}
+
+/**
+ * Generate a learning roadmap from the provided content
+ */
+export async function generateRoadmap(
+    context: string
+): Promise<RoadmapNode> {
+    const response = await apiRequest<{ roadmap: RoadmapNode }>('/generate-roadmap', {
+        context
+    });
+
+    return response.roadmap;
+}
+
+/**
+ * Get an explanation for a specific node in the roadmap
+ */
+export async function getNodeExplanation(
+    title: string,
+    description: string
+): Promise<string> {
+    const response = await apiRequest<{ explanation: string }>('/get-node-explanation', {
+        title,
+        description
+    });
+
+    return response.explanation;
 }
 
 // =============================================================================

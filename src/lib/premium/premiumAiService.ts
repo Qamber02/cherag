@@ -1,40 +1,18 @@
-// Advanced AI Service with multiple models, rate limiting, and fallbacks
-import { rateLimiter } from '../rateLimiter';
-import { generateCacheKey, getFromCache, saveToCache } from '../cacheService';
+// Advanced AI Service - Thin Client Stub
+// Premium features are temporarily disabled during migration to FastAPI backend.
+// This prevents legacy server-side code from leaking into the client bundle.
 
-// OpenRouter model for chat
-const MOLMO_MODEL = 'allenai/molmo-2-8b:free';
+// import { waitForToken } from '@/lib/server/rateLimiter';
+// import { generateCacheKey, getFromCache, saveToCache } from '@/lib/server/cache';
+// import { getKey, markRateLimited } from '@/lib/server/keyManager';
 
 // Security: Input sanitization
 function sanitizeInput(text: string, maxLength: number = 10000): string {
     if (!text || typeof text !== 'string') {
         return '';
     }
-
-    // Remove potential XSS and injection attempts
-    return text
-        .replace(/<script[^>]*>.*?<\/script>/gi, '')
-        .replace(/javascript:/gi, '')
-        .replace(/onerror=/gi, '')
-        .slice(0, maxLength)
-        .trim();
+    return text.substring(0, maxLength);
 }
-
-// Gemini Models - ordered by priority (available models)
-const PREMIUM_GEMINI_MODELS = [
-    'gemini-2.0-flash-lite',           // Fastest, most efficient
-    'gemini-2.0-flash',                // Fast and capable
-    'gemini-2.5-flash',                // Advanced flash
-    'gemini-2.5-pro',                  // Most capable (fallback)
-];
-
-// Hugging Face Models for different tasks
-const HF_MODELS = {
-    summary: 'facebook/bart-large-cnn',
-    chat: 'meta-llama/Llama-3.2-3B-Instruct',
-    flashcards: 'mistralai/Mistral-7B-Instruct-v0.2',
-    quizzes: 'mistralai/Mistral-7B-Instruct-v0.2',
-};
 
 import { getPreference } from '../preferencesService';
 
@@ -46,7 +24,7 @@ interface AIResponse {
 }
 
 /**
- * Call AI with premium model cascade and caching
+ * Call AI with premium model cascade - STUBBED FOR MIGRATION
  */
 export async function callPremiumAI(
     prompt: string,
@@ -59,126 +37,16 @@ export async function callPremiumAI(
         preferredProvider?: 'auto' | 'deepseek' | 'gemini' | 'huggingface' | 'openrouter';
     } = {}
 ): Promise<AIResponse> {
-    const {
-        maxTokens = 2000,
-        temperature = 0.5,
-        useCache = true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        preferredProvider = getPreference('aiModel') as any || 'auto'
-    } = options;
+    console.warn('[Premium AI] Calls are currently stubbed awaiting backend migration.');
 
-    // Security: Sanitize prompt
-    const sanitizedPrompt = sanitizeInput(prompt, 15000); // Allow slightly larger for premium tasks
+    // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Check cache first
-    if (useCache) {
-        const cacheKey = generateCacheKey(sanitizedPrompt, `premium_${taskType}`);
-        const cached = getFromCache<string>(cacheKey);
-        if (cached) {
-            console.log(`[Premium AI] Cache hit for ${taskType}`);
-            return { success: true, data: cached, model: 'cache', cached: true };
-        }
-    }
-
-    // Rate limiting
-    await rateLimiter.waitForToken(taskType);
-
-    // ==========================================
-    // STRATEGY: PREFERRED -> DEEPSEEK -> OPENROUTER -> GEMINI -> HUGGINGFACE
-    // ==========================================
-
-    const hasDeepSeek = !!keyManager.getKey('deepseek');
-    const hasOpenRouter = !!keyManager.getKey('openrouter');
-    const hasHuggingFace = !!keyManager.getKey('huggingface');
-
-    // 0. Try Preferred Provider First (if strictly set)
-    if (preferredProvider === 'deepseek' && hasDeepSeek) {
-        try {
-            const deepseekResult = await tryDeepSeek(sanitizedPrompt, maxTokens, temperature, taskType);
-            if (deepseekResult) {
-                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), deepseekResult.data, taskType);
-                return deepseekResult;
-            }
-        } catch (_e) {
-            console.warn('[Premium AI] Preferred (DeepSeek) failed, falling back...');
-        }
-    } else if (preferredProvider === 'gemini') {
-        try {
-            const geminiResult = await tryGeminiModels(sanitizedPrompt, maxTokens, temperature, taskType);
-            if (geminiResult) {
-                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), geminiResult.data, taskType);
-                return geminiResult;
-            }
-        } catch (_e) {
-            console.warn('[Premium AI] Preferred (Gemini) failed, falling back...');
-        }
-    }
-    // Add other preferred providers here if needed...
-
-    // 1. Try DeepSeek (Default robust model)
-    if (hasDeepSeek && preferredProvider !== 'gemini' && preferredProvider !== 'huggingface' && preferredProvider !== 'openrouter') { // Don't retry if it was already tried or explicitly avoided
-        try {
-            const deepseekResult = await tryDeepSeek(sanitizedPrompt, maxTokens, temperature, taskType);
-            if (deepseekResult) {
-                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), deepseekResult.data, taskType);
-                return deepseekResult;
-            }
-        } catch (_e) {
-            console.warn('[Premium AI] DeepSeek failed, checking next fallback...');
-        }
-    }
-
-    // 2. Try OpenRouter (Molmo)
-    if (hasOpenRouter && preferredProvider !== 'deepseek') {
-        try {
-            const openRouterResult = await tryOpenRouter(sanitizedPrompt, maxTokens, temperature);
-            if (openRouterResult) {
-                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), openRouterResult.data, taskType);
-                return openRouterResult;
-            }
-        } catch (_e) {
-            console.warn('[Premium AI] OpenRouter failed, checking next fallback...');
-        }
-    }
-
-    // 3. Try Gemini Models
-    try {
-        const geminiResult = await tryGeminiModels(sanitizedPrompt, maxTokens, temperature, taskType);
-        if (geminiResult) {
-            if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), geminiResult.data, taskType);
-            return geminiResult;
-        }
-    } catch (_e) {
-        console.warn('[Premium AI] Gemini loop exhausted or failed, checking fallbacks...');
-    }
-
-    // 4. Fallback: Hugging Face
-    if (hasHuggingFace) {
-        try {
-            const hfResult = await tryHuggingFace(sanitizedPrompt, maxTokens, temperature, taskType);
-            if (hfResult) {
-                if (useCache) saveToCache(generateCacheKey(sanitizedPrompt, `premium_${taskType}`), hfResult.data, taskType);
-                return hfResult;
-            }
-        } catch (_e) {
-            console.warn('[Premium AI] Hugging Face failed.');
-        }
-    }
-
-    // 5. Final Fallback: Mock Data (Demo Mode)
-    try {
-        const mockResult = await tryMockFallback(sanitizedPrompt, taskType);
-        return mockResult;
-    } catch (_e) {
-        console.error('[Premium AI] Mock fallback failed (should never happen).');
-    }
-
-    throw new Error('All premium AI models and fallbacks failed. Please try again later.');
+    // Return mock fallback
+    return tryMockFallback(prompt, taskType);
 }
 
 // --- Helpers ---
-
-import { keyManager } from '../keyManager';
 
 async function tryGeminiModels(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
     for (const model of PREMIUM_GEMINI_MODELS) {
@@ -186,7 +54,7 @@ async function tryGeminiModels(prompt: string, maxTokens: number, temperature: n
         const MAX_RETRIES_PER_MODEL = 2; // Try up to 2 keys
 
         while (attempts < MAX_RETRIES_PER_MODEL) {
-            const apiKey = keyManager.getKey('gemini');
+            const apiKey = getKey('gemini');
             if (!apiKey) break;
 
             try {
@@ -215,7 +83,7 @@ async function tryGeminiModels(prompt: string, maxTokens: number, temperature: n
 
                 if (response.status === 429 || data.error?.code === 429) {
                     console.warn(`[Premium AI] Rate limit on ${model}, rotating key...`);
-                    keyManager.markRateLimited('gemini');
+                    markRateLimited('gemini');
                     attempts++;
                     continue;
                 }
@@ -233,7 +101,7 @@ async function tryGeminiModels(prompt: string, maxTokens: number, temperature: n
 
 
 async function tryOpenRouter(prompt: string, maxTokens: number, temperature: number): Promise<AIResponse | null> {
-    const apiKey = keyManager.getKey('openrouter');
+    const apiKey = getKey('openrouter');
     if (!apiKey) return null;
 
     try {
@@ -267,7 +135,7 @@ async function tryOpenRouter(prompt: string, maxTokens: number, temperature: num
 
         if (response.status === 429) {
             console.warn(`[Premium AI] OpenRouter Rate Limit (429). Rotating key...`);
-            keyManager.markRateLimited('openrouter');
+            markRateLimited('openrouter');
             return tryOpenRouter(prompt, maxTokens, temperature);
         }
 
@@ -281,7 +149,7 @@ async function tryOpenRouter(prompt: string, maxTokens: number, temperature: num
 }
 
 async function tryDeepSeek(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
-    const apiKey = keyManager.getKey('deepseek');
+    const apiKey = getKey('deepseek');
     if (!apiKey) return null;
 
     // Determine model based on task type
@@ -319,7 +187,7 @@ async function tryDeepSeek(prompt: string, maxTokens: number, temperature: numbe
 
         if (response.status === 429) {
             console.warn(`[Premium AI] DeepSeek Rate Limit (429). Rotating key...`);
-            keyManager.markRateLimited('deepseek');
+            markRateLimited('deepseek');
             return tryDeepSeek(prompt, maxTokens, temperature, taskType);
         }
 
@@ -385,14 +253,14 @@ async function tryMockFallback(_prompt: string, taskType: string): Promise<AIRes
 }
 
 async function tryHuggingFace(prompt: string, maxTokens: number, temperature: number, taskType: string): Promise<AIResponse | null> {
-    const apiKey = keyManager.getKey('huggingface');
+    const apiKey = getKey('huggingface');
     if (!apiKey) return null;
 
     const model = HF_MODELS[taskType as keyof typeof HF_MODELS] || HF_MODELS.chat;
 
     console.log(`[Premium AI] 🔄 Fallback: Trying Hugging Face (${model})...`);
 
-    const baseUrl = import.meta.env.DEV ? '/api/hf' : 'https://router.huggingface.co';
+    const baseUrl = typeof window === 'undefined' ? 'https://router.huggingface.co' : '/api/hf';
 
     try {
         const response = await fetch(
@@ -424,7 +292,7 @@ async function tryHuggingFace(prompt: string, maxTokens: number, temperature: nu
         }
 
         if (response.status === 429) {
-            keyManager.markRateLimited('huggingface');
+            markRateLimited('huggingface');
             return tryHuggingFace(prompt, maxTokens, temperature, taskType);
         }
 
