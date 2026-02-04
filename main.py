@@ -25,6 +25,7 @@ import jwt
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from services.pdf_processor import pdf_processor, PDFProcessor
 
 # Load environment variables
 load_dotenv()
@@ -930,7 +931,7 @@ async def update_document_status(document_id: str, status: str, progress: float 
         print(f"[RAG] Failed to update status: {e}")
 
 async def process_document_background(document_id: str, file_url: str):
-    """Background task: Extract text from PDF, chunk, embed, and store."""
+    """Background task: Extract text from PDF using slide-aware processor, chunk, embed, and store."""
     try:
         await update_document_status(document_id, 'processing', 0)
         
@@ -941,39 +942,51 @@ async def process_document_background(document_id: str, file_url: str):
                 raise Exception(f"Failed to download file: {response.status_code}")
             pdf_bytes = response.content
         
-        # Open PDF with PyMuPDF
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        total_pages = len(doc)
+        # Process PDF using slide-aware processor (handles low-text slides, removes artifacts)
+        pages = pdf_processor.process_pdf_bytes(pdf_bytes)
+        total_pages = len(pages)
+        
+        if total_pages == 0:
+            raise Exception("PDF has no pages or could not be read")
         
         pending_chunks = []
         chunk_offset = 0
         total_chunks_stored = 0
         
-        for page_num in range(total_pages):
-            page = doc[page_num]
-            text = page.get_text()
+        for i, page_data in enumerate(pages):
+            page_num = page_data['page']
+            page_text = page_data['text']
+            page_type = page_data['type']
             
-            # OCR fallback for sparse text pages (< 50 chars)
-            if len(text.strip()) < 50:
-                # Render page to image for Gemini OCR
-                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale for better OCR
-                image_bytes = pix.tobytes("png")
-                text = await ocr_with_gemini(image_bytes)
+            # For visual slides with minimal text, try Gemini OCR
+            if page_type == 'visual' and page_data['char_count'] < 20:
+                try:
+                    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+                    page = doc[page_num - 1]  # 0-indexed
+                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    image_bytes = pix.tobytes("png")
+                    doc.close()
+                    
+                    ocr_text = await ocr_with_gemini(image_bytes)
+                    if ocr_text and len(ocr_text.strip()) > 50:
+                        page_text = pdf_processor.clean_text(ocr_text)
+                except Exception as ocr_err:
+                    print(f"[RAG] OCR fallback failed for page {page_num}: {ocr_err}")
             
-            # Chunk the text
-            if text.strip():
-                chunks = text_splitter.split_text(text)
+            # Chunk the text (including placeholders for visual slides)
+            if page_text.strip():
+                chunks = text_splitter.split_text(page_text)
                 pending_chunks.extend(chunks)
             
             # Persist every 5 pages to keep memory low
-            if (page_num + 1) % 5 == 0 and pending_chunks:
+            if (i + 1) % 5 == 0 and pending_chunks:
                 stored = await embed_and_store_chunks(document_id, pending_chunks, chunk_offset)
                 chunk_offset += len(pending_chunks)
                 total_chunks_stored += stored
                 pending_chunks = []
                 
                 # Update progress
-                progress = ((page_num + 1) / total_pages) * 100
+                progress = ((i + 1) / total_pages) * 100
                 await update_document_status(document_id, 'processing', progress)
         
         # Final batch
@@ -981,11 +994,13 @@ async def process_document_background(document_id: str, file_url: str):
             stored = await embed_and_store_chunks(document_id, pending_chunks, chunk_offset)
             total_chunks_stored += stored
         
-        doc.close()
-        
         # Mark as completed
         await update_document_status(document_id, 'completed', 100)
+        
+        # Log stats
+        stats = pdf_processor.get_stats(pages)
         print(f"[RAG] Document {document_id} processed: {total_chunks_stored} chunks stored")
+        print(f"[RAG] Stats: {stats['text_pages']} text, {stats['slide_pages']} slide, {stats['visual_pages']} visual pages")
         
     except Exception as e:
         error_msg = str(e)[:500]
