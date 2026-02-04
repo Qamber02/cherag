@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { parseFileStream } from '../lib/fileParser';
+import { processDocument, getDocumentStatus } from '../lib/aiService';
 import type { User } from '@supabase/supabase-js';
 
 export interface Document {
@@ -10,11 +10,14 @@ export interface Document {
     file_type: string;
     content: string;
     created_at: string;
+    processing_status?: string;
+    processing_progress?: number;
 }
 
 export function useFiles(user: User | null) {
     const [files, setFiles] = useState<Document[]>([]);
     const [isParsing, setIsParsing] = useState(false);
+    const [processingProgress, setProcessingProgress] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -25,16 +28,16 @@ export function useFiles(user: User | null) {
         try {
             const { data, error: fetchError } = await supabase
                 .from('documents')
-                .select('*')
-                .eq('user_id', user.id) // Ensure we only get current user's files
+                .select('*, processing_status, processing_progress')
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (fetchError) throw fetchError;
             setFiles(data || []);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to fetch files';
             console.error('Error fetching files:', err);
-            setError(err.message || 'Failed to fetch files');
+            setError(message);
         } finally {
             setIsLoading(false);
         }
@@ -44,13 +47,56 @@ export function useFiles(user: User | null) {
         fetchFiles();
     }, [fetchFiles]);
 
+    // Poll for processing status updates
+    const pollProcessingStatus = useCallback(async (documentId: string) => {
+        const maxAttempts = 600; // 10 minutes max (1s intervals)
+        let attempts = 0;
+
+        const poll = async () => {
+            try {
+                const status = await getDocumentStatus(documentId);
+                setProcessingProgress(status.progress);
+
+                if (status.status === 'completed') {
+                    setIsParsing(false);
+                    setProcessingProgress(100);
+                    await fetchFiles(); // Refresh to get updated doc
+                    return;
+                }
+
+                if (status.status === 'failed') {
+                    setIsParsing(false);
+                    setError(status.error || 'Processing failed');
+                    return;
+                }
+
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(poll, 1000); // Poll every 1 second
+                } else {
+                    setIsParsing(false);
+                    setError('Processing timed out');
+                }
+            } catch (err) {
+                console.error('Status poll error:', err);
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(poll, 2000); // Retry with backoff
+                }
+            }
+        };
+
+        poll();
+    }, [fetchFiles]);
+
     const uploadFile = async (file: File) => {
         if (!user) return;
         setIsParsing(true);
+        setProcessingProgress(0);
         setError(null);
+
         try {
-            // 1. Create DB Record First (Metadata)
-            // We store a placeholder content or empty string initially.
+            // 1. Create DB Record
             const filePath = `${user.id}/${Date.now()}_${file.name}`;
 
             const { data: doc, error: dbError } = await supabase
@@ -61,94 +107,73 @@ export function useFiles(user: User | null) {
                     file_type: file.name.split('.').pop() || 'txt',
                     file_path: filePath,
                     file_size: file.size,
-                    content: '' // Will update with preview later
+                    content: '',
+                    processing_status: 'pending'
                 })
                 .select()
                 .single();
 
             if (dbError) throw dbError;
 
-            // 2. Upload to Storage (Backup & Source of Truth)
-            // Supabase client handles large TUS uploads automatically
-            const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file);
+            // 2. Upload to Storage
+            const { error: uploadError } = await supabase.storage
+                .from('documents')
+                .upload(filePath, file);
+
             if (uploadError) {
                 console.warn('Storage upload failed:', uploadError);
+                throw uploadError;
             }
 
-            // 3. Stream Parse & Process
-            // We'll accumulate a preview string (first 20KB)
-            let previewContent = '';
-            let buffer = '';
-            let currentChunkIndex = 0; // Track global chunk index for RAG
-            const BATCH_SIZE = 500 * 1024; // 0.5 MB per Edge Function call (safe limit)
-
-            await parseFileStream(file, async (chunk: string, _progress: number) => {
-                buffer += chunk;
-
-                // Collect preview
-                if (previewContent.length < 20000) {
-                    previewContent += chunk.slice(0, 20000 - previewContent.length);
-                }
-
-                // If buffer exceeds batch size, send to RAG processing
-                if (buffer.length >= BATCH_SIZE) {
-                    await processBatch(doc.id, buffer, currentChunkIndex);
-                    // Estimate valid sub-chunks created by Edge Function (approx 1 per 1000 chars)
-                    currentChunkIndex += Math.ceil(buffer.length / 900);
-                    buffer = ''; // Clear buffer
-                }
-            });
-
-            // Process remaining buffer
-            if (buffer.length > 0) {
-                await processBatch(doc.id, buffer, currentChunkIndex);
-            }
-
-            // 4. Update DB with Preview Content
-            await supabase
+            // 3. Get signed URL for backend processing
+            const { data: urlData, error: urlError } = await supabase.storage
                 .from('documents')
-                .update({ content: previewContent })
-                .eq('id', doc.id);
+                .createSignedUrl(filePath, 3600); // 1 hour expiry
 
-            // Update local state (Optimistic: we have the doc with preview)
-            setFiles(prev => [{ ...doc, content: previewContent }, ...prev]);
+            if (urlError || !urlData?.signedUrl) {
+                throw new Error('Failed to create signed URL');
+            }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
+            // 4. Trigger server-side processing via FastAPI
+            await processDocument(doc.id, urlData.signedUrl);
+
+            // 5. Update local state immediately (show as processing)
+            setFiles(prev => [{ ...doc, processing_status: 'processing' }, ...prev]);
+
+            // 6. Start polling for status updates
+            pollProcessingStatus(doc.id);
+
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to upload file';
             console.error('Upload error:', err);
-            setError(err.message || 'Failed to upload file');
-            alert(`Failed to upload file: ${err.message || 'Unknown error'}`);
-        } finally {
+            setError(message);
             setIsParsing(false);
         }
     };
 
-    const processBatch = async (documentId: string, text: string, startIndex: number) => {
-        // Retry logic could be added here
-        const { error } = await supabase.functions.invoke('process-document', {
-            body: { document_id: documentId, content: text, chunk_offset: startIndex }
-        });
-        if (error) {
-            console.error('RAG batch processing error:', error);
-            // Optionally throw to stop processing, or continue best-effort
-        }
-    };
-
     const removeFile = async (id: string) => {
-        // Optimistic update
         const previousFiles = [...files];
         setFiles(prev => prev.filter(f => f.id !== id));
 
         try {
             const { error: deleteError } = await supabase.from('documents').delete().eq('id', id);
             if (deleteError) throw deleteError;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to delete file';
             console.error('Delete error', err);
-            setError(err.message || 'Failed to delete file');
-            setFiles(previousFiles); // Revert on error
+            setError(message);
+            setFiles(previousFiles);
         }
     };
 
-    return { files, isParsing, error, isLoading, uploadFile, removeFile, refreshFiles: fetchFiles };
+    return {
+        files,
+        isParsing,
+        processingProgress,
+        error,
+        isLoading,
+        uploadFile,
+        removeFile,
+        refreshFiles: fetchFiles
+    };
 }

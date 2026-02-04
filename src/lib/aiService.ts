@@ -218,6 +218,86 @@ export async function getNodeExplanation(
 }
 
 // =============================================================================
+// RAG Document Processing Functions
+// =============================================================================
+
+/**
+ * Start server-side document processing (returns 202 immediately)
+ */
+export async function processDocument(
+    fileId: string,
+    fileUrl: string
+): Promise<{ status: string; document_id: string; message: string }> {
+    const response = await apiRequest<{ status: string; document_id: string; message: string }>(
+        '/process-document',
+        { file_id: fileId, file_url: fileUrl }
+    );
+    return response;
+}
+
+/**
+ * Get the processing status of a document
+ */
+export async function getDocumentStatus(
+    documentId: string
+): Promise<{ status: string; progress: number; chunks_count: number; error?: string }> {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE}/document-status/${documentId}`, {
+        method: 'GET',
+        headers
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get document status');
+    }
+
+    return response.json();
+}
+
+/**
+ * Chat with AI using RAG (streams response)
+ */
+export async function ragChat(
+    documentId: string,
+    query: string,
+    onChunk?: (chunk: string) => void
+): Promise<string> {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE}/rag-chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ document_id: documentId, query })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get RAG response');
+    }
+
+    // Handle streaming response
+    if (onChunk && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            fullText += chunk;
+            onChunk(chunk);
+        }
+
+        return fullText;
+    }
+
+    // Fallback: read as text
+    return response.text();
+}
+
+// =============================================================================
 // Legacy Exports (for backward compatibility)
 // =============================================================================
 

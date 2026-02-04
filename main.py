@@ -1,21 +1,30 @@
 """
 Cherág AI Study Partner - FastAPI Backend
 Secure backend for AI orchestration with multi-model fallback
+Now with server-side RAG for 1000+ page PDF processing
 """
 
 import os
 import re
+import io
 import html
+import json
+import base64
+import asyncio
 import httpx
-from typing import Optional, List, Any
+import fitz  # PyMuPDF
+from typing import Optional, List, Any, AsyncGenerator
 from functools import wraps
 
-from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import jwt
 from dotenv import load_dotenv
+from supabase import create_client, Client
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # Load environment variables
 load_dotenv()
@@ -45,6 +54,13 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+# Initialize Supabase admin client for server-side operations
+supabase_admin: Client = None
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    supabase_admin = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # Frontend domain for CORS
 FRONTEND_ORIGIN = "https://cherag.pages.dev"
@@ -140,6 +156,21 @@ class VideoResult(BaseModel):
 class VideosResponse(BaseModel):
     result: List[VideoResult]
     next_page_token: Optional[str] = None
+
+# RAG Document Processing Models
+class ProcessDocumentRequest(BaseModel):
+    file_id: str       # Document ID in Supabase
+    file_url: str      # Signed URL to download from Storage
+
+class DocumentStatusResponse(BaseModel):
+    status: str        # 'pending', 'processing', 'completed', 'failed'
+    progress: float    # 0-100 percentage
+    chunks_count: int  # Number of chunks created
+    error: Optional[str] = None
+
+class RAGChatRequest(BaseModel):
+    document_id: str   # Reference to document for vector search
+    query: str
 
 # =============================================================================
 # JWT Authentication
@@ -797,9 +828,314 @@ Use proper formatting with headers and bullet points."""
     return {"explanation": result}
 
 # =============================================================================
+# RAG Document Processing
+# =============================================================================
+
+# Text splitter for chunking (1000 chars, 100 overlap)
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=100,
+    length_function=len,
+    separators=["\n\n", "\n", ". ", " ", ""]
+)
+
+async def generate_embedding(text: str) -> Optional[List[float]]:
+    """Generate embedding using Gemini text-embedding-004."""
+    if not GEMINI_KEYS:
+        return None
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for key in GEMINI_KEYS:
+            try:
+                response = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+                    params={"key": key},
+                    json={
+                        "model": "models/text-embedding-004",
+                        "content": {"parts": [{"text": text[:2000]}]}  # Limit text length
+                    }
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return data.get("embedding", {}).get("values")
+            except Exception:
+                continue
+    return None
+
+async def ocr_with_gemini(page_image_bytes: bytes) -> str:
+    """Use Gemini-2.5-Flash for OCR on image-based pages."""
+    if not GEMINI_KEYS:
+        return ""
+    
+    base64_image = base64.b64encode(page_image_bytes).decode('utf-8')
+    
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for key in GEMINI_KEYS:
+            try:
+                response = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    params={"key": key},
+                    json={
+                        "contents": [{
+                            "parts": [
+                                {"text": "Extract all text from this image. Return only the extracted text, nothing else."},
+                                {"inline_data": {"mime_type": "image/png", "data": base64_image}}
+                            ]
+                        }]
+                    }
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            except Exception:
+                continue
+    return ""
+
+async def embed_and_store_chunks(document_id: str, chunks: List[str], chunk_offset: int) -> int:
+    """Generate embeddings and store chunks in Supabase."""
+    if not supabase_admin or not chunks:
+        return 0
+    
+    stored_count = 0
+    for i, chunk_text in enumerate(chunks):
+        if not chunk_text.strip():
+            continue
+        
+        embedding = await generate_embedding(chunk_text)
+        if embedding:
+            try:
+                supabase_admin.table('document_chunks').insert({
+                    'document_id': document_id,
+                    'content': chunk_text,
+                    'embedding': embedding,
+                    'chunk_index': chunk_offset + i
+                }).execute()
+                stored_count += 1
+            except Exception as e:
+                print(f"[RAG] Failed to store chunk: {e}")
+    
+    return stored_count
+
+async def update_document_status(document_id: str, status: str, progress: float = 0, error: str = None):
+    """Update document processing status in Supabase."""
+    if not supabase_admin:
+        return
+    
+    try:
+        update_data = {'processing_status': status, 'processing_progress': progress}
+        if error:
+            update_data['error_message'] = error
+        supabase_admin.table('documents').update(update_data).eq('id', document_id).execute()
+    except Exception as e:
+        print(f"[RAG] Failed to update status: {e}")
+
+async def process_document_background(document_id: str, file_url: str):
+    """Background task: Extract text from PDF, chunk, embed, and store."""
+    try:
+        await update_document_status(document_id, 'processing', 0)
+        
+        # Download file from Supabase Storage
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            response = await client.get(file_url)
+            if response.status_code != 200:
+                raise Exception(f"Failed to download file: {response.status_code}")
+            pdf_bytes = response.content
+        
+        # Open PDF with PyMuPDF
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = len(doc)
+        
+        pending_chunks = []
+        chunk_offset = 0
+        total_chunks_stored = 0
+        
+        for page_num in range(total_pages):
+            page = doc[page_num]
+            text = page.get_text()
+            
+            # OCR fallback for sparse text pages (< 50 chars)
+            if len(text.strip()) < 50:
+                # Render page to image for Gemini OCR
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale for better OCR
+                image_bytes = pix.tobytes("png")
+                text = await ocr_with_gemini(image_bytes)
+            
+            # Chunk the text
+            if text.strip():
+                chunks = text_splitter.split_text(text)
+                pending_chunks.extend(chunks)
+            
+            # Persist every 5 pages to keep memory low
+            if (page_num + 1) % 5 == 0 and pending_chunks:
+                stored = await embed_and_store_chunks(document_id, pending_chunks, chunk_offset)
+                chunk_offset += len(pending_chunks)
+                total_chunks_stored += stored
+                pending_chunks = []
+                
+                # Update progress
+                progress = ((page_num + 1) / total_pages) * 100
+                await update_document_status(document_id, 'processing', progress)
+        
+        # Final batch
+        if pending_chunks:
+            stored = await embed_and_store_chunks(document_id, pending_chunks, chunk_offset)
+            total_chunks_stored += stored
+        
+        doc.close()
+        
+        # Mark as completed
+        await update_document_status(document_id, 'completed', 100)
+        print(f"[RAG] Document {document_id} processed: {total_chunks_stored} chunks stored")
+        
+    except Exception as e:
+        error_msg = str(e)[:500]
+        print(f"[RAG] Processing failed for {document_id}: {error_msg}")
+        await update_document_status(document_id, 'failed', 0, error_msg)
+
+async def search_similar_chunks(document_id: str, query: str, limit: int = 5) -> List[str]:
+    """Search for similar chunks using vector similarity."""
+    if not supabase_admin:
+        return []
+    
+    # Generate embedding for query
+    query_embedding = await generate_embedding(query)
+    if not query_embedding:
+        return []
+    
+    try:
+        # Call the RPC function for similarity search
+        result = supabase_admin.rpc('search_similar_chunks', {
+            'query_embedding': query_embedding,
+            'doc_id': document_id,
+            'match_count': limit
+        }).execute()
+        
+        if result.data:
+            return [chunk['content'] for chunk in result.data]
+    except Exception as e:
+        print(f"[RAG] Similarity search failed: {e}")
+        # Fallback: get latest chunks without vector search
+        try:
+            fallback = supabase_admin.table('document_chunks').select('content').eq('document_id', document_id).limit(limit).execute()
+            if fallback.data:
+                return [chunk['content'] for chunk in fallback.data]
+        except Exception:
+            pass
+    
+    return []
+
+# =============================================================================
+# RAG Endpoints
+# =============================================================================
+
+@app.post("/process-document", status_code=202)
+async def process_document(
+    request: ProcessDocumentRequest,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(verify_jwt)
+) -> dict:
+    """Start background document processing. Returns 202 Accepted immediately."""
+    if not supabase_admin:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    # Verify document ownership
+    try:
+        result = supabase_admin.table('documents').select('user_id').eq('id', request.file_id).single().execute()
+        if not result.data or result.data.get('user_id') != user.get('sub'):
+            raise HTTPException(status_code=403, detail="Document access denied")
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Queue background processing
+    background_tasks.add_task(process_document_background, request.file_id, request.file_url)
+    
+    return {
+        "status": "accepted",
+        "document_id": request.file_id,
+        "message": "Document processing started"
+    }
+
+@app.get("/document-status/{document_id}")
+async def get_document_status(
+    document_id: str,
+    user: dict = Depends(verify_jwt)
+) -> DocumentStatusResponse:
+    """Get the processing status of a document."""
+    if not supabase_admin:
+        raise HTTPException(status_code=503, detail="Database not configured")
+    
+    try:
+        result = supabase_admin.table('documents').select(
+            'processing_status, processing_progress, error_message, user_id'
+        ).eq('id', document_id).single().execute()
+        
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        if result.data.get('user_id') != user.get('sub'):
+            raise HTTPException(status_code=403, detail="Document access denied")
+        
+        # Count chunks
+        chunks_result = supabase_admin.table('document_chunks').select('id', count='exact').eq('document_id', document_id).execute()
+        chunks_count = chunks_result.count if chunks_result.count else 0
+        
+        return DocumentStatusResponse(
+            status=result.data.get('processing_status', 'pending'),
+            progress=result.data.get('processing_progress', 0),
+            chunks_count=chunks_count,
+            error=result.data.get('error_message')
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/rag-chat")
+async def rag_chat(
+    request: RAGChatRequest,
+    user: dict = Depends(verify_jwt)
+) -> StreamingResponse:
+    """Chat with AI using RAG - retrieves relevant chunks and streams response."""
+    sanitized_query = sanitize_input(request.query, 1000)
+    
+    # Search for relevant chunks
+    chunks = await search_similar_chunks(request.document_id, sanitized_query, limit=5)
+    
+    if not chunks:
+        # Fallback to regular chat if no chunks found
+        async def fallback_stream():
+            yield "I couldn't find relevant content in the document. Please make sure the document has finished processing."
+        return StreamingResponse(fallback_stream(), media_type="text/plain")
+    
+    # Build context from chunks
+    context = "\n\n---\n\n".join(chunks)
+    
+    prompt = f"""You are Cherág, an AI study assistant. Answer the student's question based ONLY on the following document excerpts.
+
+DOCUMENT EXCERPTS:
+{context}
+
+STUDENT QUESTION: {sanitized_query}
+
+Provide a helpful, accurate answer. If the excerpts don't contain enough information, say so."""
+
+    # Get AI response and stream it
+    async def stream_response():
+        result = await call_ai_with_fallback(prompt)
+        # Simulate streaming by yielding chunks
+        words = result.split(' ')
+        for i in range(0, len(words), 5):
+            chunk = ' '.join(words[i:i+5]) + ' '
+            yield chunk
+            await asyncio.sleep(0.05)
+    
+    return StreamingResponse(stream_response(), media_type="text/plain")
+
+# =============================================================================
 # Run Server
 # =============================================================================
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+
