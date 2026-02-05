@@ -95,8 +95,11 @@ export function useFiles(user: User | null) {
         setProcessingProgress(0);
         setError(null);
 
+        console.log('[UPLOAD] Starting upload for:', file.name);
+
         try {
             // 1. Create DB Record
+            console.log('[UPLOAD] Step 1: Creating database record...');
             const filePath = `${user.id}/${Date.now()}_${file.name}`;
 
             const { data: doc, error: dbError } = await supabase
@@ -113,39 +116,51 @@ export function useFiles(user: User | null) {
                 .select()
                 .single();
 
-            if (dbError) throw dbError;
+            if (dbError) {
+                console.error('[UPLOAD] Step 1 FAILED - DB Error:', dbError);
+                throw dbError;
+            }
+            console.log('[UPLOAD] Step 1 SUCCESS - Doc ID:', doc.id);
 
             // 2. Upload to Storage
+            console.log('[UPLOAD] Step 2: Uploading to Supabase Storage...');
             const { error: uploadError } = await supabase.storage
                 .from('documents')
                 .upload(filePath, file);
 
             if (uploadError) {
-                console.warn('Storage upload failed:', uploadError);
+                console.error('[UPLOAD] Step 2 FAILED - Storage Error:', uploadError);
                 throw uploadError;
             }
+            console.log('[UPLOAD] Step 2 SUCCESS - File uploaded to storage');
 
             // 3. Get signed URL for backend processing
+            console.log('[UPLOAD] Step 3: Creating signed URL...');
             const { data: urlData, error: urlError } = await supabase.storage
                 .from('documents')
                 .createSignedUrl(filePath, 3600); // 1 hour expiry
 
             if (urlError || !urlData?.signedUrl) {
+                console.error('[UPLOAD] Step 3 FAILED - Signed URL Error:', urlError);
                 throw new Error('Failed to create signed URL');
             }
+            console.log('[UPLOAD] Step 3 SUCCESS - Signed URL created');
 
             // 4. Trigger server-side processing via FastAPI
+            console.log('[UPLOAD] Step 4: Calling backend /process-document...');
             await processDocument(doc.id, urlData.signedUrl);
+            console.log('[UPLOAD] Step 4 SUCCESS - Backend processing started');
 
             // 5. Update local state immediately (show as processing)
             setFiles(prev => [{ ...doc, processing_status: 'processing' }, ...prev]);
 
             // 6. Start polling for status updates
+            console.log('[UPLOAD] Step 5: Starting status polling...');
             pollProcessingStatus(doc.id);
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to upload file';
-            console.error('Upload error:', err);
+            console.error('[UPLOAD] FAILED at some step:', err);
             setError(message);
             setIsParsing(false);
         }
