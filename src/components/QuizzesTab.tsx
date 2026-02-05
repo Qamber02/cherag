@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2 } from 'lucide-react';
+import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2, Flame } from 'lucide-react';
 // Server Action for secure server-side AI generation
 // import { generateQuizzes } from '@/app/actions/ai';
 import { generateQuizzes } from '../lib/aiService';
@@ -34,6 +34,11 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
 
     const [questionCount, setQuestionCount] = useState(5);
     const [difficulty, setDifficulty] = useState<string>('medium');
+
+    // Gamification state
+    const [streak, setStreak] = useState(0);
+    const [bestStreak, setBestStreak] = useState(0);
+    const [showStreakAnimation, setShowStreakAnimation] = useState(false);
 
     useEffect(() => {
         fetchQuizzes();
@@ -106,6 +111,23 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
 
         setSelectedAnswer(answer);
         setShowResult(true);
+
+        // Track streak for gamification
+        const isCorrect = answer === currentQuiz.correct_answer;
+        if (isCorrect) {
+            const newStreak = streak + 1;
+            setStreak(newStreak);
+            if (newStreak > bestStreak) {
+                setBestStreak(newStreak);
+            }
+            // Show animation for streaks of 2+
+            if (newStreak >= 2) {
+                setShowStreakAnimation(true);
+                setTimeout(() => setShowStreakAnimation(false), 1500);
+            }
+        } else {
+            setStreak(0); // Reset streak on wrong answer
+        }
 
         // Update local state with the user's answer
         setQuizzes(prev => prev.map((q, idx) =>
@@ -349,6 +371,15 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                 }`}>
                                 {difficulty}
                             </span>
+
+                            {/* Streak Counter */}
+                            {streak > 0 && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] md:text-xs font-bold bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 ${showStreakAnimation ? 'animate-bounce' : ''}`}>
+                                    <Flame className={`w-3 h-3 ${showStreakAnimation ? 'text-orange-500 animate-pulse' : ''}`} />
+                                    {streak} {streak === 1 ? 'correct' : 'streak!'}
+                                </span>
+                            )}
+
                             <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Test your knowledge</p>
                         </div>
                     </div>

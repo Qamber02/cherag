@@ -9,6 +9,7 @@ export interface UserPreferences {
     lastActiveTab: string;
     sidebarExpanded: boolean;
     lastVisit: number;
+    hasCompletedOnboarding: boolean;
     summaryOptions?: {
         length?: string;
         style?: string;
@@ -21,6 +22,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     lastActiveTab: 'dashboard',
     sidebarExpanded: true,
     lastVisit: Date.now(),
+    hasCompletedOnboarding: false,
     aiModel: 'auto',
 };
 

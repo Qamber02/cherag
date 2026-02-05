@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FileText, Loader2, Edit3, Check, Sliders, Copy, Download, ChevronDown, FileDown } from 'lucide-react';
+import { FileText, Loader2, Edit3, Check, Sliders, Copy, Download, ChevronDown, FileDown, ArrowUp, Clock } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { downloadAsMarkdown, downloadAsPDF, downloadAsDOCX } from '../lib/downloadUtils';
 
@@ -263,7 +263,19 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         />
                     </div>
                 ) : summary ? (
-                    <div className="h-full overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="h-full overflow-y-auto pr-2 custom-scrollbar relative group/scroll" id="summary-content">
+                        {/* Reading Stats */}
+                        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100 dark:border-zinc-700">
+                            <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                <Clock className="w-3.5 h-3.5" />
+                                ~{Math.ceil(summary.split(/\s+/).length / 200)} min read
+                            </span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {summary.split(/\s+/).length.toLocaleString()} words
+                            </span>
+                        </div>
+
                         <article className="prose prose-sm md:prose-lg prose-slate dark:prose-invert max-w-none 
                             prose-headings:font-bold prose-headings:tracking-tight 
                             prose-h1:text-2xl md:prose-h1:text-3xl prose-h2:text-xl md:prose-h2:text-2xl 
@@ -273,6 +285,15 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         >
                             <ReactMarkdown>{summary}</ReactMarkdown>
                         </article>
+
+                        {/* Back to Top Button */}
+                        <button
+                            onClick={() => document.getElementById('summary-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className="fixed bottom-6 right-6 md:absolute md:bottom-4 md:right-4 w-10 h-10 bg-white dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-xl transition-all opacity-0 group-hover/scroll:opacity-100 focus:opacity-100 z-10"
+                            title="Back to top"
+                        >
+                            <ArrowUp className="w-4 h-4" />
+                        </button>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center">

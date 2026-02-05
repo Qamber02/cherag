@@ -155,6 +155,24 @@ export default function AuthPage() {
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cherág</h1>
                         <p className="text-gray-500 dark:text-gray-400 mt-1">Your AI Study Partner</p>
+
+                        {/* Mobile Features Highlight */}
+                        <div className="flex flex-wrap justify-center gap-2 mt-4">
+                            {[
+                                { icon: BookOpen, text: 'AI Summaries' },
+                                { icon: Brain, text: 'Flashcards' },
+                                { icon: Lightbulb, text: 'Quizzes' },
+                                { icon: Sparkles, text: 'Roadmaps' }
+                            ].map((feature, idx) => (
+                                <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-medium rounded-full"
+                                >
+                                    <feature.icon className="w-3 h-3" />
+                                    {feature.text}
+                                </span>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Card */}

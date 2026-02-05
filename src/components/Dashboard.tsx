@@ -10,6 +10,7 @@ import ChatTab from './ChatTab';
 import FlashcardsTab from './FlashcardsTab';
 import SummaryTab from './SummaryTab';
 import DashboardHome from './DashboardHome';
+import OnboardingModal from './OnboardingModal';
 // Lazy Load Heavy Components to optimize initial load
 import {
     ExamEngineTab,
@@ -54,10 +55,18 @@ type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindma
 export default function Dashboard({ session }: DashboardProps) {
     // Initialize from saved preference
     const savedTab = getPreference('lastActiveTab') as Tab;
+    const hasCompletedOnboarding = getPreference('hasCompletedOnboarding');
+
     // State
     const [activeTab, setActiveTab] = useState<Tab>(savedTab || 'dashboard');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(!hasCompletedOnboarding);
+
+    const handleOnboardingComplete = () => {
+        setPreference('hasCompletedOnboarding', true);
+        setShowOnboarding(false);
+    };
 
     // Hooks
     const { files, isParsing, uploadFile, removeFile } = useFiles(session.user);
@@ -175,6 +184,14 @@ export default function Dashboard({ session }: DashboardProps) {
 
     return (
         <div className="flex h-[100dvh] bg-scholar overflow-hidden font-sans text-foreground">
+            {/* First-time User Onboarding */}
+            {showOnboarding && (
+                <OnboardingModal
+                    onComplete={handleOnboardingComplete}
+                    onSkip={handleOnboardingComplete}
+                />
+            )}
+
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div
