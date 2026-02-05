@@ -87,10 +87,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Configuration
+# CORS Configuration - Allow all Cherag Pages subdomains (preview deployments)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN, "http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        FRONTEND_ORIGIN,
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
+    allow_origin_regex=r"https://.*\.cherag\.pages\.dev",  # Allow all preview deployments
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
