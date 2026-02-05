@@ -92,6 +92,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         FRONTEND_ORIGIN,
+        "https://dc61812a.cherag.pages.dev",  # Current preview deployment
         "http://localhost:5173",
         "http://localhost:3000"
     ],
