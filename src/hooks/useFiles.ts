@@ -47,47 +47,45 @@ export function useFiles(user: User | null) {
         fetchFiles();
     }, [fetchFiles]);
 
-    // Poll for processing status updates
-    const pollProcessingStatus = useCallback(async (documentId: string) => {
-        const maxAttempts = 600; // 10 minutes max (1s intervals)
-        let attempts = 0;
+    // Robust polling effect: Automatically poll for any files in 'processing' state
+    useEffect(() => {
+        const processingFiles = files.filter(f => f.processing_status === 'processing' || f.processing_status === 'pending');
 
-        const poll = async () => {
-            try {
-                const status = await getDocumentStatus(documentId);
-                setProcessingProgress(status.progress);
+        if (processingFiles.length === 0) {
+            setIsParsing(false);
+            return;
+        }
 
-                if (status.status === 'completed') {
-                    setIsParsing(false);
-                    setProcessingProgress(100);
-                    await fetchFiles(); // Refresh to get updated doc
-                    return;
-                }
+        setIsParsing(true);
+        console.log('[POLL] Active processing files:', processingFiles.map(f => f.filename));
 
-                if (status.status === 'failed') {
-                    setIsParsing(false);
-                    setError(status.error || 'Processing failed');
-                    return;
-                }
+        const intervalId = setInterval(async () => {
+            for (const file of processingFiles) {
+                try {
+                    const status = await getDocumentStatus(file.id);
 
-                attempts++;
-                if (attempts < maxAttempts) {
-                    setTimeout(poll, 1000); // Poll every 1 second
-                } else {
-                    setIsParsing(false);
-                    setError('Processing timed out');
-                }
-            } catch (err) {
-                console.error('Status poll error:', err);
-                attempts++;
-                if (attempts < maxAttempts) {
-                    setTimeout(poll, 2000); // Retry with backoff
+                    // Update progress if it changed
+                    if (status.progress > (file.processing_progress || 0)) {
+                        setProcessingProgress(status.progress);
+                        // Optional: Update local file state to reflect progress visually if we added a progress bar per file
+                    }
+
+                    if (status.status === 'completed') {
+                        console.log(`[POLL] File ${file.filename} COMPLETED`);
+                        await fetchFiles(); // Refresh list to get content
+                    } else if (status.status === 'failed') {
+                        console.error(`[POLL] File ${file.filename} FAILED:`, status.error);
+                        setError(status.error || 'Processing failed');
+                        await fetchFiles(); // Refresh list to update status
+                    }
+                } catch (err) {
+                    console.error(`[POLL] Error checking status for ${file.filename}:`, err);
                 }
             }
-        };
+        }, 2000); // Poll every 2 seconds
 
-        poll();
-    }, [fetchFiles]);
+        return () => clearInterval(intervalId);
+    }, [files, fetchFiles]);
 
     const uploadFile = async (file: File) => {
         if (!user) return;
@@ -151,12 +149,8 @@ export function useFiles(user: User | null) {
             await processDocument(doc.id, urlData.signedUrl);
             console.log('[UPLOAD] Step 4 SUCCESS - Backend processing started');
 
-            // 5. Update local state immediately (show as processing)
+            // 5. Update local state immediately (triggers useEffect polling)
             setFiles(prev => [{ ...doc, processing_status: 'processing' }, ...prev]);
-
-            // 6. Start polling for status updates
-            console.log('[UPLOAD] Step 5: Starting status polling...');
-            pollProcessingStatus(doc.id);
 
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to upload file';
