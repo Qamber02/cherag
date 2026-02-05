@@ -953,7 +953,7 @@ async def embed_and_store_chunks(document_id: str, chunks: List[str], chunk_offs
     
     return stored_count
 
-async def update_document_status(document_id: str, status: str, progress: float = 0, error: str = None):
+async def update_document_status(document_id: str, status: str, progress: float = 0, error: str = None, content: str = None):
     """Update document processing status in Supabase."""
     if not supabase_admin:
         return
@@ -962,6 +962,8 @@ async def update_document_status(document_id: str, status: str, progress: float 
         update_data = {'processing_status': status, 'processing_progress': progress}
         if error:
             update_data['error_message'] = error
+        if content is not None:
+            update_data['content'] = content
         supabase_admin.table('documents').update(update_data).eq('id', document_id).execute()
     except Exception as e:
         print(f"[RAG] Failed to update status: {e}")
@@ -1030,8 +1032,9 @@ async def process_document_background(document_id: str, file_url: str):
             stored = await embed_and_store_chunks(document_id, pending_chunks, chunk_offset)
             total_chunks_stored += stored
         
-        # Mark as completed
-        await update_document_status(document_id, 'completed', 100)
+        # Mark as completed and save full text
+        full_text = "\n\n".join([p['text'] for p in pages if p['text'].strip()])
+        await update_document_status(document_id, 'completed', 100, content=full_text)
         
         # Log stats
         stats = pdf_processor.get_stats(pages)
