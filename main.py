@@ -11,10 +11,19 @@ import html
 import json
 import base64
 import asyncio
+import logging
 import httpx
 import fitz  # PyMuPDF
 from typing import Optional, List, Any, AsyncGenerator
 from functools import wraps
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -87,6 +96,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+@app.on_event("startup")
+async def startup_event():
+    logger.info("=" * 60)
+    logger.info("Cherág Backend Starting Up")
+    logger.info(f"  Supabase Admin: {'CONFIGURED' if supabase_admin else 'NOT CONFIGURED'}")
+    logger.info(f"  Gemini Keys: {len(GEMINI_KEYS)} available")
+    logger.info(f"  OpenRouter Keys: {len(OPENROUTER_KEYS)} available")
+    logger.info(f"  DeepSeek: {'CONFIGURED' if DEEPSEEK_API_KEY else 'NOT CONFIGURED'}")
+    logger.info(f"  YouTube: {'CONFIGURED' if YOUTUBE_API_KEY else 'NOT CONFIGURED'}")
+    logger.info(f"  JWT Secret: {'CONFIGURED' if SUPABASE_JWT_SECRET else 'NOT CONFIGURED'}")
+    logger.info("=" * 60)
+
 # CORS Configuration - Allow all Cherag Pages subdomains (preview deployments)
 app.add_middleware(
     CORSMiddleware,
@@ -101,6 +122,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    origin = request.headers.get("origin", "no-origin")
+    logger.info(f"[REQUEST] {request.method} {request.url.path} from {origin}")
+    response = await call_next(request)
+    logger.info(f"[RESPONSE] {request.method} {request.url.path} -> {response.status_code}")
+    return response
 
 # Security
 security = HTTPBearer()
@@ -1056,20 +1086,33 @@ async def process_document(
     user: dict = Depends(verify_jwt)
 ) -> dict:
     """Start background document processing. Returns 202 Accepted immediately."""
+    logger.info(f"[PROCESS-DOC] Received request for file_id={request.file_id}")
+    logger.info(f"[PROCESS-DOC] User sub={user.get('sub')}")
+    
     if not supabase_admin:
+        logger.error("[PROCESS-DOC] supabase_admin is None - Database not configured")
         raise HTTPException(status_code=503, detail="Database not configured")
     
     # Verify document ownership
     try:
+        logger.info(f"[PROCESS-DOC] Checking document ownership...")
         result = supabase_admin.table('documents').select('user_id').eq('id', request.file_id).single().execute()
+        logger.info(f"[PROCESS-DOC] Document query result: {result.data}")
+        
         if not result.data or result.data.get('user_id') != user.get('sub'):
+            logger.warning(f"[PROCESS-DOC] Access denied - doc user_id={result.data.get('user_id') if result.data else 'None'}, request user={user.get('sub')}")
             raise HTTPException(status_code=403, detail="Document access denied")
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"[PROCESS-DOC] Document lookup error: {e}")
         raise HTTPException(status_code=404, detail="Document not found")
     
     # Queue background processing
+    logger.info(f"[PROCESS-DOC] Starting background processing for {request.file_id}")
     background_tasks.add_task(process_document_background, request.file_id, request.file_url)
     
+    logger.info(f"[PROCESS-DOC] Successfully queued document {request.file_id}")
     return {
         "status": "accepted",
         "document_id": request.file_id,
