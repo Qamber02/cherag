@@ -68,6 +68,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Private Network Access (PNA) Middleware to fix browser warnings
+@app.middleware("http")
+async def add_private_network_access_header(request: Request, call_next):
+    response = await call_next(request)
+    # If the browser is requesting private network access (e.g. from HTTPS public site to localhost)
+    if request.headers.get("Access-Control-Request-Private-Network") == "true":
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
+
 # Request logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
