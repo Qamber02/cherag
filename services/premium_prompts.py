@@ -68,6 +68,47 @@ RULES:
 - Priority based on how many other concepts are blocked
 - No markdown, only valid JSON"""
 
+def get_knowledge_radar_prompt(content: str, user_mastery: Dict[str, int]) -> str:
+    return f"""Perform a complete Knowledge Radar analysis on this content.
+    
+Content:
+{content[:8000]}
+
+User Mastery Profile (0-100):
+{json.dumps(user_mastery)}
+
+Task:
+1. Extract key concepts (max 20).
+2. Map dependencies (prerequisites must be from the extracted list).
+3. Identify gaps based on User Mastery (gap exists if prerequisite mastery < 60).
+
+Return valid JSON:
+{{
+  "concepts": [{{
+    "concept": "name", 
+    "description": "brief desc", 
+    "complexity_level": "foundational" | "intermediate" | "advanced"
+  }}],
+  "dependencies": [{{
+    "concept": "name", 
+    "prerequisites": ["req name"], 
+    "is_foundational": boolean
+  }}],
+  "gaps": [{{
+    "gap": "concept name", 
+    "blockingConcepts": ["req name"], 
+    "priority": "critical" | "important", 
+    "recommendation": "study advice"
+  }}]
+}}
+
+RULES:
+- No markdown, ONLY valid JSON.
+- Dependencies must NOT be circular.
+- Prerequisites must exist in the extracted concepts list.
+"""
+
+
 # =============================================================================
 # Video Intelligence Prompts
 # =============================================================================

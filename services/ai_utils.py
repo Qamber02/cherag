@@ -1,54 +1,37 @@
 
-import os
 import re
 import httpx
 import logging
+import time
 from typing import Optional, List
 from fastapi import HTTPException
-from dotenv import load_dotenv
+from config import (
+    GEMINI_KEYS, GEMINI_MODELS,
+    OPENROUTER_KEYS, OPENROUTER_MODEL,
+    DEEPSEEK_API_KEY, FRONTEND_ORIGIN,
+    logger
+)
 
-# Load environment variables
-load_dotenv()
+# Shared HTTP Client
+http_client: Optional[httpx.AsyncClient] = None
 
-# Configure logging
-logger = logging.getLogger(__name__)
+async def init_http_client():
+    """Initialize shared HTTP client."""
+    global http_client
+    http_client = httpx.AsyncClient(timeout=60.0)
 
-# =============================================================================
-# Configuration
-# =============================================================================
+async def close_http_client():
+    """Close shared HTTP client."""
+    global http_client
+    if http_client:
+        await http_client.aclose()
+        http_client = None
 
-# Load all available keys
-GEMINI_KEYS = [k for k in [
-    os.getenv("GEMINI_API_KEY"),
-    os.getenv("GEMINI_API_KEY_2"),
-    os.getenv("GEMINI_API_KEY_3"),
-    os.getenv("GEMINI_API_KEY_4"),
-    os.getenv("GEMINI_API_KEY_5")
-] if k]
-
-OPENROUTER_KEYS = [k for k in [
-    os.getenv("OPENROUTER_API_KEY"),
-    os.getenv("OPENROUTER_API_KEY_2"),
-    os.getenv("OPENROUTER_API_KEY_3"),
-    os.getenv("OPENROUTER_API_KEY_4"),
-    os.getenv("OPENROUTER_API_KEY_5")
-] if k]
-
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-
-# Frontend domain for CORS
-FRONTEND_ORIGIN = "https://cherag.pages.dev"
-
-# Gemini models ordered by priority
-GEMINI_MODELS = [
-    "gemini-2.0-flash-lite",
-    "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-]
-
-# OpenRouter model
-OPENROUTER_MODEL = "allenai/molmo-2-8b:free"
+async def get_client() -> httpx.AsyncClient:
+    """Get shared client or create temporary one."""
+    if http_client:
+        return http_client
+    return httpx.AsyncClient(timeout=60.0)
 
 # =============================================================================
 # Utility Functions
@@ -102,34 +85,59 @@ async def call_gemini(prompt: str) -> Optional[str]:
     if not GEMINI_KEYS:
         return None
     
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        # Loop through models AND keys
-        for model in GEMINI_MODELS:
-            for key in GEMINI_KEYS:
-                try:
-                    # print(f"Trying Gemini {model} with key ending in ...{key[-4:]}")
-                    response = await client.post(
-                        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                        params={"key": key},
-                        json={
-                            "contents": [{"parts": [{"text": prompt}]}]
-                        }
-                    )
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text")
-                        if text:
-                            return text
-                    
-                    # If rate limited (429), try next key/model
-                    if response.status_code == 429:
-                        continue
-                        
-                except Exception:
-                    continue
+    # Use shared client if available, otherwise context manager
+    client_to_use = await get_client()
     
+    # If using shared client, don't close it. If new, close it? 
+    # To keep it simple: if global is set, we use it. If not, we create one.
+    # But get_client returns a new one if global is None. We must close that new one.
+    # Refactoring slightly for safety: using context manager mostly for ephemeral.
+    # Ideally main.py calls init_http_client.
+    
+    try:
+        if http_client:
+            return await _execute_gemini_request(http_client, prompt)
+        else:
+             async with httpx.AsyncClient(timeout=60.0) as client:
+                return await _execute_gemini_request(client, prompt)
+    except Exception:
+        return None
+
+async def _execute_gemini_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
+    # Loop through models AND keys
+    for model in GEMINI_MODELS:
+        for key in GEMINI_KEYS:
+            try:
+                logger.info(f"Trying Gemini Model: {model}")
+                start_t = time.time()
+                response = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                    params={"key": key},
+                    json={
+                        "contents": [{"parts": [{"text": prompt}]}]
+                    }
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text")
+                    if text:
+                        duration = time.time() - start_t
+                        logger.info(f"Gemini Success: {model} in {duration:.2f}s")
+                        return text
+                
+                # If rate limited (429), try next key/model
+                if response.status_code == 429:
+                    logger.warning(f"Gemini 429 Rate Limit: {model}")
+                    continue
+                else:
+                    logger.warning(f"Gemini Error {response.status_code} for {model}: {response.text[:100]}")
+                    
+            except Exception as e:
+                logger.error(f"Gemini Exception: {e}")
+                continue
     return None
+
 
 async def call_deepseek(prompt: str) -> Optional[str]:
     """Call DeepSeek API."""
@@ -137,22 +145,73 @@ async def call_deepseek(prompt: str) -> Optional[str]:
         return None
     
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        if http_client:
+            return await _execute_deepseek_request(http_client, prompt)
+        else:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                return await _execute_deepseek_request(client, prompt)
+    except Exception:
+        pass
+    
+    return None
+
+async def _execute_deepseek_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
+    response = await client.post(
+        "https://api.deepseek.com/chat/completions",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}"
+        },
+        json={
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": "You are a helpful study assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 2000,
+            "temperature": 0.5,
+            "stream": False
+        }
+    )
+    
+    if response.status_code == 200:
+        data = response.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content")
+        if content:
+            return content
+    return None
+
+async def call_openrouter(prompt: str) -> Optional[str]:
+    """Call OpenRouter API with key rotation."""
+    if not OPENROUTER_KEYS:
+        return None
+    
+    try:
+        if http_client:
+            return await _execute_openrouter_request(http_client, prompt)
+        else:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                return await _execute_openrouter_request(client, prompt)
+    except Exception:
+        pass
+    return None
+
+async def _execute_openrouter_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
+    for key in OPENROUTER_KEYS:
+        try:
             response = await client.post(
-                "https://api.deepseek.com/chat/completions",
+                "https://openrouter.ai/api/v1/chat/completions",
                 headers={
+                    "Authorization": f"Bearer {key}",
                     "Content-Type": "application/json",
-                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}"
+                    "HTTP-Referer": FRONTEND_ORIGIN,
+                    "X-Title": "Cherag Study Assistant"
                 },
                 json={
-                    "model": "deepseek-chat",
-                    "messages": [
-                        {"role": "system", "content": "You are a helpful study assistant."},
-                        {"role": "user", "content": prompt}
-                    ],
+                    "model": OPENROUTER_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 2000,
-                    "temperature": 0.5,
-                    "stream": False
+                    "temperature": 0.5
                 }
             )
             
@@ -161,49 +220,15 @@ async def call_deepseek(prompt: str) -> Optional[str]:
                 content = data.get("choices", [{}])[0].get("message", {}).get("content")
                 if content:
                     return content
-    except Exception:
-        pass
-    
+            
+            # If rate limited (429), rotate key
+            if response.status_code == 429:
+                continue
+                
+        except Exception:
+            continue
     return None
 
-async def call_openrouter(prompt: str) -> Optional[str]:
-    """Call OpenRouter API with key rotation."""
-    if not OPENROUTER_KEYS:
-        return None
-    
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        for key in OPENROUTER_KEYS:
-            try:
-                response = await client.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {key}",
-                        "Content-Type": "application/json",
-                        "HTTP-Referer": FRONTEND_ORIGIN,
-                        "X-Title": "Cherag Study Assistant"
-                    },
-                    json={
-                        "model": OPENROUTER_MODEL,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "max_tokens": 2000,
-                        "temperature": 0.5
-                    }
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content")
-                    if content:
-                        return content
-                
-                # If rate limited (429), rotate key
-                if response.status_code == 429:
-                    continue
-                    
-            except Exception:
-                continue
-    
-    return None
 
 async def call_ai_with_fallback(prompt: str) -> str:
     """Call AI with multi-model fallback: Gemini -> DeepSeek -> OpenRouter."""

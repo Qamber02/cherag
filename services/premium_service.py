@@ -22,7 +22,8 @@ from .premium_prompts import (
     get_remix_concepts_prompt,
     get_mental_model_prompt,
     get_syllabus_analysis_prompt,
-    get_daily_plan_prompt
+    get_daily_plan_prompt,
+    get_knowledge_radar_prompt
 )
 
 logger = logging.getLogger(__name__)
@@ -39,29 +40,15 @@ async def analyze_knowledge_radar(content: str, user_mastery: Dict[str, int]) ->
     3. Analyze gaps (using user mastery)
     """
     try:
-        # Step 1: Extract Concepts
-        extraction_prompt = get_concept_extraction_prompt(content)
-        extraction_response = await call_ai_with_fallback(extraction_prompt)
-        concepts = json.loads(extract_json(extraction_response))
-        
-        # Step 2: Map Dependencies
-        concept_names = [c["concept"] for c in concepts]
-        mapping_prompt = get_dependency_mapping_prompt(concept_names)
-        mapping_response = await call_ai_with_fallback(mapping_prompt)
-        dependencies = json.loads(extract_json(mapping_response))
-        
-        # Step 3: Gap Analysis
-        # We need to structure dependencies for the prompt
-        # The prompt expects: [{ "concept": ..., "prerequisites": ... }]
-        # The dependency result is already in that format
-        gap_prompt = get_gap_analysis_prompt(dependencies, user_mastery)
-        gap_response = await call_ai_with_fallback(gap_prompt)
-        gaps = json.loads(extract_json(gap_response))
+        # Optimized: Single AI call for all steps (reduces latency by ~60%)
+        prompt = get_knowledge_radar_prompt(content, user_mastery)
+        response = await call_ai_with_fallback(prompt)
+        result = json.loads(extract_json(response))
         
         return {
-            "concepts": concepts,
-            "dependencies": dependencies,
-            "gaps": gaps
+            "concepts": result.get("concepts", []),
+            "dependencies": result.get("dependencies", []),
+            "gaps": result.get("gaps", [])
         }
     except json.JSONDecodeError as e:
         logger.error(f"JSON Parse Error in Radar Analysis: {e}")

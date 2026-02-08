@@ -12,28 +12,48 @@ export type KnowledgeRadarData = {
 };
 
 async function authorizedRequest(endpoint: string, body: any) {
+    console.log(`[PremiumAI] Requesting ${endpoint}...`);
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
 
     if (!token) {
-        console.warn('[PremiumAI] No auth token available');
+        console.warn('[PremiumAI] No auth token available - Request might fail 401');
+    } else {
+        console.log('[PremiumAI] Auth token present');
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-    });
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)
+        });
 
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
-        throw new Error(err.detail || `API Error ${response.status}`);
+        console.log(`[PremiumAI] Response from ${endpoint}: status ${response.status}`);
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error(`[PremiumAI] API Error ${response.status}:`, errText);
+            let errDetail = 'Unknown error';
+            try {
+                const errJson = JSON.parse(errText);
+                errDetail = errJson.detail || errJson.message || errText;
+            } catch (e) {
+                errDetail = errText;
+            }
+            throw new Error(errDetail || `API Error ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`[PremiumAI] Success data from ${endpoint}:`, data);
+        return data;
+    } catch (error) {
+        console.error(`[PremiumAI] Network/Parsing Error for ${endpoint}:`, error);
+        throw error;
     }
-
-    return response.json();
 }
 
 // ============================================

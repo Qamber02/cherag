@@ -101,17 +101,23 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
      * Analyze content and build knowledge graph
      */
     const analyzeContent = useCallback(async (content: string): Promise<KnowledgeRadarData | null> => {
-        if (!userId || !content.trim()) return null;
+        if (!userId || !content.trim()) {
+            console.log('[usePremiumFeatures] analyzeContent skipped: missing userId or content');
+            return null;
+        }
 
+        console.log('[usePremiumFeatures] Starting analysis...');
         setIsLoading(true);
         setError(null);
 
         try {
             // Get existing mastery levels
             const mastery = await getUserMastery(userId);
+            console.log('[usePremiumFeatures] Mastery loaded:', mastery);
 
             // Analyze with AI
             const radarData = await analyzeKnowledgeRadar(content, mastery);
+            console.log('[usePremiumFeatures] Radar Data received:', radarData);
 
             // Build graph
             const graph = buildKnowledgeGraph(
@@ -125,6 +131,7 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
 
             return radarData;
         } catch (err: any) {
+            console.error('[usePremiumFeatures] Analysis failed:', err);
             setError(err.message);
             return null;
         } finally {
