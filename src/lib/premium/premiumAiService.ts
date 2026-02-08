@@ -1,185 +1,213 @@
-// Advanced AI Service - Thin Client Stub
-// Premium features are temporarily disabled during migration to FastAPI backend.
-// This prevents legacy server-side code from leaking into the client bundle.
 
-// Security: Input sanitization
-function sanitizeInput(text: string, maxLength: number = 10000): string {
-    if (!text || typeof text !== 'string') {
-        return '';
-    }
-    return text.substring(0, maxLength);
-}
+// Premium AI Service - Connected to FastAPI Backend
+import { supabase } from '../supabaseClient';
 
-// Stubbed Interfaces
-interface AIResponse {
-    success: boolean;
-    data: string;
-    model: string;
-    cached: boolean;
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// Stubbed Function
-export async function callPremiumAI(
-    prompt: string,
-    taskType: string,
-    options: any = {}
-): Promise<AIResponse> {
-    console.warn('[Premium AI] Calls are currently stubbed awaiting backend migration.');
-
-    // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    return {
-        success: true,
-        data: "This feature is temporarily unavailable while we migrate to our new, faster backend. Please try again soon!",
-        model: "offline-stub",
-        cached: false
-    };
-}
-
-// Stubbed Exports for Analysis
-export async function analyzeKnowledgeRadar(content: string, userMastery: any = {}): Promise<any> {
-    return {
-        concepts: [],
-        dependencies: [],
-        gaps: []
-    }
-}
-
-export async function analyzeSyllabus(syllabus: string): Promise<any> {
-    return {
-        topics: [],
-        complexity: "unknown"
-    }
-}
-
-export async function generateStressTest(concept: string, currentLevel: number = 1): Promise<any> {
-    return {
-        scenario: "Stubbed Scenario",
-        questions: []
-    }
-}
-
-export async function calculateExamReadiness(syllabus: any, userMastery: any): Promise<any> {
-    return {
-        score: 0,
-        readiness: "low",
-        recommendations: []
-    }
-}
-
-export async function generateExamQuestions(topics: string[], count: number = 10, difficulty: string = 'mixed'): Promise<any[]> {
-    return [];
-}
-
-export async function assessCognitiveLoad(metrics: any): Promise<any> {
-    return {
-        load: "low",
-        recommendation: "continue"
-    }
-}
-
-export async function generateLearningDNA(activityData: any): Promise<any> {
-    return {
-        profile: "unknown",
-        traits: []
-    }
-}
-
-// Duplicate removed - see updated version below
-
-export async function evaluateTeachingSession(concept: string, conversation: any[], referenceContent?: string): Promise<any> {
-    return {
-        score: 0,
-        feedback: "Stubbed evaluation"
-    }
-}
-
-export async function generateTeachingResponse(prompt: string): Promise<string> {
-    return "Teaching mode is currently undergoing maintenance.";
-}
-
-export async function compressConcept(content: string, conceptName: string): Promise<any> {
-    return {
-        original: content,
-        compressed: "Stubbed compression",
-        ratio: 0
-    }
-}
-
-export async function remixConcepts(concepts: any[]): Promise<any> {
-    return {
-        remix: "Stubbed remix",
-        analogy: "Stubbed analogy"
-    }
-}
-
-export async function generateActiveLesson(concept: string, context: string, previousQuestions: string[] = []): Promise<any> {
-    return {
-        explanation: {
-            hook: "Feature updating...",
-            core_concept: "We are updating this feature.",
-            analogy: "Please check back later.",
-            key_takeaway: "Under construction."
-        },
-        quiz: {
-            question: "Is this feature available?",
-            options: ["No", "Not yet", "Soon", "Maybe"],
-            correct_index: 2,
-            explanation: "We are migrating to a new backend."
-        }
-    }
-}
-
-export function parseJSONResponse<T>(response: string): T {
-    try {
-        return JSON.parse(response);
-    } catch (e) {
-        return {} as T;
-    }
-}
-
-export async function executePromptChain<T>(prompts: any[], taskType: string): Promise<T> {
-    return {} as T;
-}
-
-// Missing Stubs for Index Exports
-export async function generateDailyPlan(metrics: any): Promise<any> {
-    return {
-        schedule: [],
-        focus: "stub"
-    }
-}
-
-export async function analyzeLivingNotes(notes: string): Promise<any> {
-    return {
-        insights: [],
-        connections: []
-    }
-}
-
-
-export function getKnowledgeTwinPrompt(concept: string): string {
-    return "Knowledge Twin Stub";
-}
-
-// Fix Signature: Accept more args
-export async function generateMentalModelAnalysis(concept: string, model?: any, options?: any): Promise<any> {
-    return {
-        model: "stub",
-        analogy: "stub"
-    }
-}
-
+// Types
 export type KnowledgeRadarData = {
     concepts: any[];
     dependencies: any[];
     gaps: any[];
 };
 
-// Fix Return Type: usage expects object with .system
-export function getTeachingModeSystemPrompt(concept: string, difficulty: string = 'intermediate') {
-    return {
-        system: `Teaching ${concept} at ${difficulty} level (Stubbed)`
-    };
+async function authorizedRequest(endpoint: string, body: any) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) {
+        console.warn('[PremiumAI] No auth token available');
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        throw new Error(err.detail || `API Error ${response.status}`);
+    }
+
+    return response.json();
+}
+
+// ============================================
+// Knowledge Radar
+// ============================================
+
+export async function analyzeKnowledgeRadar(content: string, userMastery: any = {}) {
+    return authorizedRequest('/premium/radar/analyze', {
+        content,
+        user_mastery: userMastery
+    });
+}
+
+export async function generateActiveLesson(concept: string, context: string, previousQuestions: string[] = []) {
+    return authorizedRequest('/premium/radar/micro-lesson', {
+        concept,
+        context,
+        previous_questions: previousQuestions
+    });
+}
+
+// ============================================
+// Video Intelligence
+// ============================================
+
+export async function extractClipsFromVideo(videoId: string, videoTitle: string) {
+    return authorizedRequest('/premium/video/extract-clips', {
+        video_id: videoId,
+        video_title: videoTitle
+    });
+}
+
+// ============================================
+// Teaching Mode
+// ============================================
+
+export async function generateTeachingResponse(
+    history: any[],
+    concept: string,
+    difficulty: string,
+    context?: string
+) {
+    const data = await authorizedRequest('/premium/teaching/chat', {
+        history,
+        concept,
+        difficulty,
+        context
+    });
+    return data.response;
+}
+
+export async function evaluateTeachingSession(concept: string, conversation: any[]) {
+    return authorizedRequest('/premium/teaching/evaluate', {
+        concept,
+        history: conversation
+    });
+}
+
+// Only used for initial setup, can now be handled by backend or kept for Type safety if needed.
+// We'll keep it returning a simple structure as the backend logic handles the prompt.
+export function getTeachingModeSystemPrompt(concept: string, difficulty: string) {
+    return { system: `(Backend handled) Teaching ${concept}` };
+}
+
+// ============================================
+// Exam Engine
+// ============================================
+
+export async function calculateExamReadiness(syllabus: any, userMastery: any) {
+    return authorizedRequest('/premium/exam/readiness', {
+        syllabus,
+        user_mastery: userMastery
+    });
+}
+
+export async function generateExamQuestions(topics: string[], count: number = 10, difficulty: string = 'mixed') {
+    const data = await authorizedRequest('/premium/exam/questions', {
+        topics,
+        count,
+        difficulty
+    });
+    return data.questions;
+}
+
+export async function generateStressTest(concept: string, currentLevel: number = 1, failedLevel?: number) {
+    const data = await authorizedRequest('/premium/exam/stress-test', {
+        concept,
+        current_level: currentLevel,
+        failed_level: failedLevel
+    });
+    return data.questions;
+}
+
+// ============================================
+// Analytics & Tools
+// ============================================
+
+export async function generateLearningDNA(activityData: any) {
+    return authorizedRequest('/premium/analytics/dna', {
+        activity_data: activityData
+    });
+}
+
+export async function assessCognitiveLoad(metrics: any) {
+    return authorizedRequest('/premium/analytics/cognitive-load', {
+        metrics
+    });
+}
+
+export async function compressConcept(content: string, conceptName: string) {
+    return authorizedRequest('/premium/tools/compress', {
+        content,
+        concept_name: conceptName
+    });
+}
+
+export async function remixConcepts(concepts: any[]) {
+    return authorizedRequest('/premium/tools/remix', {
+        concepts
+    });
+}
+
+export async function generateMentalModelAnalysis(content: string, model: string) {
+    return authorizedRequest('/premium/tools/mental-model', {
+        content,
+        model
+    });
+}
+
+// ============================================
+// Stubs / Deprecated
+// ============================================
+
+export async function callPremiumAI() {
+    console.warn('Direct callPremiumAI is deprecated. Use feature-specific functions.');
+    return { success: false, error: 'Deprecated' };
+}
+
+export function parseJSONResponse<T>(response: string | any): T {
+    if (typeof response === 'string') {
+        try { return JSON.parse(response); } catch { return {} as T; }
+    }
+    return response as T;
+}
+
+// Implement missing items to prevent build errors
+export async function generateDailyPlan(metrics: any) {
+    // Current DashboardHome implementation sends raw metrics.
+    // We need to map this to DailyPlanRequest structure or update backend to accept loose metrics.
+    // For now, let's map what we can.
+    return authorizedRequest('/premium/analytics/daily-plan', {
+        goals: metrics.goals || ['General Study'],
+        available_minutes: metrics.available_minutes || 60,
+        learning_dna: metrics.learning_dna || {},
+        current_progress: metrics.current_progress || {},
+        current_hour: new Date().getHours()
+    });
+}
+
+export async function analyzeLivingNotes(notes: string) {
+    return { insights: [] };
+}
+
+export async function analyzeSyllabus(syllabus: string) {
+    return authorizedRequest('/premium/exam/analyze-syllabus', {
+        syllabus_text: syllabus
+    });
+}
+
+// Deprecated stubs to satisfy build
+export function getKnowledgeTwinPrompt(concept: string): string {
+    return "";
+}
+
+export async function executePromptChain<T>(prompts: any[], taskType: string): Promise<T> {
+    return {} as T;
 }

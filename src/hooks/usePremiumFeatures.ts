@@ -318,7 +318,7 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
         setIsLoading(true);
         const aiModel = getPreference('aiModel');
         try {
-            return await generateMentalModelAnalysis(content, model, aiModel === 'auto' ? undefined : aiModel);
+            return await generateMentalModelAnalysis(content, model);
         } catch (err: any) {
             setError(err.message);
             return null;
@@ -337,45 +337,13 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
     // Teaching Mode
     const startTeachingSession = async (concept: string, difficulty: 'beginner' | 'intermediate' | 'advanced', context?: string) => {
         if (!userId) throw new Error('User not authenticated');
-
-        const systemPrompt = getTeachingModeSystemPrompt(concept, difficulty);
-        const openingPrompt = `${systemPrompt.system}
-
-Context provided: ${context ? context.slice(0, 300) + '...' : 'None'}
-
-Teacher (User) says: "I want to teach you about ${concept}."
-Student (AI): (Greet the teacher excitedly and ask existing knowledge based on context if any)`;
-
-        const response = await generateTeachingResponse(openingPrompt);
-        return response;
+        // Initial call with empty history to get the greeting
+        return await generateTeachingResponse([], concept, difficulty, context);
     };
 
     const sendTeachingMessage = async (history: Array<{ role: 'teacher' | 'student'; content: string }>, concept: string, difficulty: 'beginner' | 'intermediate' | 'advanced', context?: string) => {
-        const lastUserMsg = history[history.length - 1];
-        const isUserConfused = /don'?t know|idk|not sure|explain|confused|lost|help/i.test(lastUserMsg.content);
-
-        const conversation = history.map(msg => `${msg.role === 'teacher' ? 'Teacher' : 'Student'}: ${msg.content}`).join('\n');
-        const systemPrompt = getTeachingModeSystemPrompt(concept, difficulty).system;
-
-        let dynamicInstruction = "";
-        if (isUserConfused) {
-            dynamicInstruction = `\n[SYSTEM INTERVENTION: The teacher (user) is confused. STOP QUESTIONING IMMEDIATELY. Briefly explain the concept yourself using a simple query or analogy. Then check for understanding.]\n`;
-        }
-
-        const prompt = `
-${systemPrompt}
-
-${dynamicInstruction}
-
-Context about concept (${concept}) from files: ${context ? context.slice(0, 500) : 'None'}
-
-Current Conversation:
-${conversation}
-
-Student (AI):`;
-
-        const response = await generateTeachingResponse(prompt);
-        return response;
+        // Backend handles prompt construction and "confusion" detection
+        return await generateTeachingResponse(history, concept, difficulty, context);
     };
 
     const evaluateSession = async (concept: string, history: Array<{ role: 'teacher' | 'student'; content: string }>) => {

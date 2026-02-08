@@ -209,6 +209,75 @@ class RAGChatRequest(BaseModel):
     document_id: str   # Reference to document for vector search
     query: str
 
+    document_id: str   # Reference to document for vector search
+    query: str
+
+# Premium Feature Models
+class SyllabusAnalysisRequest(BaseModel):
+    syllabus_text: str
+
+class DailyPlanRequest(BaseModel):
+    goals: List[str]
+    available_minutes: int
+    learning_dna: dict
+    current_progress: dict
+    current_hour: int
+
+class RadarAnalysisRequest(BaseModel):
+
+    content: str
+    user_mastery: Optional[dict] = {}
+
+class MicroLessonRequest(BaseModel):
+    concept: str
+    context: str
+    previous_questions: List[str] = []
+
+class VideoExtractionRequest(BaseModel):
+    video_id: str
+    video_title: str
+
+class TeachingChatRequest(BaseModel):
+    history: List[dict] # {role: 'teacher'|'student', content: str}
+    concept: str
+    difficulty: str
+    context: Optional[str] = None
+
+class TeachingEvaluationRequest(BaseModel):
+    concept: str
+    history: List[dict]
+
+class ExamReadinessRequest(BaseModel):
+    syllabus: dict
+    user_mastery: dict
+
+class ExamQuestionsRequest(BaseModel):
+    topics: List[str]
+    count: int
+    difficulty: str
+
+class StressTestRequest(BaseModel):
+    concept: str
+    current_level: int
+    failed_level: Optional[int] = None
+
+class LearningDNARequest(BaseModel):
+    activity_data: dict
+
+class CognitiveLoadRequest(BaseModel):
+    metrics: dict
+
+class CompressConceptRequest(BaseModel):
+    content: str
+    concept_name: str
+
+class RemixConceptsRequest(BaseModel):
+    concepts: List[dict]
+
+class MentalModelRequest(BaseModel):
+    content: str
+    model: str
+
 # =============================================================================
 # JWT Authentication
 # =============================================================================
@@ -1199,10 +1268,92 @@ Provide a helpful, accurate answer. If the excerpts don't contain enough informa
     return StreamingResponse(stream_response(), media_type="text/plain")
 
 # =============================================================================
+# Premium Feature Endpoints
+# =============================================================================
+
+from services.premium_service import (
+    analyze_knowledge_radar,
+    generate_micro_lesson,
+    extract_video_clips,
+    generate_teaching_chat,
+    evaluate_teaching_session,
+    calculate_exam_readiness,
+    generate_exam_questions,
+    generate_stress_test,
+    analyze_learning_dna,
+    assess_cognitive_load,
+    compress_concept,
+    remix_concepts,
+    analyze_mental_model,
+    analyze_syllabus,
+    generate_daily_plan
+)
+
+@app.post("/premium/exam/analyze-syllabus")
+async def api_analyze_syllabus(request: SyllabusAnalysisRequest, user: dict = Depends(verify_jwt)):
+    return await analyze_syllabus(request.syllabus_text)
+
+@app.post("/premium/analytics/daily-plan")
+async def api_daily_plan(request: DailyPlanRequest, user: dict = Depends(verify_jwt)):
+    return await generate_daily_plan(request.goals, request.available_minutes, request.learning_dna, request.current_progress, request.current_hour)
+
+@app.post("/premium/radar/analyze")
+async def api_analyze_radar(request: RadarAnalysisRequest, user: dict = Depends(verify_jwt)):
+    return await analyze_knowledge_radar(request.content, request.user_mastery)
+
+@app.post("/premium/radar/micro-lesson")
+async def api_micro_lesson(request: MicroLessonRequest, user: dict = Depends(verify_jwt)):
+    return await generate_micro_lesson(request.concept, request.context, request.previous_questions)
+
+@app.post("/premium/video/extract-clips")
+async def api_extract_clips(request: VideoExtractionRequest, user: dict = Depends(verify_jwt)):
+    return await extract_video_clips(request.video_id, request.video_title)
+
+@app.post("/premium/teaching/chat")
+async def api_teaching_chat(request: TeachingChatRequest, user: dict = Depends(verify_jwt)):
+    response_text = await generate_teaching_chat(request.history, request.concept, request.difficulty, request.context)
+    return {"response": response_text}
+
+@app.post("/premium/teaching/evaluate")
+async def api_teaching_eval(request: TeachingEvaluationRequest, user: dict = Depends(verify_jwt)):
+    return await evaluate_teaching_session(request.concept, request.history)
+
+@app.post("/premium/exam/readiness")
+async def api_exam_readiness(request: ExamReadinessRequest, user: dict = Depends(verify_jwt)):
+    return await calculate_exam_readiness(request.syllabus, request.user_mastery)
+
+@app.post("/premium/exam/questions")
+async def api_exam_questions(request: ExamQuestionsRequest, user: dict = Depends(verify_jwt)):
+    return {"questions": await generate_exam_questions(request.topics, request.count, request.difficulty)}
+
+@app.post("/premium/exam/stress-test")
+async def api_stress_test(request: StressTestRequest, user: dict = Depends(verify_jwt)):
+    return {"questions": await generate_stress_test(request.concept, request.current_level, request.failed_level)}
+
+@app.post("/premium/analytics/dna")
+async def api_learning_dna(request: LearningDNARequest, user: dict = Depends(verify_jwt)):
+    return await analyze_learning_dna(request.activity_data)
+
+@app.post("/premium/analytics/cognitive-load")
+async def api_cognitive_load(request: CognitiveLoadRequest, user: dict = Depends(verify_jwt)):
+    return await assess_cognitive_load(request.metrics)
+
+@app.post("/premium/tools/compress")
+async def api_compress(request: CompressConceptRequest, user: dict = Depends(verify_jwt)):
+    return await compress_concept(request.content, request.concept_name)
+
+@app.post("/premium/tools/remix")
+async def api_remix(request: RemixConceptsRequest, user: dict = Depends(verify_jwt)):
+    return await remix_concepts(request.concepts)
+
+@app.post("/premium/tools/mental-model")
+async def api_mental_model(request: MentalModelRequest, user: dict = Depends(verify_jwt)):
+    return await analyze_mental_model(request.content, request.model)
+
+# =============================================================================
 # Run Server
 # =============================================================================
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
-

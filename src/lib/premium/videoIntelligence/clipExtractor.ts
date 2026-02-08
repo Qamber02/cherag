@@ -2,8 +2,8 @@
 // Uses YouTube transcript API + AI to identify meaningful segments
 
 import { supabase } from '../../supabaseClient';
-import { callPremiumAI, parseJSONResponse } from '../premiumAiService';
-import { VIDEO_INTELLIGENCE_PROMPTS, CLIP_EXTRACTION_CONFIG } from '../prompts/videoIntelligence.prompts';
+// External Services
+import { extractClipsFromVideo as callExternalClipExtractionService } from '../premiumAiService';
 import type { VideoClip, ClipExtractionResult, ClipExtractionPromptData } from '../../../types/videoIntelligence.types';
 
 // ============================================
@@ -91,27 +91,16 @@ export async function extractClipsFromVideo(
             return createFallbackClip(videoId, videoTitle);
         }
 
-        // Step 3: Call AI to extract clips
-        const promptData: ClipExtractionPromptData = {
-            transcript,
-            video_id: videoId,
-            video_title: videoTitle,
-        };
+        // Step 3: Call AI to extract clips (Now handled by backend)
+        const extractionResult = await extractClipsFromVideo(videoId, videoTitle);
 
-        const prompt = VIDEO_INTELLIGENCE_PROMPTS.EXTRACT_CLIPS(promptData);
-
-        const aiResponse = await callPremiumAI(
-            prompt,
-            'video_clip_extraction',
-            CLIP_EXTRACTION_CONFIG
-        );
-
-        if (!aiResponse.success) {
-            throw new Error(`AI extraction failed: ${aiResponse.data}`);
+        if (!extractionResult || !extractionResult.clips) {
+            throw new Error('Backend returned invalid clip data');
         }
 
         // Step 4: Parse and validate clips
-        const rawClips = parseJSONResponse<RawClipData[]>(aiResponse.data);
+        // Backend returns valid clip objects directly
+        const rawClips = extractionResult.clips;
 
         if (!Array.isArray(rawClips) || rawClips.length === 0) {
             console.warn(`[ClipExtractor] No clips extracted, using fallback`);
@@ -119,13 +108,13 @@ export async function extractClipsFromVideo(
         }
 
         // Step 5: Store clips in database
-        const clipsToInsert = rawClips.map(clip => ({
+        const clipsToInsert = rawClips.map((clip: any) => ({
             video_id: videoId,
             concept: clip.concept,
-            start_time: clip.start,
-            end_time: clip.end,
+            start_time: clip.start || clip.start_time,
+            end_time: clip.end || clip.end_time,
             difficulty: Math.min(5, Math.max(1, clip.difficulty)) as 1 | 2 | 3 | 4 | 5,
-            importance_score: Math.min(10, Math.max(1, clip.importance)),
+            importance_score: Math.min(10, Math.max(1, clip.importance || clip.importance_score)),
             prerequisites: clip.prerequisites || [],
             metadata: {
                 video_title: videoTitle,
