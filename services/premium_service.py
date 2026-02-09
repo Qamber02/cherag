@@ -1,4 +1,5 @@
 
+import asyncio
 import json
 import logging
 from typing import List, Dict, Any, Optional
@@ -76,7 +77,7 @@ async def extract_video_clips(video_id: str, video_title: str) -> Dict[str, Any]
         
         # Fetch transcript
         try:
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            transcript_list = await asyncio.to_thread(YouTubeTranscriptApi.get_transcript, video_id)
             # Combine transcript into a single string with timestamps roughly every minute
             # For the AI prompt, a raw text block is often better, but strict timestamps are needed
             # We'll pass the full text for extraction, but the AI won't know exact seconds unless we provide them
