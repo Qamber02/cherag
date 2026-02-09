@@ -3,6 +3,7 @@ import base64
 import asyncio
 import httpx
 import fitz # PyMuPDF
+from urllib.parse import urlparse
 from typing import List, Optional, Dict, Any
 from supabase import create_client, Client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -161,6 +162,16 @@ async def process_document_background(document_id: str, file_url: str):
         await update_document_status(document_id, 'processing', 0)
         
         # Download file from Supabase Storage
+        # Security: Validate URL to prevent SSRF
+        if not SUPABASE_URL:
+            raise ValueError("Configuration error: SUPABASE_URL is not set")
+
+        parsed_file = urlparse(file_url)
+        parsed_base = urlparse(SUPABASE_URL)
+
+        if parsed_file.scheme != parsed_base.scheme or parsed_file.netloc != parsed_base.netloc:
+            raise ValueError(f"Security check failed: URL must match Supabase domain {parsed_base.netloc}")
+
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.get(file_url)
             if response.status_code != 200:
