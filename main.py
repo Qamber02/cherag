@@ -1,14 +1,17 @@
 
-import logging
+import jwt
+import asyncio
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from supabase import create_client, Client
 
 # Config & Auth
 from config import (
-    logger, FRONTEND_ORIGIN, PREVIEW_DEPLOYMENT_ORIGINS, PREVIEW_DEPLOYMENT_REGEX,
-    SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+    logger, PREVIEW_DEPLOYMENT_ORIGINS, PREVIEW_DEPLOYMENT_REGEX,
+    SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET
 )
 from auth import verify_jwt
 
@@ -16,7 +19,7 @@ from auth import verify_jwt
 from schemas import (
     SummaryRequest, FlashcardsRequest, QuizzesRequest, MindmapRequest,
     VideosRequest, ChatRequest, RoadmapRequest, NodeExplanationRequest,
-    VideoResult, VideosResponse,
+    VideosResponse,
     ProcessDocumentRequest, DocumentStatusResponse, RAGChatRequest,
     SyllabusAnalysisRequest, DailyPlanRequest, RadarAnalysisRequest,
     MicroLessonRequest, VideoExtractionRequest, TeachingChatRequest,
@@ -58,15 +61,86 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=PREVIEW_DEPLOYMENT_ORIGINS,
-    allow_origin_regex=PREVIEW_DEPLOYMENT_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Supabase Client for Middleware
+supabase_client: Client = None
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    try:
+        supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase Client: {e}")
+
+# Rate Limiting Middleware
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    # Skip OPTIONS requests
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer ") and supabase_client:
+        token = auth_header.split(" ")[1]
+        try:
+            if SUPABASE_JWT_SECRET:
+                # Verify token independently to avoid dependency issues in middleware
+                payload = jwt.decode(
+                    token,
+                    SUPABASE_JWT_SECRET,
+                    algorithms=["HS256"],
+                    audience="authenticated",
+                    options={"verify_exp": True}
+                )
+                user_id = payload.get("sub")
+
+                if user_id:
+                    # Check rate limit
+                    try:
+                        # Fetch profile asynchronously
+                        profile = await asyncio.to_thread(lambda: supabase_client.table("profiles").select("daily_requests_count, last_request_time").eq("id", user_id).single().execute())
+
+                        if profile.data:
+                            count = profile.data.get("daily_requests_count", 0)
+                            last_request_time_str = profile.data.get("last_request_time")
+
+                            # Check if reset needed
+                            if last_request_time_str:
+                                try:
+                                    last_request = datetime.fromisoformat(last_request_time_str.replace('Z', '+00:00'))
+                                    now = datetime.now(timezone.utc)
+                                    if last_request.date() < now.date():
+                                        count = 0
+                                except ValueError:
+                                    # Handle parsing error, maybe reset?
+                                    pass
+
+                            # Limit (Default 1000)
+                            LIMIT = 1000
+                            if count >= LIMIT:
+                                logger.warning(f"Rate limit exceeded for user {user_id}")
+                                return JSONResponse(
+                                    status_code=429,
+                                    content={"detail": "Rate limit exceeded. Please try again tomorrow."}
+                                )
+
+                            # Increment count
+                            # We use asyncio.to_thread to avoid blocking the event loop with sync DB call.
+                            # Note: This is still a read-modify-write race condition if not atomic.
+                            new_count = count + 1
+                            await asyncio.to_thread(lambda: supabase_client.table("profiles").update({
+                                "daily_requests_count": new_count,
+                                "last_request_time": datetime.now(timezone.utc).isoformat()
+                            }).eq("id", user_id).execute())
+
+                    except Exception as e:
+                        logger.error(f"Rate limit check failed: {e}")
+                        # Fail open to avoid blocking users on DB errors
+                        pass
+
+        except Exception:
+            # Invalid token or other error, proceed
+            pass
+
+    response = await call_next(request)
+    return response
 
 # Private Network Access (PNA) Middleware to fix browser warnings
 @app.middleware("http")
@@ -85,6 +159,16 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     logger.info(f"[RESPONSE] {request.method} {request.url.path} -> {response.status_code}")
     return response
+
+# CORS Configuration - Added last to be outermost middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=PREVIEW_DEPLOYMENT_ORIGINS,
+    allow_origin_regex=PREVIEW_DEPLOYMENT_REGEX,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # =============================================================================
 # Standard Endpoints
@@ -385,7 +469,7 @@ async def process_document(
             raise HTTPException(status_code=403, detail="Document access denied")
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail="Document not found")
         
     background_tasks.add_task(rag_service.process_document_background, request.file_id, request.file_url)
