@@ -11,6 +11,7 @@ from config import (
     GEMINI_KEYS, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, logger
 )
 from services.pdf_processor import pdf_processor
+from services.prompts import get_ocr_prompt
 
 # Global Supabase Admin Client
 supabase_admin: Optional[Client] = None
@@ -102,7 +103,7 @@ async def ocr_with_gemini(page_image_bytes: bytes) -> str:
                     json={
                         "contents": [{
                             "parts": [
-                                {"text": "Extract all text from this image. Return only the extracted text, nothing else."},
+                                {"text": get_ocr_prompt()},
                                 {"inline_data": {"mime_type": "image/png", "data": base64_image}}
                             ]
                         }]

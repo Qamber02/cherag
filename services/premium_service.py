@@ -6,9 +6,6 @@ from fastapi import HTTPException
 
 from .ai_utils import call_ai_with_fallback, extract_json
 from .premium_prompts import (
-    get_concept_extraction_prompt,
-    get_dependency_mapping_prompt,
-    get_gap_analysis_prompt,
     get_extract_clips_prompt,
     get_micro_lesson_prompt,
     get_teaching_system_prompt,
