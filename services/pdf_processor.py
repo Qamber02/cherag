@@ -28,11 +28,10 @@ class PDFProcessor:
     # Artifacts to remove (case-insensitive)
     FOOTER_ARTIFACTS = [
         "NotebookLM",
-        "notebooklm",
-        "NOTEBOOKLM",
     ]
     
     # Regex patterns for cleaning
+    FOOTER_ARTIFACTS_PATTERN = re.compile(r'NotebookLM', re.IGNORECASE)
     CITATION_PATTERN = re.compile(r'\[\d+\]')  # [1], [2], [23], etc.
     PAGE_NUMBER_PATTERN = re.compile(r'^[\s]*\d+[\s]*$', re.MULTILINE)  # Lines with just numbers
     PAGE_MARKER_PATTERN = re.compile(r'---\s*PAGE\s*\d+\s*---', re.IGNORECASE)
@@ -61,8 +60,7 @@ class PDFProcessor:
         cleaned = text
         
         # Remove footer artifacts (NotebookLM, etc.)
-        for artifact in self.FOOTER_ARTIFACTS:
-            cleaned = cleaned.replace(artifact, "")
+        cleaned = self.FOOTER_ARTIFACTS_PATTERN.sub("", cleaned)
         
         # Remove citation markers [1], [2], etc.
         cleaned = self.CITATION_PATTERN.sub("", cleaned)
