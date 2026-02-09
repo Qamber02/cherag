@@ -31,6 +31,11 @@ from services.ai_utils import call_ai_with_fallback, sanitize_input, extract_jso
 import services.video_service as video_service
 import services.premium_service as premium_service
 import services.rag_service as rag_service
+from services.prompts import (
+    get_summary_prompt, get_flashcards_prompt, get_difficulty_prompt,
+    get_quizzes_prompt, get_mindmap_prompt, get_chat_prompt,
+    get_roadmap_prompt, get_node_explanation_prompt, get_rag_chat_prompt
+)
 
 # =============================================================================
 # Lifecycle & App Setup
@@ -121,18 +126,7 @@ async def generate_summary(
     if request.focus:
         focus_instruction = f"Focus specifically on: {request.focus}."
     
-    prompt = f"""Create a {length_instruction} summary of this text for a student.
-
-**CRITICAL FORMATTING RULES:**
-1. {style_instruction}
-2. Use **bold** for key terms and important concepts.
-3. Include section headers using ## for organization.
-4. Highlight definitions and core concepts.
-
-{focus_instruction}
-
-Text:
-{sanitized}"""
+    prompt = get_summary_prompt(length_instruction, style_instruction, focus_instruction, sanitized)
 
     result = await call_ai_with_fallback(prompt)
     return {"summary": result}
@@ -145,10 +139,7 @@ async def generate_flashcards(
     """Generate flashcards from content."""
     sanitized = sanitize_input(request.context)
     
-    prompt = f"""Generate 5 study flashcards as a JSON array. Format: [{{"question": "...", "answer": "..."}}]. No markdown, ONLY valid JSON.
-
-Text:
-{sanitized}"""
+    prompt = get_flashcards_prompt(sanitized)
 
     result = await call_ai_with_fallback(prompt)
     cleaned = extract_json(result)
@@ -173,11 +164,7 @@ async def generate_quizzes(
     count = request.count or 5
     difficulty = request.difficulty or "medium"
     
-    difficulty_prompt = {
-        "hard": "Make questions challenging, focusing on analysis, synthesis, and deep understanding.",
-        "easy": "Make questions straightforward, focusing on basic definitions and core concepts.",
-        "medium": "Make questions of medium difficulty, focusing on application and understanding."
-    }.get(difficulty, "")
+    diff_prompt = get_difficulty_prompt(difficulty)
     
     variance_instruction = ""
     if request.force_refresh:
@@ -185,19 +172,7 @@ async def generate_quizzes(
         seed = int(time.time())
         variance_instruction = f"Ensure questions are COMPLETELY different. Random seed: {seed}."
     
-    prompt = f"""Generate {count} multiple choice questions as a JSON array. 
-Format: [{{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}}]
-
-CRITICAL RULES:
-1. correct_answer must be just the letter (A, B, C, or D)
-2. VARY the correct answers - do NOT make all answers the same letter!
-3. Each option should start with its letter like "A) answer text"
-4. Difficulty Level: {difficulty}. {difficulty_prompt}
-5. No markdown, ONLY valid JSON array
-{variance_instruction}
-
-Text:
-{sanitized}"""
+    prompt = get_quizzes_prompt(count, difficulty, diff_prompt, variance_instruction, sanitized)
 
     result = await call_ai_with_fallback(prompt)
     cleaned = extract_json(result)
@@ -219,12 +194,7 @@ async def generate_mindmap(
     """Generate mindmap structure from content."""
     sanitized = sanitize_input(request.context, 5000)
     
-    prompt = f"""Create a simple mind map as JSON.
-Format: {{"title": "Main Topic", "children": [{{"title": "Subtopic 1"}}, {{"title": "Subtopic 2"}}]}}
-Max 2 levels deep. No markdown, ONLY valid JSON.
-
-Text:
-{sanitized}"""
+    prompt = get_mindmap_prompt(sanitized)
 
     result = await call_ai_with_fallback(prompt)
     cleaned = extract_json(result)
@@ -254,14 +224,7 @@ async def chat_with_ai(
     sanitized_context = sanitize_input(request.context)
     sanitized_query = sanitize_input(request.query, 1000)
     
-    prompt = f"""You are Cherág, an AI study assistant. You help students understand their study materials. Be helpful, clear, and educational.
-
-Based on this context, answer the question.
-
-Context:
-{sanitized_context or 'No context provided'}
-
-Question: {sanitized_query}"""
+    prompt = get_chat_prompt(sanitized_context, sanitized_query)
 
     result = await call_ai_with_fallback(prompt)
     return {"response": result}
@@ -274,37 +237,7 @@ async def generate_roadmap(
     """Generate a learning roadmap from content."""
     sanitized = sanitize_input(request.context, 3000)
     
-    prompt = f"""Create a learning roadmap from this content as JSON.
-
-CONTENT:
-{sanitized}
-
-OUTPUT FORMAT (JSON only):
-{{
-  "id": "main",
-  "title": "Main Topic",
-  "type": "main",
-  "description": "Brief overview",
-  "children": [
-    {{
-      "id": "t1",
-      "title": "Topic 1",
-      "type": "topic",
-      "description": "Description",
-      "children": [
-        {{"id": "s1", "title": "Subtopic", "type": "subtopic", "description": "Detail"}}
-      ]
-    }}
-  ]
-}}
-
-RULES:
-- 3-5 main topics
-- 2-3 subtopics each
-- Short titles (2-4 words)
-- Brief descriptions
-
-OUTPUT ONLY JSON:"""
+    prompt = get_roadmap_prompt(sanitized)
 
     result = await call_ai_with_fallback(prompt)
     cleaned = extract_json(result)
@@ -335,24 +268,7 @@ async def get_node_explanation(
     sanitized_title = sanitize_input(request.title, 200)
     sanitized_desc = sanitize_input(request.description, 500)
     
-    prompt = f"""Explain "{sanitized_title}" for a student learning this topic.
-
-Context: {sanitized_desc}
-
-Provide a clear, well-structured explanation with:
-
-## Overview
-A clear 2-paragraph explanation of what this is and why it matters.
-
-## Key Points
-- First important point about this topic
-- Second key concept to understand
-- Third essential aspect
-
-## Why It Matters
-Brief explanation of practical importance.
-
-Use proper formatting with headers and bullet points."""
+    prompt = get_node_explanation_prompt(sanitized_title, sanitized_desc)
 
     result = await call_ai_with_fallback(prompt)
     return {"explanation": result}
@@ -451,14 +367,7 @@ async def rag_chat(
     # Build context
     context = "\n\n---\n\n".join(chunks)
     
-    prompt = f"""You are Cherág, an AI study assistant. Answer the student's question based ONLY on the following document excerpts.
-
-DOCUMENT EXCERPTS:
-{context}
-
-STUDENT QUESTION: {sanitized_query}
-
-Provide a helpful, accurate answer. If the excerpts don't contain enough information, say so."""
+    prompt = get_rag_chat_prompt(context, sanitized_query)
 
     # Get AI response and stream it
     async def stream_response():

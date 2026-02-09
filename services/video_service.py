@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from config import YOUTUBE_API_KEY
 from schemas import VideosResponse, VideoResult
 from services.ai_utils import call_ai_with_fallback
+from services.prompts import get_video_topic_prompt
 
 async def search_youtube_videos(topic: str, page_token: Optional[str] = None) -> VideosResponse:
     """Search for educational YouTube videos."""
@@ -19,11 +20,7 @@ async def search_youtube_videos(topic: str, page_token: Optional[str] = None) ->
     # Extract main topic using AI if content is long
     if len(topic) > 100:
         try:
-            topic_prompt = f"""Extract the main educational topic from this content in 3-5 keywords for a YouTube search. Only output the keywords, nothing else.
-
-Content: {topic[:1000]}
-
-Keywords:"""
+            topic_prompt = get_video_topic_prompt(topic)
             extracted = await call_ai_with_fallback(topic_prompt)
             if extracted and 3 < len(extracted) < 100:
                 search_topic = extracted.strip()

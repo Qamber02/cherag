@@ -1,6 +1,6 @@
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 
 # =============================================================================
 # Knowledge Radar Prompts
