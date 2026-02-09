@@ -1,10 +1,11 @@
 
 import re
+import json
 import random
 import httpx
 import logging
 import time
-from typing import Optional, List
+from typing import Optional, List, AsyncGenerator, Any
 from contextlib import asynccontextmanager
 from fastapi import HTTPException
 from config import (
@@ -265,3 +266,175 @@ async def call_ai_with_fallback(prompt: str) -> str:
         return result
     
     raise HTTPException(status_code=503, detail="All AI providers unavailable")
+
+
+# =============================================================================
+# Streaming Functions (Real-time response)
+# =============================================================================
+
+async def stream_gemini(prompt: str) -> AsyncGenerator[str, None]:
+    """Stream response from Gemini API using SSE."""
+    if not GEMINI_KEYS:
+        return
+    
+    shuffled_keys = GEMINI_KEYS.copy()
+    random.shuffle(shuffled_keys)
+    
+    # Use the first available model for streaming
+    model = GEMINI_MODELS[0] if GEMINI_MODELS else "gemini-2.0-flash-lite"
+    
+    for key in shuffled_keys:
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent",
+                    params={"key": key, "alt": "sse"},
+                    json={"contents": [{"parts": [{"text": prompt}]}]}
+                ) as response:
+                    if response.status_code != 200:
+                        continue
+                    
+                    async for line in response.aiter_lines():
+                        if not line or not line.startswith("data: "):
+                            continue
+                        
+                        try:
+                            data = json.loads(line[6:])  # Remove "data: " prefix
+                            text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                            if text:
+                                yield text
+                        except json.JSONDecodeError:
+                            continue
+                    
+                    # If we got here, streaming succeeded
+                    return
+                    
+        except Exception as e:
+            logger.warning(f"Gemini streaming failed: {e}")
+            continue
+
+
+async def stream_deepseek(prompt: str) -> AsyncGenerator[str, None]:
+    """Stream response from DeepSeek API."""
+    if not DEEPSEEK_API_KEY:
+        return
+    
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream(
+                "POST",
+                "https://api.deepseek.com/chat/completions",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {"role": "system", "content": get_deepseek_system_prompt()},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "max_tokens": 2000,
+                    "temperature": 0.5,
+                    "stream": True
+                }
+            ) as response:
+                if response.status_code != 200:
+                    return
+                
+                async for line in response.aiter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
+                    
+                    data_str = line[6:]  # Remove "data: " prefix
+                    if data_str == "[DONE]":
+                        break
+                    
+                    try:
+                        data = json.loads(data_str)
+                        delta = data.get("choices", [{}])[0].get("delta", {})
+                        content = delta.get("content", "")
+                        if content:
+                            yield content
+                    except json.JSONDecodeError:
+                        continue
+                        
+    except Exception as e:
+        logger.warning(f"DeepSeek streaming failed: {e}")
+
+
+async def stream_ai_with_fallback(prompt: str) -> AsyncGenerator[str, None]:
+    """Stream AI response with fallback: Gemini -> DeepSeek.
+    
+    Yields chunks as they arrive from the AI provider.
+    Falls back to next provider if streaming fails.
+    """
+    sanitized_prompt = sanitize_input(prompt, 15000)
+    if not sanitized_prompt:
+        yield "Error: Invalid input provided"
+        return
+    
+    # Track if we got any content
+    got_content = False
+    
+    # 1. Try Gemini streaming first
+    try:
+        async for chunk in stream_gemini(sanitized_prompt):
+            got_content = True
+            yield chunk
+        
+        if got_content:
+            return
+    except Exception as e:
+        logger.warning(f"Gemini stream fallback triggered: {e}")
+    
+    # 2. Fall back to DeepSeek streaming
+    try:
+        async for chunk in stream_deepseek(sanitized_prompt):
+            got_content = True
+            yield chunk
+        
+        if got_content:
+            return
+    except Exception as e:
+        logger.warning(f"DeepSeek stream fallback triggered: {e}")
+    
+    # 3. Final fallback: non-streaming call
+    if not got_content:
+        try:
+            result = await call_ai_with_fallback(sanitized_prompt)
+            yield result
+        except Exception:
+            yield "I'm having trouble generating a response. Please try again."
+
+
+# =============================================================================
+# Structured Data Helper
+# =============================================================================
+
+async def generate_structured_data(prompt: str, fallback: Any) -> Any:
+    """Call AI, extract JSON, parse it, return fallback on failure.
+    
+    This centralizes the common pattern of:
+    1. Call AI
+    2. Extract JSON from response
+    3. Parse JSON
+    4. Return fallback if parsing fails
+    
+    Args:
+        prompt: The prompt to send to the AI
+        fallback: Value to return if AI call or JSON parsing fails
+        
+    Returns:
+        Parsed JSON data or fallback value
+    """
+    try:
+        result = await call_ai_with_fallback(prompt)
+        cleaned = extract_json(result)
+        parsed = json.loads(cleaned)
+        return parsed
+    except Exception as e:
+        logger.warning(f"generate_structured_data failed: {e}")
+        return fallback
+
