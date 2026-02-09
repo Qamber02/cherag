@@ -27,7 +27,7 @@ async def verify_jwt(credentials: HTTPAuthorizationCredentials = Depends(securit
         logger.warning("Token expired")
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.InvalidTokenError as e:
-        logger.error(f"JWT Verification Failed: {str(e)}")
+        logger.error(f"JWT Verification Failed: {str(e)}", exc_info=True)
         # Debugging: Print headers to see if we are getting what we expect
         # logger.info(f"Token Header: {jwt.get_unverified_header(token)}")
-        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid token")

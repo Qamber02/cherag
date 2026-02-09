@@ -11,6 +11,7 @@ from config import (
     DEEPSEEK_API_KEY, FRONTEND_ORIGIN,
     logger
 )
+from services.prompts import get_deepseek_system_prompt
 
 # Shared HTTP Client
 http_client: Optional[httpx.AsyncClient] = None
@@ -165,7 +166,7 @@ async def _execute_deepseek_request(client: httpx.AsyncClient, prompt: str) -> O
         json={
             "model": "deepseek-chat",
             "messages": [
-                {"role": "system", "content": "You are a helpful study assistant."},
+                {"role": "system", "content": get_deepseek_system_prompt()},
                 {"role": "user", "content": prompt}
             ],
             "max_tokens": 2000,

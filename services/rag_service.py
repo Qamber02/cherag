@@ -11,6 +11,7 @@ from config import (
     GEMINI_KEYS, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, logger
 )
 from services.pdf_processor import pdf_processor
+from services.prompts import get_ocr_prompt
 
 # Global Supabase Admin Client
 supabase_admin: Optional[Client] = None
@@ -87,7 +88,7 @@ async def ocr_with_gemini(page_image_bytes: bytes) -> str:
                     json={
                         "contents": [{
                             "parts": [
-                                {"text": "Extract all text from this image. Return only the extracted text, nothing else."},
+                                {"text": get_ocr_prompt()},
                                 {"inline_data": {"mime_type": "image/png", "data": base64_image}}
                             ]
                         }]
@@ -146,6 +147,16 @@ async def process_document_background(document_id: str, file_url: str):
         await update_document_status(document_id, 'processing', 0)
         
         # Download file from Supabase Storage
+        # Security: Validate URL to prevent SSRF
+        if not SUPABASE_URL:
+            raise ValueError("Configuration error: SUPABASE_URL is not set")
+
+        parsed_file = urlparse(file_url)
+        parsed_base = urlparse(SUPABASE_URL)
+
+        if parsed_file.scheme != parsed_base.scheme or parsed_file.netloc != parsed_base.netloc:
+            raise ValueError(f"Security check failed: URL must match Supabase domain {parsed_base.netloc}")
+
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.get(file_url)
             if response.status_code != 200:
@@ -243,9 +254,8 @@ async def process_document_background(document_id: str, file_url: str):
         logger.info(f"[RAG] Stats: {stats['text_pages']} text, {stats['slide_pages']} slide, {stats['visual_pages']} visual pages")
         
     except Exception as e:
-        error_msg = str(e)[:500]
-        logger.error(f"[RAG] Processing failed for {document_id}: {error_msg}")
-        await update_document_status(document_id, 'failed', 0, error_msg)
+        logger.error(f"[RAG] Processing failed for {document_id}: {e}", exc_info=True)
+        await update_document_status(document_id, 'failed', 0, "Internal error during document processing")
 
 async def search_similar_chunks(document_id: str, query: str, limit: int = 5) -> List[str]:
     """Search for similar chunks using vector similarity."""
