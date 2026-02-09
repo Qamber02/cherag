@@ -49,21 +49,8 @@ export function useFlashcards(user: User | null, context: string) {
         }
         setIsLoading(true);
         try {
-            // Use new aiService (FastAPI Backend)
-            // Legacy import removed
-            // const data = await genAI(context);
-
-            // Import dynamically or statically - here using dynamic to match previous pattern if needed, but static is better for thin client
             const { generateFlashcards: genAI } = await import('../lib/aiService');
-            // Note: aiService.generateFlashcards returns Flashcard[] directly, assuming the types match or need mapping
-            // Let's check the return type of aiService.generateFlashcards in next step before committing this blindly.
-            // Actually, let's use the static import at top if possible, or dynamic here.
-
             const result = await genAI(context);
-
-            // The new aiService returns { question, answer } objects? 
-            // In aiService.ts: export async function generateFlashcards(context: string): Promise<Flashcard[]> 
-            // where Flashcard = { question: string, answer: string }
 
             const mapped: Flashcard[] = result.map((item: any) => ({
                 id: crypto.randomUUID(),

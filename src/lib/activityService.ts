@@ -149,11 +149,12 @@ export async function getLastTeachingSessionState(userId: string): Promise<any |
 
 // Quiz Activity
 export async function saveQuizActivity(userId: string, topic: string, score: number, total: number): Promise<void> {
+    const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
     await saveActivity({
         user_id: userId,
         activity_type: 'quiz',
         title: `Quiz: ${topic}`,
-        content_preview: `Score: ${score}/${total} (${Math.round((score / total) * 100)}%)`,
+        content_preview: `Score: ${score}/${total} (${percentage}%)`,
         content_full: JSON.stringify({ score, total, topic }),
         metadata: { score, total, topic }
     });

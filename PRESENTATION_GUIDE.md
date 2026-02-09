@@ -18,7 +18,7 @@
 
 *   **Contextual Chat:**
     *   *Function:* Ask questions specifically about *your* document.
-    *   *Differentiation:* Unlike generic ChatGPT, it cites sources from the uploaded files and refuses to hallucinate facts not present in the text.
+    *   *Differentiation:* Unlike generic ChatGPT, it cites sources from uploaded files and aims to minimize unsupported assertions by grounding responses in provided materials, but may occasionally produce statements that should be verified.
 
 *   **Intelligent Summaries:**
     *   *Function:* One-click generation of concise summaries, key takeaways, and action items from dense chapters.
@@ -46,7 +46,7 @@
     *   *Function:* Visualizes the relationships between concepts in a node-based graph.
     *   *Why:* Perfect for visual learners to see the "big picture" hierarchy.
 
-### D. Premium AI Tutors (Advanced Learning)
+### C. Premium AI Tutors (Advanced Learning)
 *   **Knowledge Radar:**
     *   *Function:* Visualizes student proficiency across different sub-topics.
     *   *Mech:* A spider-chart interface that grows as you answer questions correctly in specifically deficient areas.
@@ -70,7 +70,7 @@
 *   **Mental Models:**
     *   *Function:* Applies famous frameworks (e.g., First Principles, Inversion) to the study material.
 
-### E. System & Utility
+### D. System & Utility
 *   **Activity History:**
     *   *Function:* A comprehensive log of every quiz taken, video watched, and summary generated.
     *   *Tech:* Unified database logging ensures progress is never lost.

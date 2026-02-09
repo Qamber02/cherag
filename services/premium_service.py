@@ -1,5 +1,4 @@
 
-import asyncio
 import json
 import logging
 from typing import List, Dict, Any, Optional
@@ -7,6 +6,9 @@ from fastapi import HTTPException
 
 from .ai_utils import call_ai_with_fallback, extract_json
 from .premium_prompts import (
+    get_concept_extraction_prompt,
+    get_dependency_mapping_prompt,
+    get_gap_analysis_prompt,
     get_extract_clips_prompt,
     get_micro_lesson_prompt,
     get_teaching_system_prompt,
@@ -50,10 +52,10 @@ async def analyze_knowledge_radar(content: str, user_mastery: Dict[str, int]) ->
         }
     except json.JSONDecodeError as e:
         logger.error(f"JSON Parse Error in Radar Analysis: {e}")
-        raise HTTPException(status_code=500, detail="Failed to parse AI response for Knowledge Radar")
+        raise HTTPException(status_code=500, detail="Failed to parse AI response")
     except Exception as e:
         logger.error(f"Radar Analysis Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during radar analysis")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 async def generate_micro_lesson(concept: str, context: str, previous_questions: List[str]) -> Dict[str, Any]:
     try:
@@ -62,7 +64,7 @@ async def generate_micro_lesson(concept: str, context: str, previous_questions: 
         return json.loads(extract_json(response))
     except Exception as e:
         logger.error(f"Micro-Lesson Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during micro-lesson generation")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # =============================================================================
 # Study Shorts Service
@@ -74,7 +76,7 @@ async def extract_video_clips(video_id: str, video_title: str) -> Dict[str, Any]
         
         # Fetch transcript
         try:
-            transcript_list = await asyncio.to_thread(YouTubeTranscriptApi.get_transcript, video_id)
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
             # Combine transcript into a single string with timestamps roughly every minute
             # For the AI prompt, a raw text block is often better, but strict timestamps are needed
             # We'll pass the full text for extraction, but the AI won't know exact seconds unless we provide them
@@ -104,7 +106,7 @@ async def extract_video_clips(video_id: str, video_title: str) -> Dict[str, Any]
         }
     except Exception as e:
         logger.error(f"Clip Extraction Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during video clip extraction")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # =============================================================================
 # Teaching Mode Service
@@ -122,10 +124,13 @@ async def generate_teaching_chat(history: List[Dict[str, str]], concept: str, di
         
         conversation_text = ""
         for msg in history:
-            role = "Teacher" if msg["role"] == "teacher" else "Student"
-            conversation_text += f"{role}: {msg['content']}\n"
+            role = "Teacher" if msg.get("role") == "teacher" else "Student"
+            content = msg.get("content", "")
+            if not content:
+                continue
+            conversation_text += f"{role}: {content}\n"
             
-        context_text = f"Context: {context[:500]}" if context else ""
+        context_text = f"Context: {context[:500]}" if context and isinstance(context, str) else ""
         
         full_prompt = f"""{system_prompt}
 
@@ -139,8 +144,8 @@ Student (AI):"""
         response = await call_ai_with_fallback(full_prompt)
         return response
     except Exception as e:
-        logger.error(f"Teaching Chat Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during teaching chat generation")
+        logger.error(f"Teaching Chat Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def evaluate_teaching_session(concept: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
     try:
@@ -148,8 +153,8 @@ async def evaluate_teaching_session(concept: str, history: List[Dict[str, str]])
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Teaching Evaluation Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during teaching session evaluation")
+        logger.error(f"Teaching Evaluation Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # =============================================================================
 # Exam Engine Service
@@ -161,8 +166,8 @@ async def calculate_exam_readiness(syllabus: Dict, user_mastery: Dict[str, int])
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Readiness Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during readiness assessment")
+        logger.error(f"Readiness Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_exam_questions(topics: List[str], count: int, difficulty: str) -> List[Dict[str, Any]]:
     try:
@@ -170,8 +175,8 @@ async def generate_exam_questions(topics: List[str], count: int, difficulty: str
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Exam Generation Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during exam question generation")
+        logger.error(f"Exam Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_stress_test(concept: str, current_level: int, failed_level: Optional[int] = None) -> List[Dict[str, Any]]:
     try:
@@ -179,8 +184,8 @@ async def generate_stress_test(concept: str, current_level: int, failed_level: O
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Stress Test Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during stress test generation")
+        logger.error(f"Stress Test Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def analyze_syllabus(syllabus_text: str) -> Dict[str, Any]:
     try:
@@ -188,8 +193,8 @@ async def analyze_syllabus(syllabus_text: str) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Syllabus Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during syllabus analysis")
+        logger.error(f"Syllabus Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # =============================================================================
 # Analytics & Tools Service
@@ -201,8 +206,8 @@ async def analyze_learning_dna(activity_data: Dict) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Learning DNA Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during learning DNA analysis")
+        logger.error(f"Learning DNA Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_daily_plan(goals: List[str], available_minutes: int, learning_dna: Dict, current_progress: Dict, current_hour: int) -> Dict[str, Any]:
     try:
@@ -210,8 +215,8 @@ async def generate_daily_plan(goals: List[str], available_minutes: int, learning
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Daily Plan Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during daily plan generation")
+        logger.error(f"Daily Plan Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))        
 
 async def assess_cognitive_load(metrics: Dict) -> Dict[str, Any]:
     try:
@@ -219,8 +224,8 @@ async def assess_cognitive_load(metrics: Dict) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Cognitive Load Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during cognitive load assessment")
+        logger.error(f"Cognitive Load Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def compress_concept(content: str, concept_name: str) -> Dict[str, Any]:
     try:
@@ -228,8 +233,8 @@ async def compress_concept(content: str, concept_name: str) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Compress Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during concept compression")
+        logger.error(f"Compress Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def remix_concepts(concepts: List[Dict]) -> Dict[str, Any]:
     try:
@@ -237,8 +242,8 @@ async def remix_concepts(concepts: List[Dict]) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Remix Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during concept remixing")
+        logger.error(f"Remix Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def analyze_mental_model(content: str, model: str) -> Dict[str, Any]:
     try:
@@ -246,6 +251,6 @@ async def analyze_mental_model(content: str, model: str) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Mental Model Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during mental model analysis")
+        logger.error(f"Mental Model Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 

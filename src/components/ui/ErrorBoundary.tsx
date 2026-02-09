@@ -33,14 +33,15 @@ export class ErrorBoundary extends Component<Props, State> {
             }
 
             return (
-                <div className={`flex flex-col items-center justify-center p-6 text-center bg-red-50/10 rounded-xl border border-red-500/20 ${this.props.className}`}>
+                <div className={`flex flex-col items-center justify-center p-6 text-center bg-red-50/10 rounded-xl border border-red-500/20 ${this.props.className || ''}`}>
                     <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
                     <h3 className="text-lg font-bold text-red-500 mb-1">Something went wrong</h3>
                     <p className="text-sm text-muted-foreground mb-4 max-w-[250px] mx-auto">
                         {this.state.error?.message || 'A playback error occurred'}
                     </p>
                     <button
-                        onClick={() => this.setState({ hasError: false })}
+                        type="button"
+                        onClick={() => this.setState({ hasError: false, error: undefined })}
                         className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" />

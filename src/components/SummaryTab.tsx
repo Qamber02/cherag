@@ -28,6 +28,8 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
         style: 'mixed',
         focus: ''
     });
+    const [showBackToTop, setShowBackToTop] = useState(false);
+    const summaryContentRef = useRef<HTMLDivElement>(null);
 
     // Close download menu when clicking outside
     useEffect(() => {
@@ -39,6 +41,19 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Handle scroll to show/hide back to top button
+    useEffect(() => {
+        const scrollEl = summaryContentRef.current;
+        if (!scrollEl) return;
+
+        const handleScroll = () => {
+            setShowBackToTop(scrollEl.scrollTop > 200);
+        };
+
+        scrollEl.addEventListener('scroll', handleScroll);
+        return () => scrollEl.removeEventListener('scroll', handleScroll);
+    }, [summary]);
 
     const handleStartEdit = () => {
         setEditedSummary(summary);
@@ -263,7 +278,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         />
                     </div>
                 ) : summary ? (
-                    <div className="h-full overflow-y-auto pr-2 custom-scrollbar relative group/scroll" id="summary-content">
+                    <div ref={summaryContentRef} className="h-full overflow-y-auto pr-2 custom-scrollbar relative" id="summary-content">
                         {/* Reading Stats */}
                         <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100 dark:border-zinc-700">
                             <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -286,11 +301,12 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                             <ReactMarkdown>{summary}</ReactMarkdown>
                         </article>
 
-                        {/* Back to Top Button */}
+                        {/* Back to Top Button - Scroll-position based visibility */}
                         <button
-                            onClick={() => document.getElementById('summary-content')?.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className="fixed bottom-6 right-6 md:absolute md:bottom-4 md:right-4 w-10 h-10 bg-white dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-xl transition-all opacity-0 group-hover/scroll:opacity-100 focus:opacity-100 z-10"
+                            onClick={() => summaryContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+                            className={`fixed bottom-6 right-6 md:absolute md:bottom-4 md:right-4 w-10 h-10 bg-white dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-xl transition-all z-10 ${showBackToTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
                             title="Back to top"
+                            type="button"
                         >
                             <ArrowUp className="w-4 h-4" />
                         </button>

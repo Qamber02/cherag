@@ -24,6 +24,15 @@ export const DEFAULT_FEED_CONFIG: FeedConfig = {
     diversityThreshold: 3, // Max 3 same-concept clips in a row
 };
 
+// Helper: Check if concept matches using word boundaries (not substring)
+function conceptMatches(concept: string, target: string): boolean {
+    const conceptLower = concept.toLowerCase();
+    const targetLower = target.toLowerCase();
+    // Use word boundary regex for more accurate matching
+    const regex = new RegExp(`\\b${targetLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    return regex.test(conceptLower);
+}
+
 /**
  * Rank clips based on personalized signals
  * Returns sorted array with scores and reasons
@@ -77,14 +86,14 @@ function calculateClipScore(
 
     // 2. Upcoming Exam Boost
     for (const exam of signals.upcomingExams) {
-        if (concept.includes(exam.topic.toLowerCase())) {
+        if (conceptMatches(concept, exam.topic)) {
             const urgency = Math.max(0, 1 - (exam.days_until / 30)); // More urgent as exam approaches
             score += urgency * config.upcomingExamBoost;
         }
     }
 
     // 3. Recent Failure Boost
-    if (signals.failedConcepts.some(fc => concept.includes(fc.toLowerCase()))) {
+    if (signals.failedConcepts.some(fc => conceptMatches(concept, fc))) {
         score += config.recentFailureBoost;
     }
 
@@ -139,13 +148,13 @@ function generateRankingReason(
     }
 
     const upcomingExam = signals.upcomingExams.find(e =>
-        concept.includes(e.topic.toLowerCase())
+        conceptMatches(concept, e.topic)
     );
     if (upcomingExam && upcomingExam.days_until <= 7) {
         return `Exam in ${upcomingExam.days_until} days: ${upcomingExam.topic}`;
     }
 
-    if (signals.failedConcepts.some(fc => concept.includes(fc.toLowerCase()))) {
+    if (signals.failedConcepts.some(fc => conceptMatches(concept, fc))) {
         return `Recent quiz failure in "${clip.concept}"`;
     }
 

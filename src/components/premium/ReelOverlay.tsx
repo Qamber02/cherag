@@ -56,6 +56,7 @@ export default function ReelOverlay({
 
                     {/* Like button in center */}
                     <button
+                        type="button"
                         onClick={handleLike}
                         className="relative w-14 h-14 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 active:scale-95 transition-all"
                     >
@@ -68,6 +69,7 @@ export default function ReelOverlay({
                 {/* Replay button */}
                 {onReplay && (
                     <button
+                        type="button"
                         onClick={onReplay}
                         className="w-14 h-14 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 active:scale-95 transition-all"
                     >
@@ -77,11 +79,15 @@ export default function ReelOverlay({
 
                 {/* Share button */}
                 <button
-                    onClick={() => {
-                        // TODO: Implement share functionality
-                        navigator.clipboard.writeText(
-                            `Check out this clip: ${clip.concept}`
-                        );
+                    type="button"
+                    onClick={async () => {
+                        try {
+                            await navigator.clipboard.writeText(
+                                `Check out this clip: ${clip.concept}`
+                            );
+                        } catch (err) {
+                            console.error('[ReelOverlay] Clipboard write failed:', err);
+                        }
                     }}
                     className="w-14 h-14 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 active:scale-95 transition-all"
                 >
@@ -90,6 +96,7 @@ export default function ReelOverlay({
 
                 {/* "Why am I seeing this?" button */}
                 <button
+                    type="button"
                     onClick={() => setShowTooltip(!showTooltip)}
                     className="w-14 h-14 flex items-center justify-center bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 active:scale-95 transition-all"
                 >

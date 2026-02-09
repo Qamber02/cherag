@@ -137,6 +137,7 @@ In Cloudflare → Your Project → **Settings** → **Environment variables**, a
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+VITE_API_BASE_URL=https://your-railway-url.up.railway.app
 ```
 
 > ℹ️ These ARE prefixed with `VITE_` because they're for the frontend

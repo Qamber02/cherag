@@ -98,7 +98,7 @@ Hosting the React SPA.
 ### Active Learning Modes
 *   **Teach-AI (Feynman Mode)**: You learn by teaching the AI.
 *   **Exam Simulator**: Realistic exam generation based on your weak spots.
-*   **Video Intelligence**: Finds and analyzes relevant YouTube videos without ads.
+*   **Video Intelligence**: Finds and analyzes relevant YouTube videos; ad display is controlled by YouTube/Google and may still appear.
 
 ---
 

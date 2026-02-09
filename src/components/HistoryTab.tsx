@@ -43,22 +43,33 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
             setIsLoading(true);
         }
 
-        let query = supabase
-            .from('activity_history')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(50);
+        try {
+            let query = supabase
+                .from('activity_history')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .limit(50);
 
-        if (filter !== 'all') {
-            query = query.eq('activity_type', filter);
+            if (filter !== 'all') {
+                query = query.eq('activity_type', filter);
+            }
+
+            const { data, error } = await query;
+
+            if (error) {
+                console.error('Failed to fetch activities:', error);
+                // Don't overwrite existing activities on error
+                return;
+            }
+
+            setActivities(data || []);
+        } catch (err) {
+            console.error('Unexpected error fetching activities:', err);
+        } finally {
+            setIsLoading(false);
+            setIsInitialLoad(false);
         }
-
-        const { data } = await query;
-        setActivities(data || []);
-        setIsLoading(false);
-         
-        setIsInitialLoad(false);
     }, [userId, filter, isInitialLoad]);
 
     useEffect(() => {

@@ -311,23 +311,22 @@ export default function Sidebar({
                             files.map((file) => {
                                 const isProcessing = file.processing_status === 'processing' || file.processing_status === 'pending';
                                 const isFailed = file.processing_status === 'failed' || (!file.content && !isProcessing);
-                                const isReady = file.content && file.content.length > 0;
 
                                 return (
                                     <div
                                         key={file.id}
                                         className={`group flex items-center gap-3 p-3 rounded-xl transition-all border shadow-sm ${isFailed
-                                                ? 'bg-red-50/60 dark:bg-red-900/10 border-red-200 dark:border-red-900/30'
-                                                : isProcessing
-                                                    ? 'bg-amber-50/60 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30'
-                                                    : 'bg-white/60 dark:bg-black/20 border-transparent hover:border-black/5 dark:hover:border-white/5 hover:bg-white/80 dark:hover:bg-black/30'
+                                            ? 'bg-red-50/60 dark:bg-red-900/10 border-red-200 dark:border-red-900/30'
+                                            : isProcessing
+                                                ? 'bg-amber-50/60 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30'
+                                                : 'bg-white/60 dark:bg-black/20 border-transparent hover:border-black/5 dark:hover:border-white/5 hover:bg-white/80 dark:hover:bg-black/30'
                                             }`}
                                     >
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isFailed
-                                                ? 'bg-red-500/10'
-                                                : isProcessing
-                                                    ? 'bg-amber-500/10'
-                                                    : 'bg-blue-500/10'
+                                            ? 'bg-red-500/10'
+                                            : isProcessing
+                                                ? 'bg-amber-500/10'
+                                                : 'bg-blue-500/10'
                                             }`}>
                                             {isProcessing ? (
                                                 <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
@@ -342,10 +341,10 @@ export default function Sidebar({
                                                 {file.filename}
                                             </span>
                                             <span className={`text-[10px] uppercase ${isFailed
-                                                    ? 'text-red-500 font-medium'
-                                                    : isProcessing
-                                                        ? 'text-amber-600 dark:text-amber-400'
-                                                        : 'text-muted-foreground'
+                                                ? 'text-red-500 font-medium'
+                                                : isProcessing
+                                                    ? 'text-amber-600 dark:text-amber-400'
+                                                    : 'text-muted-foreground'
                                                 }`}>
                                                 {isFailed ? 'Failed - Re-upload' : isProcessing ? 'Processing...' : file.file_type}
                                             </span>

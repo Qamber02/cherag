@@ -446,7 +446,7 @@ Full content:
 
 Return as JSON:
 {{
-  "analogy": "A relatable analogy to understand the concept (e.g. 'The mitochondriona is like a power plant...')",
+  "analogy": "A relatable analogy to understand the concept (e.g. 'The mitochondria is like a power plant...')",
   "eli5": "Explain Like I'm 5 (simple explanation using basic language)",
   "tldr": "Too Long, Didn't Read (one concise summary sentence)",
   "mnemonic": "A memorable mnemonic phrase or acronym to help recall",

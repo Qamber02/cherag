@@ -38,6 +38,19 @@ OPENROUTER_KEYS = [k for k in [
     os.getenv("OPENROUTER_API_KEY_5")
 ] if k]
 
+# Validate required API keys at startup
+if not GEMINI_KEYS:
+    raise RuntimeError(
+        "GEMINI_KEYS is empty. Set at least GEMINI_API_KEY environment variable. "
+        "Get a key from https://aistudio.google.com/apikey"
+    )
+
+if not OPENROUTER_KEYS:
+    raise RuntimeError(
+        "OPENROUTER_KEYS is empty. Set at least OPENROUTER_API_KEY environment variable. "
+        "Get a key from https://openrouter.ai/keys"
+    )
+
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
@@ -55,7 +68,6 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 FRONTEND_ORIGIN = "https://cherag.pages.dev"
 PREVIEW_DEPLOYMENT_ORIGINS = [
     FRONTEND_ORIGIN,
-    "https://dc61812a.cherag.pages.dev",  # Current preview deployment
     "http://localhost:5173",
     "http://localhost:3000"
 ]

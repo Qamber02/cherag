@@ -94,6 +94,10 @@ export function useLearningReels(): UseLearningReelsReturn {
             if (newFeed.length > 0) {
                 setFeed(newFeed);
                 setCurrentIndex(0);
+                setHasMore(newFeed.length >= 20);
+            } else {
+                // Empty feed from refresh - keep current feed but signal no more items
+                setHasMore(false);
             }
 
         } catch (err) {

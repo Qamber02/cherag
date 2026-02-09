@@ -78,8 +78,13 @@ async def search_youtube_videos(topic: str, page_token: Optional[str] = None) ->
                     if vid and dur:
                         durations[vid] = parse_iso8601_duration(dur)
         
-        # Build results
-        topic_words = [w.lower() for w in search_topic.split() if len(w) > 2]
+        # Build results - whitelist for common technical abbreviations
+        TECH_TERMS = {'ai', 'ml', 'js', 'go', 'c', 'c#', 'c++'}
+        topic_words = []
+        for w in search_topic.split():
+            w_lower = w.lower().strip()
+            if len(w) > 2 or w_lower in TECH_TERMS or '+' in w or '#' in w:
+                topic_words.append(w_lower)
         videos = []
         
         for item in items:
@@ -126,9 +131,14 @@ def calculate_relevance(title: str, channel: str, topic_words: List[str]) -> flo
     channel_lower = (channel or "").lower()
     matches = 0
     
-    # Check topic word matches
+    # Tokenize title for whole-word matching
+    import re
+    title_tokens = set(re.findall(r'\b\w+\b', title_lower))
+    
+    # Check topic word matches using word boundaries
     for word in topic_words:
-        if word in title_lower:
+        # Use regex for word boundary matching to avoid false positives
+        if word in title_tokens or re.search(rf'\b{re.escape(word)}\b', title_lower):
             matches += 1
     
     # Boost for educational keywords

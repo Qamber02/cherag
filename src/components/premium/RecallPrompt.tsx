@@ -1,7 +1,7 @@
 // Recall Prompt - Micro-recall question overlay
 // Tests understanding without typing
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import type { RecallPromptProps } from '../../types/videoIntelligence.types';
 
@@ -18,6 +18,7 @@ export default function RecallPrompt({
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [timeRemaining, setTimeRemaining] = useState(timeoutSeconds);
     const [answerStartTime] = useState(Date.now());
+    const skipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Countdown timer
     useEffect(() => {
@@ -28,7 +29,7 @@ export default function RecallPrompt({
                 if (prev <= 1) {
                     // Timeout - auto-skip
                     setState('skipped');
-                    setTimeout(() => {
+                    skipTimeoutRef.current = setTimeout(() => {
                         onSkip();
                     }, 1500);
                     return 0;
@@ -37,7 +38,12 @@ export default function RecallPrompt({
             });
         }, 1000);
 
-        return () => clearInterval(timer);
+        return () => {
+            clearInterval(timer);
+            if (skipTimeoutRef.current) {
+                clearTimeout(skipTimeoutRef.current);
+            }
+        };
     }, [state, onSkip]);
 
     const handleOptionClick = (index: number) => {
@@ -109,7 +115,7 @@ export default function RecallPrompt({
                                 key={index}
                                 onClick={() => handleOptionClick(index)}
                                 disabled={state !== 'showing'}
-                                className={`w-full ${bgColor} backdrop-blur-md ${borderColor} border-2 rounded-xl p-4 text-white text-left hover:bg-white/20 active:scale-98 transition-all disabled:cursor-not-allowed flex items-center justify-between`}
+                                className={`w-full ${bgColor} backdrop-blur-md ${borderColor} border-2 rounded-xl p-4 text-white text-left hover:bg-white/20 active:scale-95 transition-all disabled:cursor-not-allowed flex items-center justify-between`}
                             >
                                 <span>{option}</span>
                                 {icon}
@@ -146,9 +152,10 @@ export default function RecallPrompt({
                 {/* Skip button (only when showing) */}
                 {state === 'showing' && (
                     <button
+                        type="button"
                         onClick={() => {
                             setState('skipped');
-                            setTimeout(onSkip, 500);
+                            skipTimeoutRef.current = setTimeout(onSkip, 500);
                         }}
                         className="w-full bg-white/5 backdrop-blur-md text-white/60 rounded-full py-3 text-sm hover:bg-white/10 transition-all"
                     >

@@ -127,10 +127,10 @@ class PDFProcessor:
         
         # For visual/low-text pages, add placeholder
         if page_type == "visual":
+            original = self.clean_text(raw_text)
             cleaned_text = f"[Visual/Low-Text Slide - Page {page_num}]"
-            if cleaned_text.strip():
-                # Append any text we did find
-                cleaned_text += f"\n{cleaned_text}" if len(self.clean_text(raw_text)) > 0 else ""
+            if original:
+                cleaned_text += f"\n{original}"
         
         return PageResult(
             page=page_num,
@@ -151,10 +151,8 @@ class PDFProcessor:
         """
         results = []
         
-        # Open PDF from bytes (memory efficient)
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        
-        try:
+        # Open PDF from bytes using context manager for safety
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
             for page_num in range(len(doc)):
                 page = doc[page_num]
                 result = self.process_page(page, page_num + 1)  # 1-indexed
@@ -165,9 +163,6 @@ class PDFProcessor:
                     "type": result.type,
                     "char_count": result.char_count
                 })
-                
-        finally:
-            doc.close()
         
         return results
     

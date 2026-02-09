@@ -81,10 +81,12 @@ export function EmptyState({
                 <div className="flex flex-col sm:flex-row gap-3">
                     {action && (
                         <button
+                            type="button"
                             onClick={action.onClick}
+                            aria-label={action.label}
                             className={`px-6 py-3 font-medium rounded-xl transition-all active:scale-95 ${action.variant === 'secondary'
-                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl'
+                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 hover:shadow-xl'
                                 }`}
                         >
                             {action.label}
@@ -92,7 +94,9 @@ export function EmptyState({
                     )}
                     {secondaryAction && (
                         <button
+                            type="button"
                             onClick={secondaryAction.onClick}
+                            aria-label={secondaryAction.label}
                             className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                         >
                             {secondaryAction.label}

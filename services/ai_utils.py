@@ -4,6 +4,7 @@ import httpx
 import logging
 import time
 from typing import Optional, List
+from contextlib import asynccontextmanager
 from fastapi import HTTPException
 from config import (
     GEMINI_KEYS, GEMINI_MODELS,
@@ -28,11 +29,17 @@ async def close_http_client():
         await http_client.aclose()
         http_client = None
 
-async def get_client() -> httpx.AsyncClient:
-    """Get shared client or create temporary one."""
+@asynccontextmanager
+async def get_client():
+    """Get shared client or create temporary one as async context manager."""
     if http_client:
-        return http_client
-    return httpx.AsyncClient(timeout=60.0)
+        yield http_client
+    else:
+        client = httpx.AsyncClient(timeout=60.0)
+        try:
+            yield client
+        finally:
+            await client.aclose()
 
 # =============================================================================
 # Utility Functions
@@ -86,22 +93,11 @@ async def call_gemini(prompt: str) -> Optional[str]:
     if not GEMINI_KEYS:
         return None
     
-    # Use shared client if available, otherwise context manager
-    client_to_use = await get_client()
-    
-    # If using shared client, don't close it. If new, close it? 
-    # To keep it simple: if global is set, we use it. If not, we create one.
-    # But get_client returns a new one if global is None. We must close that new one.
-    # Refactoring slightly for safety: using context manager mostly for ephemeral.
-    # Ideally main.py calls init_http_client.
-    
     try:
-        if http_client:
-            return await _execute_gemini_request(http_client, prompt)
-        else:
-             async with httpx.AsyncClient(timeout=60.0) as client:
-                return await _execute_gemini_request(client, prompt)
-    except Exception:
+        async with get_client() as client:
+            return await _execute_gemini_request(client, prompt)
+    except Exception as e:
+        logger.error(f"Gemini call failed: {e}", exc_info=True)
         return None
 
 async def _execute_gemini_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
@@ -146,15 +142,11 @@ async def call_deepseek(prompt: str) -> Optional[str]:
         return None
     
     try:
-        if http_client:
-            return await _execute_deepseek_request(http_client, prompt)
-        else:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                return await _execute_deepseek_request(client, prompt)
-    except Exception:
-        pass
-    
-    return None
+        async with get_client() as client:
+            return await _execute_deepseek_request(client, prompt)
+    except Exception as e:
+        logger.error(f"DeepSeek call failed: {e}", exc_info=True)
+        return None
 
 async def _execute_deepseek_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
     response = await client.post(

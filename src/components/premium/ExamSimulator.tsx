@@ -168,7 +168,7 @@ export default function ExamSimulator({
             }
         });
 
-        const finalScore = Math.round((calculatedScore / questions.length) * 100);
+        const finalScore = questions.length > 0 ? Math.round((calculatedScore / questions.length) * 100) : 0;
         setScore(finalScore);
         setIsFinished(true);
 
@@ -189,6 +189,7 @@ export default function ExamSimulator({
                 <div className="flex items-center justify-between mb-8">
                     <h2 className="text-2xl font-bold text-foreground">Exam Results</h2>
                     <button
+                        type="button"
                         onClick={onCancel}
                         className="px-4 py-2 border border-border rounded-lg hover:bg-secondary text-foreground"
                     >
@@ -274,6 +275,7 @@ export default function ExamSimulator({
 
                 <div className="mt-8 flex justify-center pb-8">
                     <button
+                        type="button"
                         onClick={() => onComplete(score, answers)}
                         className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:opacity-90"
                     >
@@ -299,6 +301,7 @@ export default function ExamSimulator({
                     {formatTime(timeLeft)}
                 </div>
                 <button
+                    type="button"
                     onClick={finishExam}
                     className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors text-sm font-medium"
                 >
@@ -317,6 +320,7 @@ export default function ExamSimulator({
                                 {currentQuestion.topic}
                             </span>
                             <button
+                                type="button"
                                 onClick={toggleFlag}
                                 className={`flex items-center gap-2 text-sm ${flagged[currentQuestionIndex] ? 'text-orange-500 font-medium' : 'text-muted-foreground hover:text-foreground'
                                     }`}
@@ -341,6 +345,7 @@ export default function ExamSimulator({
 
                                     return (
                                         <button
+                                            type="button"
                                             key={idx}
                                             onClick={() => handleAnswer(letter)}
                                             className={`w-full text-left p-4 rounded-xl border transition-all ${isSelected

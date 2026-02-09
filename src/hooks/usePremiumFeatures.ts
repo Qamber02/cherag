@@ -323,7 +323,6 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
         model: 'first_principles' | 'second_order' | 'pareto' | 'inversion' | 'opportunity_cost'
     ) => {
         setIsLoading(true);
-        const aiModel = getPreference('aiModel');
         try {
             return await generateMentalModelAnalysis(content, model);
         } catch (err: any) {

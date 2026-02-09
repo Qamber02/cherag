@@ -200,8 +200,16 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                                                 )}
                                             </button>
                                             <button
-                                                onClick={() => onSendMessage(`Regenerate: ${messages[idx - 1]?.content || 'previous response'}`)}
-                                                className="min-w-[36px] min-h-[36px] p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                                                onClick={() => {
+                                                    // Find the last user message before this assistant message
+                                                    const userMessages = messages.slice(0, idx).filter(m => m.role === 'user');
+                                                    const lastUserMsg = userMessages.length > 0 ? userMessages[userMessages.length - 1] : null;
+                                                    if (lastUserMsg) {
+                                                        onSendMessage(lastUserMsg.content);
+                                                    }
+                                                }}
+                                                disabled={!messages.slice(0, idx).some(m => m.role === 'user')}
+                                                className="min-w-[36px] min-h-[36px] p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Regenerate"
                                             >
                                                 <RotateCcw className="w-4 h-4 text-gray-400" />

@@ -3,7 +3,7 @@ import base64
 import asyncio
 import httpx
 import fitz # PyMuPDF
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from supabase import create_client, Client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -11,7 +11,6 @@ from config import (
     GEMINI_KEYS, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, logger
 )
 from services.pdf_processor import pdf_processor
-from services.prompts import get_ocr_prompt
 
 # Global Supabase Admin Client
 supabase_admin: Optional[Client] = None
@@ -39,24 +38,12 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
     if not GEMINI_KEYS:
         return None
     
-    # Use generic HTTP client logic similar to ai_utils?
-    # For now, keeping local client here as per original main.py logic, 
-    # but ideally we should reuse shared client.
-    # To avoid circular dep with ai_utils (if any), I'll use a new client context here.
     try:
-        # If client is the shared global one, we use it directly.
-        # If it's a new one (because global not init), we should close it.
-        # Simplified approach: create new client context here for safety if we are unsure about global lifecycle for now,
-        # OR trust init_http_client is called.
-        # Given main.py refactor plan includes init_http_client, I will assume global client is available mostly.
-        # But safest is context manager for now to match original behavior, or use ai_utils pattern if I want to reuse connection.
-        # I'll stick to creating new client for RAG tasks to be safe with timeouts (30.0s here vs 60.0s in ai_utils).
-        
         async with httpx.AsyncClient(timeout=30.0) as local_client:
              for key in GEMINI_KEYS:
                 try:
                     response = await local_client.post(
-                        "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+                        f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
                         params={"key": key},
                         json={
                             "model": "models/text-embedding-004",
@@ -83,12 +70,12 @@ async def ocr_with_gemini(page_image_bytes: bytes) -> str:
         for key in GEMINI_KEYS:
             try:
                 response = await client.post(
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
                     params={"key": key},
                     json={
                         "contents": [{
                             "parts": [
-                                {"text": get_ocr_prompt()},
+                                {"text": "Extract all text from this image. Return only the extracted text, nothing else."},
                                 {"inline_data": {"mime_type": "image/png", "data": base64_image}}
                             ]
                         }]
@@ -147,16 +134,6 @@ async def process_document_background(document_id: str, file_url: str):
         await update_document_status(document_id, 'processing', 0)
         
         # Download file from Supabase Storage
-        # Security: Validate URL to prevent SSRF
-        if not SUPABASE_URL:
-            raise ValueError("Configuration error: SUPABASE_URL is not set")
-
-        parsed_file = urlparse(file_url)
-        parsed_base = urlparse(SUPABASE_URL)
-
-        if parsed_file.scheme != parsed_base.scheme or parsed_file.netloc != parsed_base.netloc:
-            raise ValueError(f"Security check failed: URL must match Supabase domain {parsed_base.netloc}")
-
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.get(file_url)
             if response.status_code != 200:
@@ -203,12 +180,10 @@ async def process_document_background(document_id: str, file_url: str):
                     # This part is definitely blocking. We should ideally wrap it too.
                     # Creating a helper function for extracting image bytes
                     def extract_image_bytes(p_bytes, p_num):
-                        d = fitz.open(stream=p_bytes, filetype="pdf")
-                        p = d[p_num - 1]
-                        pix = p.get_pixmap(matrix=fitz.Matrix(2, 2))
-                        ib = pix.tobytes("png")
-                        d.close()
-                        return ib
+                        with fitz.open(stream=p_bytes, filetype="pdf") as d:
+                            p = d[p_num - 1]
+                            pix = p.get_pixmap(matrix=fitz.Matrix(2, 2))
+                            return pix.tobytes("png")
                     
                     image_bytes = await loop.run_in_executor(
                         None, 
@@ -218,8 +193,6 @@ async def process_document_background(document_id: str, file_url: str):
                     ocr_text = await ocr_with_gemini(image_bytes)
                     if ocr_text and len(ocr_text.strip()) > 50:
                         page_text = pdf_processor.clean_text(ocr_text)
-                        # Update the source data structure so final aggregation includes OCR text
-                        pages[i]['text'] = page_text
                 except Exception as ocr_err:
                     logger.warning(f"[RAG] OCR fallback failed for page {page_num}: {ocr_err}")
             
@@ -254,8 +227,9 @@ async def process_document_background(document_id: str, file_url: str):
         logger.info(f"[RAG] Stats: {stats['text_pages']} text, {stats['slide_pages']} slide, {stats['visual_pages']} visual pages")
         
     except Exception as e:
-        logger.error(f"[RAG] Processing failed for {document_id}: {e}", exc_info=True)
-        await update_document_status(document_id, 'failed', 0, "Internal error during document processing")
+        error_msg = str(e)[:500]
+        logger.error(f"[RAG] Processing failed for {document_id}: {error_msg}")
+        await update_document_status(document_id, 'failed', 0, error_msg)
 
 async def search_similar_chunks(document_id: str, query: str, limit: int = 5) -> List[str]:
     """Search for similar chunks using vector similarity."""
