@@ -429,7 +429,8 @@ async def get_document_status(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting document status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/rag-chat")
 async def rag_chat(
@@ -490,7 +491,7 @@ async def api_analyze_radar(request: RadarAnalysisRequest, user: dict = Depends(
         return await premium_service.analyze_knowledge_radar(request.content, request.user_mastery)
     except Exception as e:
         logger.error(f"Radar Analysis Failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error during radar analysis")
 
 @app.post("/premium/radar/micro-lesson")
 async def api_micro_lesson(request: MicroLessonRequest, user: dict = Depends(verify_jwt)):

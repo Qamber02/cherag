@@ -267,9 +267,8 @@ async def process_document_background(document_id: str, file_url: str):
         logger.info(f"[RAG] Stats: {stats['text_pages']} text, {stats['slide_pages']} slide, {stats['visual_pages']} visual pages")
         
     except Exception as e:
-        error_msg = str(e)[:500]
-        logger.error(f"[RAG] Processing failed for {document_id}: {error_msg}")
-        await update_document_status(document_id, 'failed', 0, error_msg)
+        logger.error(f"[RAG] Processing failed for {document_id}: {e}", exc_info=True)
+        await update_document_status(document_id, 'failed', 0, "Internal error during document processing")
 
 async def search_similar_chunks(document_id: str, query: str, limit: int = 5) -> List[str]:
     """Search for similar chunks using vector similarity."""
