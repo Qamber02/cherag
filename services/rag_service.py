@@ -3,8 +3,7 @@ import base64
 import asyncio
 import httpx
 import fitz # PyMuPDF
-from urllib.parse import urlparse
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from supabase import create_client, Client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -44,21 +43,6 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
     # For now, keeping local client here as per original main.py logic, 
     # but ideally we should reuse shared client.
     # To avoid circular dep with ai_utils (if any), I'll use a new client context here.
-    # But ai_utils has init_http_client. RAG service can import get_client from ai_utils.
-    # Let's import get_client from ai_utils.
-    from services.ai_utils import get_client
-
-    client = await get_client()
-    # If client is shared (from ai_utils), we don't close it.
-    # But get_client returns a shared one or new one.
-    # If shared one, we just use it.
-    # Wait, ai_utils.get_client returns global `http_client` OR new one.
-    # If shared `http_client` is initialized in main::lifespan, it will be returned here.
-    
-    # HOWEVER, ai_utils logic for "execute request" is encapsulated in _execute_gemini_request.
-    # Generating embedding is a different endpoint path.
-    # I'll implement logic here using the client.
-    
     try:
         # If client is the shared global one, we use it directly.
         # If it's a new one (because global not init), we should close it.
@@ -72,7 +56,7 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
              for key in GEMINI_KEYS:
                 try:
                     response = await local_client.post(
-                        f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
+                        "https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent",
                         params={"key": key},
                         json={
                             "model": "models/text-embedding-004",
@@ -99,7 +83,7 @@ async def ocr_with_gemini(page_image_bytes: bytes) -> str:
         for key in GEMINI_KEYS:
             try:
                 response = await client.post(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
                     params={"key": key},
                     json={
                         "contents": [{
@@ -234,6 +218,8 @@ async def process_document_background(document_id: str, file_url: str):
                     ocr_text = await ocr_with_gemini(image_bytes)
                     if ocr_text and len(ocr_text.strip()) > 50:
                         page_text = pdf_processor.clean_text(ocr_text)
+                        # Update the source data structure so final aggregation includes OCR text
+                        pages[i]['text'] = page_text
                 except Exception as ocr_err:
                     logger.warning(f"[RAG] OCR fallback failed for page {page_num}: {ocr_err}")
             
