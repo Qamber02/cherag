@@ -68,7 +68,7 @@
     *   *Goal:* Deepens understanding through lateral thinking.
 
 *   **Mental Models:**
-    *   *Function:* Applies famous framework (e.g., First Principles, Inversion) to the study material.
+    *   *Function:* Applies famous frameworks (e.g., First Principles, Inversion) to the study material.
 
 ### E. System & Utility
 *   **Activity History:**
@@ -93,7 +93,7 @@
 1.  **The Hook (Home Tab):** Start on the Dashboard. Show the clean UI and the "Activity History" showing previous progress.
 2.  **The Input (Upload):** Upload a file. Point out how quickly the specific context is loaded.
 3.  **The Visual (Mind Map):** Immediately go to the Mind Map tab. "Before we read, let's see the structure."
-4.  **The Deep Dive (Study Shorts):** "I don't feel like reading yet." Open StudyShorts. Scroll through 2 videos. explicitely mention the **Interaction Tracking** (it knows if you skipped!).
+4.  **The Deep Dive (Study Shorts):** "I don't feel like reading yet." Open StudyShorts. Scroll through 2 videos. Explicitly mention the **Interaction Tracking** (it knows if you skipped!).
 5.  **The Drill (Teach AI):** "Okay, I think I get it." Open 'Teach AI'. Explain the concept to the bot. Show the bot's grading/feedback.
 6.  **The Final Boss (Exam Engine):** Generate a hard mode mock exam. Submit it and show the result screen.
 

@@ -4,8 +4,8 @@
 
 import { supabase } from './supabaseClient';
 
-// Railway API Base URL
-const API_BASE = 'https://cherag.up.railway.app';
+// API Base URL: reads from environment variable, falls back to localhost for local dev
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // =============================================================================
 // Types

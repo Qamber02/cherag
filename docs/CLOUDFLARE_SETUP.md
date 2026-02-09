@@ -50,7 +50,7 @@ This is where you define what keys the frontend can see.
 
 | Variable Name | Value |
 |:---|:---|
-| `VITE_SUPABASE_URL` | `https://rdlrmkpircequotldjen.supabase.co` |
+| `VITE_SUPABASE_URL` | `https://<your-supabase-project>.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | *(Your public anon key starting with eyJ...)* |
 
 1.  Click **Environment variables (advanced)** to expand the section.

@@ -28,6 +28,17 @@ The backend handles all AI logic and protects your API keys.
 # Navigate to project root
 cd cherag
 
+# Create and activate a Python virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+# On Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# On Windows (Command Prompt):
+# venv\Scripts\activate.bat
+# On macOS/Linux:
+# source venv/bin/activate
+
 # Install Python dependencies
 pip install -r requirements.txt
 
@@ -51,8 +62,10 @@ cd cherag
 # Install dependencies
 npm install
 
-# Create .env file for frontend
-# Add: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+# Create .env file for frontend with these variables:
+# VITE_SUPABASE_URL=https://your-project.supabase.co
+# VITE_SUPABASE_ANON_KEY=your-anon-key
+# VITE_API_BASE_URL=http://localhost:8000  (for local dev, points to the FastAPI backend)
 
 # Run the dev server
 npm run dev

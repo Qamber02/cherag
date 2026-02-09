@@ -36,7 +36,7 @@
 ## Step 1.2: Push Code to GitHub
 
 ```powershell
-cd c:\Users\HALA-MADRID\Desktop\Cherag
+cd path/to/your/cherag-project
 
 # Stage all new backend files
 git add main.py requirements.txt Procfile
@@ -92,20 +92,21 @@ curl https://your-railway-url.up.railway.app/health
 
 # Part 2: Connect Frontend to Backend
 
-## Step 2.1: Update API Base URL
+## Step 2.1: Configure API Base URL
 
-Edit `src/lib/aiService.ts` line 10:
+The frontend reads the backend URL from an environment variable. Add this to your Cloudflare Pages environment variables:
 
-```typescript
-// Railway API Base URL
-const API_BASE = 'https://cherag.up.railway.app';
 ```
+VITE_API_BASE_URL=https://your-railway-url.up.railway.app
+```
+
+> ℹ️ The `aiService.ts` module reads `VITE_API_BASE_URL` at build time. For local development, it falls back to `http://localhost:8000`.
 
 ## Step 2.2: Push Update
 
 ```powershell
-git add src/lib/aiService.ts
-git commit -m "Update API_BASE to Railway URL"
+git add .
+git commit -m "Configure VITE_API_BASE_URL for Railway backend"
 git push
 ```
 
