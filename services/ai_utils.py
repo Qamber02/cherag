@@ -1,5 +1,6 @@
 
 import re
+import random
 import httpx
 import logging
 import time
@@ -17,6 +18,9 @@ from services.prompts import get_deepseek_system_prompt
 # Shared HTTP Client
 http_client: Optional[httpx.AsyncClient] = None
 
+# Timeout for fallback attempts (shorter to avoid latency trap)
+FALLBACK_TIMEOUT = 10.0  # seconds
+
 async def init_http_client():
     """Initialize shared HTTP client."""
     global http_client
@@ -30,12 +34,16 @@ async def close_http_client():
         http_client = None
 
 @asynccontextmanager
-async def get_client():
-    """Get shared client or create temporary one as async context manager."""
+async def get_client(timeout: float = 60.0):
+    """Get shared client or create temporary one as async context manager.
+    
+    Args:
+        timeout: Request timeout in seconds. Use FALLBACK_TIMEOUT for faster failover.
+    """
     if http_client:
         yield http_client
     else:
-        client = httpx.AsyncClient(timeout=60.0)
+        client = httpx.AsyncClient(timeout=timeout)
         try:
             yield client
         finally:
@@ -46,43 +54,49 @@ async def get_client():
 # =============================================================================
 
 def sanitize_input(text: str, max_length: int = 10000) -> str:
-    """Sanitize user input to prevent injection attacks."""
+    """Sanitize user input by limiting length.
+    
+    Note: We do NOT strip HTML tags or code syntax here.
+    LLMs are not vulnerable to XSS - that's a frontend rendering concern.
+    Stripping <tags> would break prompts like "Explain the <div> syntax".
+    """
     if not text or not isinstance(text, str):
         return ""
     
-    # Remove potential XSS and injection attempts
-    sanitized = text
-    sanitized = re.sub(r'<[^>]*>', '', sanitized)  # Remove HTML tags
-    sanitized = re.sub(r'javascript\s*:', '', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'vbscript\s*:', '', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'data\s*:', '', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'on\w+\s*=', '', sanitized, flags=re.IGNORECASE)
-    sanitized = re.sub(r'expression\s*\(', '', sanitized, flags=re.IGNORECASE)
-    
-    return sanitized[:max_length].strip()
+    # Only limit length and strip whitespace
+    # Do NOT remove HTML/code syntax - this is a study assistant that discusses code
+    return text[:max_length].strip()
 
 def extract_json(text: str) -> str:
-    """Extract JSON from AI response."""
-    # Remove markdown code blocks
-    cleaned = text.replace('```json', '').replace('```', '').strip()
-    
-    # Try to find array [...]
-    start_array = cleaned.find('[')
-    end_array = cleaned.rfind(']')
-    
-    # Try to find object {...}
-    start_object = cleaned.find('{')
-    end_object = cleaned.rfind('}')
-    
-    # Determine which outer structure appears first
-    if start_array != -1 and (start_object == -1 or start_array < start_object):
-        if end_array != -1 and end_array > start_array:
-            return cleaned[start_array:end_array + 1]
-    elif start_object != -1:
-        if end_object != -1 and end_object > start_object:
-            return cleaned[start_object:end_object + 1]
-    
-    return cleaned
+    """Robust JSON extraction from AI response."""
+    try:
+        # 1. Try finding markdown code blocks first (handles AI explanations before JSON)
+        match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+        if match:
+            return match.group(1).strip()
+        
+        # 2. Check if text is already clean JSON
+        stripped = text.strip()
+        if (stripped.startswith('{') and stripped.endswith('}')) or \
+           (stripped.startswith('[') and stripped.endswith(']')):
+            return stripped
+        
+        # 3. Fallback: find outermost brackets
+        start_array = stripped.find('[')
+        end_array = stripped.rfind(']')
+        start_object = stripped.find('{')
+        end_object = stripped.rfind('}')
+        
+        if start_array != -1 and (start_object == -1 or start_array < start_object):
+            if end_array != -1 and end_array > start_array:
+                return stripped[start_array:end_array + 1]
+        elif start_object != -1:
+            if end_object != -1 and end_object > start_object:
+                return stripped[start_object:end_object + 1]
+        
+        return stripped
+    except Exception:
+        return text
 
 # =============================================================================
 # AI Provider Functions
@@ -101,9 +115,13 @@ async def call_gemini(prompt: str) -> Optional[str]:
         return None
 
 async def _execute_gemini_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
-    # Loop through models AND keys
+    # Shuffle keys to prevent one bad key from blocking all requests
+    shuffled_keys = GEMINI_KEYS.copy()
+    random.shuffle(shuffled_keys)
+    
+    # Loop through models AND shuffled keys (with shorter timeout for fallbacks)
     for model in GEMINI_MODELS:
-        for key in GEMINI_KEYS:
+        for key in shuffled_keys:
             try:
                 logger.info(f"Trying Gemini Model: {model}")
                 start_t = time.time()
@@ -179,18 +197,20 @@ async def call_openrouter(prompt: str) -> Optional[str]:
     if not OPENROUTER_KEYS:
         return None
     
+    # Use the context manager with shorter timeout for faster failover
     try:
-        if http_client:
-            return await _execute_openrouter_request(http_client, prompt)
-        else:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                return await _execute_openrouter_request(client, prompt)
-    except Exception:
-        pass
-    return None
+        async with get_client(FALLBACK_TIMEOUT) as client:
+            return await _execute_openrouter_request(client, prompt)
+    except Exception as e:
+        logger.error(f"OpenRouter call failed: {e}", exc_info=True)
+        return None
 
 async def _execute_openrouter_request(client: httpx.AsyncClient, prompt: str) -> Optional[str]:
-    for key in OPENROUTER_KEYS:
+    # Shuffle keys to prevent one bad key from blocking all requests
+    shuffled_keys = OPENROUTER_KEYS.copy()
+    random.shuffle(shuffled_keys)
+    
+    for key in shuffled_keys:
         try:
             response = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
