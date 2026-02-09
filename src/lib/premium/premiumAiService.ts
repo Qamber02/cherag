@@ -2,7 +2,21 @@
 // Premium AI Service - Connected to FastAPI Backend
 import { supabase } from '../supabaseClient';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// API Base URL: same env var as aiService.ts for consistency
+// In production, VITE_API_BASE_URL must be set. Only allow localhost fallback in dev mode.
+const API_URL = (() => {
+    const url = import.meta.env.VITE_API_BASE_URL;
+    if (url) return url;
+
+    // Only allow localhost fallback in development
+    if (import.meta.env.DEV) {
+        console.warn('[premiumAiService] VITE_API_BASE_URL not set, using localhost:8000 for development');
+        return 'http://localhost:8000';
+    }
+
+    // In production, throw a clear error
+    throw new Error('VITE_API_BASE_URL environment variable is required in production');
+})();
 
 // Types
 export type KnowledgeRadarData = {

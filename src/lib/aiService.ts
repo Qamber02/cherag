@@ -4,8 +4,21 @@
 
 import { supabase } from './supabaseClient';
 
-// API Base URL: reads from environment variable, falls back to localhost for local dev
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// API Base URL: reads from environment variable
+// In production, VITE_API_BASE_URL must be set. Only allow localhost fallback in dev mode.
+const API_BASE = (() => {
+    const url = import.meta.env.VITE_API_BASE_URL;
+    if (url) return url;
+
+    // Only allow localhost fallback in development
+    if (import.meta.env.DEV) {
+        console.warn('[aiService] VITE_API_BASE_URL not set, using localhost:8000 for development');
+        return 'http://localhost:8000';
+    }
+
+    // In production, throw a clear error
+    throw new Error('VITE_API_BASE_URL environment variable is required in production');
+})();
 
 // =============================================================================
 // Types
