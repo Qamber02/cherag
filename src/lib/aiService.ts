@@ -3,7 +3,13 @@
 // This service simply proxies requests with Supabase authentication
 
 import { supabase } from './supabaseClient';
-
+import {
+    validate,
+    summaryOptionsSchema,
+    flashcardOptionsSchema,
+    quizOptionsSchema,
+    chatQuerySchema
+} from './validation';
 // API Base URL: reads from environment variable
 // In production, VITE_API_BASE_URL must be set. Only allow localhost fallback in dev mode.
 const API_BASE = (() => {
@@ -109,6 +115,17 @@ async function apiRequest<T>(
 // AI Service Functions
 // =============================================================================
 
+
+
+// ... (API_BASE code remains same, assume it's there or I need to include it if replacing whole block)
+
+// ... (Types remain same)
+
+
+// =============================================================================
+// AI Service Functions
+// =============================================================================
+
 /**
  * Generate a summary of the provided content
  */
@@ -116,6 +133,10 @@ export async function generateSummary(
     context: string,
     options?: { length?: string; style?: string; focus?: string }
 ): Promise<string> {
+    // Validation
+    validate(summaryOptionsSchema, options || {});
+    if (!context || context.length > 200000) throw new Error("Context invalid or too long"); // logical check
+
     const response = await apiRequest<{ summary: string }>('/generate-summary', {
         context,
         length: options?.length,
@@ -132,6 +153,8 @@ export async function generateSummary(
 export async function generateFlashcards(
     context: string
 ): Promise<Flashcard[]> {
+    validate(flashcardOptionsSchema, { context });
+
     const response = await apiRequest<{ flashcards: Flashcard[] }>('/generate-flashcards', {
         context
     });
@@ -146,6 +169,9 @@ export async function generateQuizzes(
     context: string,
     options: { count?: number; difficulty?: string; seed?: number; forceRefresh?: boolean } = {}
 ): Promise<QuizQuestion[]> {
+    // Validate context and options
+    validate(quizOptionsSchema, { context, ...options });
+
     const response = await apiRequest<{ quizzes: QuizQuestion[] }>('/generate-quizzes', {
         context,
         count: options.count,
@@ -155,6 +181,8 @@ export async function generateQuizzes(
 
     return response.quizzes;
 }
+
+
 
 /**
  * Generate a mindmap structure from the provided content
@@ -194,6 +222,8 @@ export async function chatWithAI(
     context: string,
     query: string
 ): Promise<string> {
+    validate(chatQuerySchema, { context, query });
+
     const response = await apiRequest<{ response: string }>('/chat', {
         context,
         query
@@ -201,6 +231,7 @@ export async function chatWithAI(
 
     return response.response;
 }
+
 
 /**
  * Generate a learning roadmap from the provided content

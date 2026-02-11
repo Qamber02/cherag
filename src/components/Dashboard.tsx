@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { Search, User, Menu, LayoutDashboard, MessageCircle, Layers, FileQuestion, MoreHorizontal } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { saveSummary, getLastSummary } from '../lib/activityService';
 import { getPreference, setPreference } from '../lib/preferencesService';
 
 import Sidebar from './Sidebar';
-import ChatTab from './ChatTab';
-import FlashcardsTab from './FlashcardsTab';
-import SummaryTab from './SummaryTab';
 import DashboardHome from './DashboardHome';
 import OnboardingModal from './OnboardingModal';
+import DashboardHeader from './dashboard/DashboardHeader';
+import MobileNav from './dashboard/MobileNav';
+import type { Tab } from './dashboard/types';
+
 // Lazy Load Heavy Components to optimize initial load
 import {
     ExamEngineTab,
@@ -21,8 +22,6 @@ import {
 } from './premium';
 import { useVideoContext } from './premium/VideoContext';
 import { usePremiumFeatures } from '../hooks/usePremiumFeatures';
-import { Suspense, lazy } from 'react';
-import { Loader2 } from 'lucide-react';
 
 // Lazy Load Heavy Components
 const KnowledgeRadarTab = lazy(() => import('./premium').then(module => ({ default: module.KnowledgeRadarTab })));
@@ -32,6 +31,11 @@ const QuizzesTab = lazy(() => import('./QuizzesTab'));
 const StudyShortsTab = lazy(() => import('./StudyShortsTab'));
 const HistoryTab = lazy(() => import('./HistoryTab'));
 const SettingsTab = lazy(() => import('./SettingsTab'));
+
+// Lazy load remaining tabs that were previously eager
+const ChatTab = lazy(() => import('./ChatTab'));
+const FlashcardsTab = lazy(() => import('./FlashcardsTab'));
+const SummaryTab = lazy(() => import('./SummaryTab'));
 
 // Loading Fallback
 const TabLoading = () => (
@@ -49,8 +53,6 @@ import { useStudyShorts } from '../hooks/useStudyShorts';
 interface DashboardProps {
     session: Session;
 }
-
-type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'radar' | 'confidence' | 'exam' | 'teaching' | 'compress' | 'remix' | 'mental' | 'videos' | 'reels' | 'history' | 'settings';
 
 export default function Dashboard({ session }: DashboardProps) {
     // Initialize from saved preference
@@ -71,7 +73,7 @@ export default function Dashboard({ session }: DashboardProps) {
     // Hooks
     const { files, isParsing, uploadFile, removeFile } = useFiles(session.user);
     // Memoize context to prevent expensive re-calculation on every render (e.g. typing search)
-    const context = useMemo(() => files.map(f => f.content).join('\n\n'), [files]);
+    const context = useMemo(() => files.map((f: any) => f.content).join('\n\n'), [files]);
 
     const { messages, sendMessage, isLoading: isChatLoading } = useChat(session.user);
     const { flashcards, generateFlashcards, clearFlashcards, isLoading: isFlashcardsLoading } = useFlashcards(session.user, context);
@@ -220,37 +222,14 @@ export default function Dashboard({ session }: DashboardProps) {
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
-                {/* Top Bar with Search */}
-                <header className="h-14 md:h-16 flex items-center px-3 md:px-6 gap-2 md:gap-4 shrink-0 border-b border-border/50 bg-background/50 backdrop-blur-sm">
-                    {/* Mobile Menu Button */}
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="p-2 hover:bg-secondary rounded-lg md:hidden text-foreground flex-shrink-0"
-                    >
-                        <Menu className="w-5 h-5" />
-                    </button>
-
-                    {/* Search Bar */}
-                    <div className="flex-1 min-w-0 max-w-2xl">
-                        <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 rounded-xl bg-secondary/50 border border-border/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search..."
-                                className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-w-0"
-                            />
-                        </div>
-                    </div>
-
-                    {/* User Avatar */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center text-primary-foreground font-semibold shadow-lg text-sm">
-                            {session.user.email ? session.user.email[0].toUpperCase() : <User className="w-4 h-4" />}
-                        </div>
-                    </div>
-                </header>
+                {/* Top Bar */}
+                <DashboardHeader
+                    sidebarOpen={sidebarOpen}
+                    setSidebarOpen={setSidebarOpen}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    session={session}
+                />
 
                 {/* Content Area */}
                 <main className="flex-1 overflow-hidden relative">
@@ -436,8 +415,6 @@ export default function Dashboard({ session }: DashboardProps) {
                         </div>
                     ), true, true)}
 
-
-
                     {/* History Tab - Page Scroll */}
                     {renderTab('history', (
                         <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
@@ -460,53 +437,11 @@ export default function Dashboard({ session }: DashboardProps) {
                 </main>
 
                 {/* Mobile Bottom Navigation - Touch Optimized */}
-                <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-background via-background/95 to-background/80 backdrop-blur-xl border-t border-border z-50 safe-area-bottom shadow-lg">
-                    <div className="flex items-center justify-around h-[72px] px-1 gap-1">
-                        <button
-                            onClick={() => handleTabChange('dashboard')}
-                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'dashboard'
-                                ? 'text-primary bg-primary/15 shadow-sm'
-                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
-                        >
-                            <LayoutDashboard className="w-6 h-6" />
-                            <span className="text-[11px] mt-1 font-semibold">Home</span>
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('chat')}
-                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'chat'
-                                ? 'text-primary bg-primary/15 shadow-sm'
-                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
-                        >
-                            <MessageCircle className="w-6 h-6" />
-                            <span className="text-[11px] mt-1 font-semibold">Chat</span>
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('flashcards')}
-                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'flashcards'
-                                ? 'text-primary bg-primary/15 shadow-sm'
-                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
-                        >
-                            <Layers className="w-6 h-6" />
-                            <span className="text-[11px] mt-1 font-semibold">Cards</span>
-                        </button>
-                        <button
-                            onClick={() => handleTabChange('quizzes')}
-                            className={`flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl transition-all active:scale-95 ${activeTab === 'quizzes'
-                                ? 'text-primary bg-primary/15 shadow-sm'
-                                : 'text-muted-foreground hover:text-primary hover:bg-muted/50'}`}
-                        >
-                            <FileQuestion className="w-6 h-6" />
-                            <span className="text-[11px] mt-1 font-semibold">Quiz</span>
-                        </button>
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="flex flex-col items-center justify-center min-w-[56px] min-h-[56px] py-2 px-3 rounded-2xl text-muted-foreground hover:text-primary hover:bg-muted/50 transition-all active:scale-95"
-                        >
-                            <MoreHorizontal className="w-6 h-6" />
-                            <span className="text-[11px] mt-1 font-semibold">More</span>
-                        </button>
-                    </div>
-                </nav>
+                <MobileNav
+                    activeTab={activeTab}
+                    onTabChange={(tab) => handleTabChange(tab)}
+                    onMoreClick={() => setSidebarOpen(true)}
+                />
             </div>
         </div>
     );

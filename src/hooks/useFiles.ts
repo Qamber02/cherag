@@ -1,7 +1,6 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient, type Query } from '@tanstack/react-query';
 import { supabase } from '../lib/supabaseClient';
-import { processDocument, getDocumentStatus } from '../lib/aiService';
+import { processDocument } from '../lib/aiService';
 import type { User } from '@supabase/supabase-js';
 
 export interface Document {
@@ -15,91 +14,64 @@ export interface Document {
 }
 
 export function useFiles(user: User | null) {
-    const [files, setFiles] = useState<Document[]>([]);
-    const [isParsing, setIsParsing] = useState(false);
-    const [processingProgress, setProcessingProgress] = useState<number>(0);
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const queryClient = useQueryClient();
 
-    const fetchFiles = useCallback(async () => {
-        if (!user) return;
-        setIsLoading(true);
-        setError(null);
-        try {
-            const { data, error: fetchError } = await supabase
+    // Query for fetching files
+    const {
+        data: files = [],
+        isLoading,
+        error: queryError
+    } = useQuery({
+        queryKey: ['files', user?.id],
+        queryFn: async () => {
+            if (!user) return [];
+            const { data, error } = await supabase
                 .from('documents')
                 .select('*, processing_status, processing_progress')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
-            if (fetchError) throw fetchError;
-            setFiles(data || []);
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Failed to fetch files';
-            console.error('Error fetching files:', err);
-            setError(message);
-        } finally {
-            setIsLoading(false);
+            if (error) throw error;
+            return data as Document[];
+        },
+        enabled: !!user,
+        // Poll every 2 seconds if any file is processing or pending
+        refetchInterval: (query: Query<Document[], Error, Document[], readonly unknown[]>) => {
+            const data = query.state.data;
+            const hasProcessing = data?.some((f: Document) =>
+                f.processing_status === 'processing' || f.processing_status === 'pending'
+            );
+            return hasProcessing ? 2000 : false;
         }
-    }, [user]);
+    });
 
-    useEffect(() => {
-        fetchFiles();
-    }, [fetchFiles]);
+    const isParsing = files.some((f: Document) => f.processing_status === 'processing' || f.processing_status === 'pending');
 
-    // Robust polling effect: Automatically poll for any files in 'processing' state
-    useEffect(() => {
-        const processingFiles = files.filter(f => f.processing_status === 'processing' || f.processing_status === 'pending');
+    // Mutation for uploading files
+    const uploadMutation = useMutation({
+        mutationFn: async (file: File) => {
+            if (!user) throw new Error("No user");
 
-        if (processingFiles.length === 0) {
-            setIsParsing(false);
-            return;
-        }
+            // Validation
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+            if (file.size > MAX_SIZE) throw new Error("File too large. Maximum size is 10MB.");
 
-        setIsParsing(true);
-        console.log('[POLL] Active processing files:', processingFiles.map(f => f.filename));
+            const ALLOWED_TYPES = [
+                'application/pdf',
+                'text/plain',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                'text/markdown'
+            ];
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            const allowedExts = ['pdf', 'txt', 'docx', 'md'];
 
-        const intervalId = setInterval(async () => {
-            for (const file of processingFiles) {
-                try {
-                    const status = await getDocumentStatus(file.id);
-
-                    // Update progress if it changed
-                    if (status.progress > (file.processing_progress || 0)) {
-                        setProcessingProgress(status.progress);
-                        // Optional: Update local file state to reflect progress visually if we added a progress bar per file
-                    }
-
-                    if (status.status === 'completed') {
-                        console.log(`[POLL] File ${file.filename} COMPLETED`);
-                        await fetchFiles(); // Refresh list to get content
-                    } else if (status.status === 'failed') {
-                        console.error(`[POLL] File ${file.filename} FAILED:`, status.error);
-                        setError(status.error || 'Processing failed');
-                        await fetchFiles(); // Refresh list to update status
-                    }
-                } catch (err) {
-                    console.error(`[POLL] Error checking status for ${file.filename}:`, err);
-                }
+            if (!ALLOWED_TYPES.includes(file.type) && !allowedExts.includes(ext || '')) {
+                throw new Error("Invalid file type. Allowed: PDF, DOCX, TXT, MD");
             }
-        }, 2000); // Poll every 2 seconds
 
-        return () => clearInterval(intervalId);
-    }, [files, fetchFiles]);
-
-    const uploadFile = async (file: File) => {
-        if (!user) return;
-        setIsParsing(true);
-        setProcessingProgress(0);
-        setError(null);
-
-        console.log('[UPLOAD] Starting upload for:', file.name);
-
-        try {
-            // 1. Create DB Record
-            console.log('[UPLOAD] Step 1: Creating database record...');
             const filePath = `${user.id}/${Date.now()}_${file.name}`;
 
+            // 1. Create DB Record
             const { data: doc, error: dbError } = await supabase
                 .from('documents')
                 .insert({
@@ -114,75 +86,57 @@ export function useFiles(user: User | null) {
                 .select()
                 .single();
 
-            if (dbError) {
-                console.error('[UPLOAD] Step 1 FAILED - DB Error:', dbError);
-                throw dbError;
-            }
-            console.log('[UPLOAD] Step 1 SUCCESS - Doc ID:', doc.id);
+            if (dbError) throw dbError;
 
             // 2. Upload to Storage
-            console.log('[UPLOAD] Step 2: Uploading to Supabase Storage...');
             const { error: uploadError } = await supabase.storage
                 .from('documents')
                 .upload(filePath, file);
 
-            if (uploadError) {
-                console.error('[UPLOAD] Step 2 FAILED - Storage Error:', uploadError);
-                throw uploadError;
-            }
-            console.log('[UPLOAD] Step 2 SUCCESS - File uploaded to storage');
+            if (uploadError) throw uploadError;
 
-            // 3. Get signed URL for backend processing
-            console.log('[UPLOAD] Step 3: Creating signed URL...');
+            // 3. Get signed URL
             const { data: urlData, error: urlError } = await supabase.storage
                 .from('documents')
-                .createSignedUrl(filePath, 3600); // 1 hour expiry
+                .createSignedUrl(filePath, 3600);
 
-            if (urlError || !urlData?.signedUrl) {
-                console.error('[UPLOAD] Step 3 FAILED - Signed URL Error:', urlError);
-                throw new Error('Failed to create signed URL');
-            }
-            console.log('[UPLOAD] Step 3 SUCCESS - Signed URL created');
+            if (urlError || !urlData?.signedUrl) throw new Error('Failed to create signed URL');
 
-            // 4. Trigger server-side processing via FastAPI
-            console.log('[UPLOAD] Step 4: Calling backend /process-document...');
-            await processDocument(doc.id, urlData.signedUrl);
-            console.log('[UPLOAD] Step 4 SUCCESS - Backend processing started');
+            // 4. Trigger backend processing
+            processDocument(doc.id, urlData.signedUrl).catch(err => console.error("Processing trigger failed", err));
 
-            // 5. Update local state immediately (triggers useEffect polling)
-            setFiles(prev => [{ ...doc, processing_status: 'processing' }, ...prev]);
-
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Failed to upload file';
-            console.error('[UPLOAD] FAILED at some step:', err);
-            setError(message);
-            setIsParsing(false);
+            return doc;
+        },
+        onSuccess: (newDoc: Document) => {
+            queryClient.invalidateQueries({ queryKey: ['files', user?.id] });
+            queryClient.setQueryData(['files', user?.id], (old: Document[] | undefined) => {
+                return old ? [newDoc, ...old] : [newDoc];
+            });
         }
-    };
+    });
 
-    const removeFile = async (id: string) => {
-        const previousFiles = [...files];
-        setFiles(prev => prev.filter(f => f.id !== id));
-
-        try {
-            const { error: deleteError } = await supabase.from('documents').delete().eq('id', id);
-            if (deleteError) throw deleteError;
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Failed to delete file';
-            console.error('Delete error', err);
-            setError(message);
-            setFiles(previousFiles);
+    // Mutation for removing files
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from('documents').delete().eq('id', id);
+            if (error) throw error;
+            return id;
+        },
+        onSuccess: (id: string) => {
+            queryClient.setQueryData(['files', user?.id], (old: Document[] | undefined) => {
+                return old ? old.filter((f: Document) => f.id !== id) : [];
+            });
         }
-    };
+    });
 
     return {
         files,
         isParsing,
-        processingProgress,
-        error,
+        processingProgress: 0,
+        error: (queryError as Error)?.message || (uploadMutation.error as Error)?.message || null,
         isLoading,
-        uploadFile,
-        removeFile,
-        refreshFiles: fetchFiles
+        uploadFile: (file: File) => uploadMutation.mutateAsync(file),
+        removeFile: (id: string) => deleteMutation.mutateAsync(id),
+        refreshFiles: () => queryClient.invalidateQueries({ queryKey: ['files', user?.id] })
     };
 }
