@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-# Config & Auth
+# Config & Authentication 
 from config import (
     logger, FRONTEND_ORIGIN, PREVIEW_DEPLOYMENT_ORIGINS, PREVIEW_DEPLOYMENT_REGEX,
     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
