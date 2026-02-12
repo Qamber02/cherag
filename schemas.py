@@ -84,7 +84,7 @@ class RAGChatRequest(BaseModel):
     query: str
 
 # =============================================================================
-# Premium Features
+# Premium Features of Cherág 
 # =============================================================================
 
 class SyllabusAnalysisRequest(BaseModel):
