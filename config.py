@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-
+$Before Loading the env get the api keys
 # =============================================================================
 # Logging Configuration
 # =============================================================================
