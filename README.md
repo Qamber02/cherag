@@ -74,7 +74,7 @@ npm run dev
 
 ---
 
-## 🌍 Deployment
+##  Deployment
 
 We use a split deployment strategy for maximum performance and security.
 
