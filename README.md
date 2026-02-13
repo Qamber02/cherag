@@ -13,7 +13,7 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 
 ---
 
-## 🚀 Quick Start (Local Development)
+##  Quick Start (Local Development)
 
 ### Prerequisites
 *   Node.js (v18+)
