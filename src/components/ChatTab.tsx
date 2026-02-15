@@ -70,7 +70,7 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
         <div className="flex flex-col h-full relative">
             {/* Header */}
             {messages.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-3 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center justify-between px-6 py-3 glass border-b border-white/10 z-10">
                     <div className="flex items-center gap-2">
                         <Bot className="w-5 h-5 text-primary" />
                         <span className="font-medium text-sm text-gray-700 dark:text-gray-200">Cherág AI</span>
@@ -132,9 +132,9 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                             >
                                 <div className={`group relative max-w-[85%] lg:max-w-[75%] ${msg.role === 'user' ? '' : ''}`}>
                                     <div
-                                        className={`flex items-start rounded-3xl p-5 space-x-4 shadow-sm ${msg.role === 'user'
-                                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-br-sm'
-                                            : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-bl-sm text-gray-900 dark:text-white'
+                                        className={`flex items-start rounded-3xl p-5 space-x-4 shadow-sm backdrop-blur-sm ${msg.role === 'user'
+                                            ? 'bg-gradient-to-br from-primary to-orange-600 text-white rounded-br-sm shadow-warm-glow'
+                                            : 'bg-white/60 dark:bg-black/40 border border-white/20 rounded-bl-sm text-foreground'
                                             }`}
                                     >
                                         {msg.role === 'assistant' && (
@@ -239,20 +239,20 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
             </div>
 
             {/* Input Area - Touch Optimized */}
-            <div className="p-3 md:p-4 bg-white/40 dark:bg-gray-900/40 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 z-10 shrink-0">
+            <div className="p-3 md:p-4 glass border-t border-white/10 z-20 shrink-0">
                 <form onSubmit={handleSubmit} className="relative max-w-4xl mx-auto flex items-center gap-2">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Ask Cherág about your documents..."
-                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 focus:border-primary/50 rounded-full shadow-lg focus:shadow-primary/20 focus:outline-none transition-all text-base placeholder:text-gray-400 pr-14"
+                        className="w-full px-4 md:px-6 py-3 md:py-4 bg-white/50 dark:bg-black/20 border border-white/20 focus:border-primary/50 rounded-full shadow-inner focus:shadow-warm-glow focus:outline-none transition-all text-base placeholder:text-muted-foreground pr-14 backdrop-blur-md"
                         autoFocus
                     />
                     <button
                         type="submit"
                         disabled={isLoading || !input.trim()}
-                        className="absolute right-2 w-11 h-11 md:w-12 md:h-12 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full hover:shadow-lg disabled:opacity-50 disabled:from-gray-400 disabled:to-gray-400 transition-all group flex items-center justify-center active:scale-95"
+                        className="absolute right-2 w-11 h-11 md:w-12 md:h-12 bg-gradient-to-r from-primary to-orange-600 text-white rounded-full shadow-lg shadow-primary/20 hover:shadow-warm-glow disabled:opacity-50 disabled:shadow-none transition-all group flex items-center justify-center active:scale-95"
                     >
                         <Send className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                     </button>

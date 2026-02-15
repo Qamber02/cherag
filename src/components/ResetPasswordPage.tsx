@@ -80,16 +80,16 @@ export default function ResetPasswordPage() {
 
     if (checkingSession) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-cyan-50 to-teal-100">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-zinc-900 dark:to-black">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
     }
 
     if (!isValidSession) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-cyan-50 to-teal-100">
-                <div className="w-full max-w-md p-8 space-y-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 text-center">
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-zinc-900 dark:to-black">
+                <div className="w-full max-w-md p-8 space-y-6 glass-card text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-100 mb-4">
                         <AlertCircle className="w-8 h-8 text-red-500" />
                     </div>
@@ -99,7 +99,7 @@ export default function ResetPasswordPage() {
                     </p>
                     <button
                         onClick={() => navigate('/auth')}
-                        className="w-full px-4 py-3 text-white font-medium bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all"
+                        className="w-full px-4 py-3 text-white font-medium bg-primary rounded-xl hover:bg-orange-600 transition-all shadow-warm-glow"
                     >
                         Back to Login
                     </button>
@@ -110,8 +110,8 @@ export default function ResetPasswordPage() {
 
     if (success) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-cyan-50 to-teal-100">
-                <div className="w-full max-w-md p-8 space-y-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 text-center">
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-zinc-900 dark:to-black">
+                <div className="w-full max-w-md p-8 space-y-6 glass-card text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-100 mb-4">
                         <CheckCircle className="w-8 h-8 text-green-500" />
                     </div>
@@ -125,8 +125,8 @@ export default function ResetPasswordPage() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-cyan-50 to-teal-100">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50">
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 dark:from-zinc-900 dark:to-black">
+            <div className="w-full max-w-md p-8 space-y-6 glass-card">
                 {/* Logo */}
                 <div className="text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 mb-4">
@@ -161,7 +161,7 @@ export default function ResetPasswordPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm"
                             />
                         </div>
                     </div>
@@ -179,7 +179,7 @@ export default function ResetPasswordPage() {
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/50 backdrop-blur-sm"
+                                className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm"
                             />
                         </div>
                     </div>
@@ -187,7 +187,7 @@ export default function ResetPasswordPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="flex items-center justify-center w-full px-4 py-3 text-white font-medium bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl hover:from-amber-600 hover:to-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 transition-all shadow-lg shadow-amber-500/25"
+                        className="flex items-center justify-center w-full px-4 py-3 text-white font-medium bg-primary rounded-xl hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-all shadow-warm-glow"
                     >
                         {loading ? (
                             <Loader2 className="w-5 h-5 animate-spin" />

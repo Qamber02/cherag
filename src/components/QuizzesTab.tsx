@@ -172,17 +172,17 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
     // Empty State
     if (quizzes.length === 0 && !isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-4 md:p-8 text-center bg-gray-50 dark:bg-gray-900/50">
-                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25 animate-float">
+            <div className="flex flex-col items-center justify-center h-full p-4 md:p-8 text-center glass-panel">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/25 animate-float border border-white/10">
                     <FileQuestion className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">AI Quizzes</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-2">AI Quizzes</h2>
                 <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm">
                     Customize your study session and test your knowledge.
                 </p>
 
                 {/* Settings Controls */}
-                <div className="w-full max-w-md bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm mb-6 animate-fade-in-up">
+                <div className="w-full max-w-md glass p-4 rounded-xl border border-white/10 shadow-sm mb-6 animate-fade-in-up">
                     <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Difficulty</label>
@@ -277,8 +277,8 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         const percentage = Math.round((score / quizzes.length) * 100);
 
         return (
-            <div className="flex flex-col h-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-indigo-950 p-4 md:p-12 overflow-y-auto pb-24 md:pb-12">
-                <div className="max-w-2xl mx-auto w-full bg-white dark:bg-gray-800 rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-8 border border-white/50 dark:border-white/10">
+            <div className="flex flex-col h-full glass-panel p-4 md:p-12 overflow-y-auto pb-24 md:pb-12">
+                <div className="max-w-2xl mx-auto w-full glass rounded-2xl md:rounded-3xl shadow-xl p-4 md:p-8 border border-white/20">
                     <div className="text-center mb-6 md:mb-8">
                         <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-lg shadow-orange-500/30">
                             <span className="text-3xl md:text-4xl font-bold text-white">{percentage}%</span>
@@ -358,9 +358,9 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
 
     // Quiz View
     return (
-        <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50">
+        <div className="flex flex-col h-full glass-panel">
             {/* Header / Progress */}
-            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 md:px-8 shadow-sm z-10">
+            <div className="glass border-b border-white/10 p-4 md:px-8 shadow-sm z-10">
                 <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 md:gap-4">
                     <div className="min-w-0 shrink">
                         <h2 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">Topic Quiz</h2>
@@ -421,11 +421,11 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                     {currentQuiz && (
                         <div className="flex flex-col gap-6 animate-fade-in">
                             {/* Question Card */}
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <span className="inline-block px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold rounded-lg mb-4 uppercase tracking-wider">
+                            <div className="glass rounded-2xl p-6 md:p-8 shadow-sm border border-white/10">
+                                <span className="inline-block px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-300 text-xs font-bold rounded-lg mb-4 uppercase tracking-wider border border-purple-500/20">
                                     Question {currentIndex + 1}
                                 </span>
-                                <div className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white leading-relaxed prose prose-lg dark:prose-invert max-w-none">
+                                <div className="text-xl md:text-2xl font-bold text-foreground leading-relaxed prose prose-lg dark:prose-invert max-w-none">
                                     <ReactMarkdown>{currentQuiz.question}</ReactMarkdown>
                                 </div>
                             </div>
@@ -503,7 +503,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
             </div>
 
             {/* Bottom Actions */}
-            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="glass border-t border-white/10 p-4">
                 <div className="max-w-3xl mx-auto flex justify-between items-center">
                     <button
                         className="px-4 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"

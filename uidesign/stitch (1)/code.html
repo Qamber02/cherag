@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cherág Hero &amp; Feynman Mode Variant 2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1337ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101322",
+                        "surface-dark": "#15192c",
+                        "surface-dark-lighter": "#1c2138",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(19, 55, 236, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(19, 55, 236, 0.4);
+        }
+        
+        .glass-panel {
+            background: rgba(16, 19, 34, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card {
+            background: rgba(21, 25, 44, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Soft gradient blobs */
+        .gradient-blob-1 {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(19, 55, 236, 0.15) 0%, rgba(19, 55, 236, 0) 70%);
+            top: -200px;
+            right: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .gradient-blob-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0) 70%);
+            bottom: 0;
+            left: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-x-hidden relative">
+<!-- Ambient Background Effects -->
+<div class="gradient-blob-1"></div>
+<div class="gradient-blob-2"></div>
+<!-- Navigation -->
+<nav class="w-full glass-panel sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-white/5">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-white font-bold text-lg">C</div>
+<span class="font-bold text-xl tracking-tight">Cherág</span>
+</div>
+<div class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">Library</a>
+<a class="text-white" href="#">Study Room</a>
+<a class="hover:text-primary transition-colors" href="#">Analytics</a>
+<a class="hover:text-primary transition-colors" href="#">Community</a>
+</div>
+<div class="flex items-center space-x-4">
+<button class="p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+<span class="material-icons-outlined text-xl">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 p-[2px]">
+<img alt="User Profile Picture" class="w-full h-full rounded-full object-cover border-2 border-background-dark" data-alt="Young woman smiling profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeUVuUFAXcZ0alApHll5l5mMfisVW7jYyogpSg1mKTsxc2-KxXILZZ3S1z6rVPfNR2DB_Dg_uQSPFNbh1Iy-jWQqgpc7S_qMWXQ2C_O2XER-8X0JGSwsqmgLwLx1yjeFSy19UhEpyKtPjDGsL9OCvw6TOJQGWY8udfh6dphg4wDZ7UOXrDFa1FjDH54qArpUrR-4VbGAVlqAGUbWMNR1_8_5sN-tUnqdF5z4ltyZHq2oPDL1_atxyhDrvuNJpSDHDPCw-egbxu-08"/>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 relative z-10 flex flex-col">
+<!-- Hero Section -->
+<section class="flex flex-col md:flex-row items-center justify-between mb-12">
+<div class="md:w-1/2 space-y-6">
+<div class="inline-flex items-center px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase">
+<span class="w-2 h-2 rounded-full bg-primary mr-2 animate-pulse"></span>
+                    Now Active: Feynman Mode
+                </div>
+<h1 class="text-5xl md:text-6xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+                    Think. <span class="text-primary">Explain.</span> Excel.
+                </h1>
+<p class="text-lg text-slate-400 max-w-lg leading-relaxed">
+                    Master complexity by teaching it back. Our AI companion listens, critiques, and helps you simplify the toughest concepts.
+                </p>
+<!-- Action Buttons -->
+<div class="flex space-x-4 pt-2">
+<button class="px-6 py-3 bg-primary hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-[0_0_20px_rgba(19,55,236,0.3)] hover:shadow-[0_0_30px_rgba(19,55,236,0.5)] flex items-center">
+                        Start Session <span class="material-icons-outlined ml-2 text-sm">arrow_forward</span>
+</button>
+<button class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-lg font-medium transition-all flex items-center">
+<span class="material-icons-outlined mr-2 text-sm">play_circle</span> Watch Tutorial
+                    </button>
+</div>
+</div>
+<!-- 3D Mascot Area -->
+<div class="md:w-1/2 flex justify-center md:justify-end mt-10 md:mt-0 relative">
+<!-- Glowing orb behind mascot -->
+<div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full transform scale-75"></div>
+<div class="relative w-80 h-80 lg:w-96 lg:h-96">
+<!-- This represents the 3D Mascot -->
+<img alt="3D Abstract glowing geometric shape representing AI" class="w-full h-full object-contain drop-shadow-2xl animate-[bounce_6s_infinite]" data-alt="Abstract 3D floating blue and violet geometric shape representing AI mascot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXBazIHLfrxhGxS8RJwliG8ympP_YhB1frNReZ7W6_zYNezbUWudBwCJFcid7cyE80Bl4sLjM7NJbCJ9MaVc7EWAmwLuJModV2asHaeQk0Z8k_9hN9SXewlZ_f7C2JtXPjm0qxJxocHUp2bdNBwA8q3S_EsLYlmbjYvAWjSFonaanw1ajV8FdvbuIzOwydbn1aMp8K0RAEA18ASl3WvpndUJqc1JJs8M8qbZ5OTI8XHR3OB2ei1fU6TE6mod8cW1P9m8s6u0cDxwk"/>
+</div>
+</div>
+</section>
+<!-- Mode Tabs -->
+<div class="mb-8 border-b border-white/10 relative">
+<div class="flex space-x-8 text-sm font-medium">
+<button class="pb-4 text-primary relative">
+                    Feynman Mode
+                    <span class="absolute bottom-0 left-0 w-full h-0.5 bg-primary shadow-[0_0_10px_rgba(19,55,236,0.8)] rounded-t-full"></span>
+</button>
+<button class="pb-4 text-slate-400 hover:text-white transition-colors relative group">
+                    Socratic Method
+                    <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all group-hover:w-full rounded-t-full"></span>
+</button>
+<button class="pb-4 text-slate-400 hover:text-white transition-colors relative group">
+                    Quick Review
+                    <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all group-hover:w-full rounded-t-full"></span>
+</button>
+<button class="pb-4 text-slate-400 hover:text-white transition-colors relative group">
+                    Flashcard Gen
+                    <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-primary/50 transition-all group-hover:w-full rounded-t-full"></span>
+</button>
+</div>
+</div>
+<!-- Split Screen Workspace -->
+<div class="flex flex-col lg:flex-row gap-6 h-[600px] mb-12">
+<!-- Left Panel: AI Feedback (Feed style) -->
+<div class="lg:w-1/3 glass-panel rounded-2xl p-6 flex flex-col relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent"></div>
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-semibold text-lg text-white">AI Mentor</h3>
+<div class="flex space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+<span class="text-xs text-primary font-medium">Listening</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+<!-- AI Chat Bubble -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded bg-primary/20 flex-shrink-0 flex items-center justify-center">
+<span class="material-icons-outlined text-primary text-sm">smart_toy</span>
+</div>
+<div class="glass-card p-3 rounded-lg rounded-tl-none text-sm text-slate-300 border-l-2 border-l-primary/50">
+<p>Ready to break down "Quantum Entanglement"? Remember, try to use a simple analogy first. Imagine a pair of dice...</p>
+</div>
+</div>
+<!-- User History Bubble (Previous Turn) -->
+<div class="flex gap-3 flex-row-reverse">
+<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/10">
+<img alt="User Avatar" data-alt="Small user avatar thumbnail" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXmtChwnqKwYF0SX60-1QJrQI3qU_7VKZygqcIxgAoaGAGFoEjLwE1AEvinLG5Q6g4Ybtq4K2fYcwsL5XVlS9ssKxQnnFnjUOwMxPliHzXNNiSZ7hAKuRvdKpuJbNEX9qdGQX5uDAelP5ekObJB1MNHJiowCNN2Wf8LfahCCfAkTP794hiuhXAlgDdJ5j73rU4XzjI3CJY6B88cxeQTsTyYbgEKiQSO2o4na4r1wbmA-MOvyOXZV6oTQcwmhSq7EKiBA44BYasmPg"/>
+</div>
+<div class="bg-surface-dark-lighter p-3 rounded-lg rounded-tr-none text-sm text-slate-400 border border-white/5">
+<p>Okay, so it's like two particles are connected no matter how far apart they are?</p>
+</div>
+</div>
+<!-- AI Critique Card -->
+<div class="mt-4 p-4 rounded-xl bg-gradient-to-br from-primary/10 to-transparent border border-primary/20">
+<div class="flex items-center gap-2 mb-2 text-primary">
+<span class="material-icons-outlined text-sm">lightbulb</span>
+<span class="text-xs font-bold uppercase tracking-wider">Insight</span>
+</div>
+<p class="text-sm text-slate-200">That's a great start! You mentioned 'connection,' but to really simplify it, try explaining <strong>how</strong> changing one instantly affects the other. Think "Instant Messaging" vs "Mail".</p>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="mt-4 grid grid-cols-2 gap-2">
+<button class="py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-slate-300 transition-colors border border-white/5">Ask for Hint</button>
+<button class="py-2 px-3 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-slate-300 transition-colors border border-white/5">Show Analogy</button>
+</div>
+</div>
+<!-- Right Panel: Simplification Workspace -->
+<div class="lg:w-2/3 glass-panel rounded-2xl p-6 md:p-8 flex flex-col relative border-t border-t-white/10">
+<!-- Header with Progress -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+<div>
+<h2 class="text-xl font-bold text-white">Current Concept: Quantum Entanglement</h2>
+<p class="text-sm text-slate-400">Target Audience: 5-year-old</p>
+</div>
+<!-- Clarity Score Widget -->
+<div class="bg-surface-dark-lighter rounded-xl p-3 border border-white/5 min-w-[200px]">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-semibold text-slate-300 uppercase tracking-wide">Clarity Score</span>
+<span class="text-sm font-bold text-primary">85%</span>
+</div>
+<div class="w-full bg-slate-700/50 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full shadow-[0_0_10px_rgba(19,55,236,0.5)]" style="width: 85%"></div>
+</div>
+<p class="text-[10px] text-right mt-1 text-primary/80">Excellent!</p>
+</div>
+</div>
+<!-- Input Area -->
+<div class="flex-1 flex flex-col relative">
+<textarea class="w-full h-full bg-transparent border-0 text-lg md:text-xl text-slate-200 placeholder-slate-600 focus:ring-0 resize-none leading-relaxed" placeholder="Start typing your explanation here... Imagine you are telling a story...">So, imagine you have two magic coins. Even if you take one coin to the moon and keep the other one here on Earth, they are still best friends. If you flip the moon coin and it lands on heads, the Earth coin will instantly know and land on tails! They are talking to each other faster than a phone call.</textarea>
+<!-- Floating Controls at Bottom of Text Area -->
+<div class="absolute bottom-0 left-0 right-0 flex items-center justify-between pb-2">
+<div class="flex space-x-2">
+<button class="p-2 text-slate-500 hover:text-white transition-colors" title="Voice Input">
+<span class="material-icons-outlined">mic</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-white transition-colors" title="Upload Image">
+<span class="material-icons-outlined">add_photo_alternate</span>
+</button>
+</div>
+<div class="text-xs text-slate-500 font-mono">
+                            243 characters
+                        </div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="mt-6 pt-6 border-t border-white/5 flex justify-end items-center gap-4">
+<span class="text-xs text-slate-500 hidden md:inline-block">Press Cmd + Enter to submit</span>
+<button class="px-6 py-3 bg-white text-primary-900 font-bold rounded-lg hover:bg-slate-200 transition-colors shadow-lg shadow-white/5 flex items-center">
+                        Analyze Explanation
+                        <span class="material-icons-outlined ml-2">auto_awesome</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Recent Concepts Grid (Bottom) -->
+<div class="mb-12">
+<h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Recent Concepts</h4>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Card 1 -->
+<div class="glass-card p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<div class="p-2 rounded bg-purple-500/10 text-purple-400 group-hover:text-purple-300 transition-colors">
+<span class="material-icons-outlined text-lg">psychology</span>
+</div>
+<span class="text-xs text-slate-500">2h ago</span>
+</div>
+<h5 class="text-white font-medium mb-1 group-hover:text-primary transition-colors">Cognitive Bias</h5>
+<p class="text-sm text-slate-400 line-clamp-2">Understanding the Dunning-Kruger effect through everyday examples.</p>
+</div>
+<!-- Card 2 -->
+<div class="glass-card p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<div class="p-2 rounded bg-blue-500/10 text-blue-400 group-hover:text-blue-300 transition-colors">
+<span class="material-icons-outlined text-lg">code</span>
+</div>
+<span class="text-xs text-slate-500">1d ago</span>
+</div>
+<h5 class="text-white font-medium mb-1 group-hover:text-primary transition-colors">Recursion</h5>
+<p class="text-sm text-slate-400 line-clamp-2">Explaining recursive functions using the concept of Russian nesting dolls.</p>
+</div>
+<!-- Card 3 -->
+<div class="glass-card p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group border-dashed border-white/20 bg-transparent flex flex-col items-center justify-center text-center">
+<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2 group-hover:bg-primary group-hover:text-white transition-all text-slate-400">
+<span class="material-icons-outlined">add</span>
+</div>
+<span class="text-sm font-medium text-slate-300">New Concept</span>
+</div>
+</div>
+</div>
+</main>
+</body></html>

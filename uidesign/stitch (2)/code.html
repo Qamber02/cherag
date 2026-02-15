@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cherág Hero &amp; Exam Simulator Variant 3</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1337ec",
+                        "primary-hover": "#0e2ab8",
+                        "secondary": "#06b6d4", // Neon Teal for accents
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101322",
+                        "surface-dark": "#1a1f36",
+                        "surface-darker": "#15192b",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(19, 55, 236, 0.5), 0 0 20px rgba(6, 182, 212, 0.3)',
+                        'neon-sm': '0 0 5px rgba(19, 55, 236, 0.4)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cyber aesthetic */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101322; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1a1f36; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #1337ec; 
+        }
+
+        /* Mesh Gradient Background Animation */
+        .mesh-gradient {
+            background-color: #101322;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(230,85%,45%,0.15) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(188,78%,41%,0.1) 0, transparent 50%);
+        }
+
+        /* Mastery Ring Animation */
+        @keyframes fillRing {
+            from { stroke-dashoffset: 283; }
+            to { stroke-dashoffset: var(--offset); }
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-display selection:bg-primary selection:text-white">
+<!-- Navigation -->
+<nav class="sticky top-0 z-50 backdrop-blur-md bg-background-light/80 dark:bg-background-dark/80 border-b border-slate-200 dark:border-slate-800/50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-20">
+<!-- Logo -->
+<div class="flex-shrink-0 flex items-center gap-2">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-neon-sm">
+<span class="material-icons text-white text-xl">auto_awesome</span>
+</div>
+<span class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Cherág<span class="text-primary">.ai</span></span>
+</div>
+<!-- Desktop Menu (Pill Shaped) -->
+<div class="hidden md:block">
+<div class="flex space-x-2 bg-slate-200 dark:bg-surface-darker p-1.5 rounded-full border border-slate-300 dark:border-slate-700/50">
+<a class="px-5 py-2 rounded-full text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="px-5 py-2 rounded-full text-sm font-medium bg-primary text-white shadow-lg shadow-primary/30 relative overflow-hidden group" href="#">
+<span class="relative z-10">Exam Simulator</span>
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+</a>
+<a class="px-5 py-2 rounded-full text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary transition-colors" href="#">Study Materials</a>
+<a class="px-5 py-2 rounded-full text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-primary transition-colors" href="#">AI Tutor</a>
+</div>
+</div>
+<!-- User Profile -->
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:text-primary transition-colors relative">
+<span class="material-icons">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full"></span>
+</button>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-surface-dark border-2 border-slate-300 dark:border-slate-700 overflow-hidden cursor-pointer hover:border-primary transition-colors">
+<img alt="User profile avatar showing a young woman" class="h-full w-full object-cover" data-alt="Portrait of a user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOLnxtGNqZ4o_sloDC-f3L_ezYiDlDg9qOrHlaG6d8l6yjKsYftCsskUBDa06kxe5156x0LOiFLdXBfZgPweorYLlDmemB-dNQFwhTP9HRzS7QJB9FwINsNG1wxpFjepH7z6fLQqlqNzheQEU5RCv-FN-OMOvldibF7FTr_wLI4NxZJgLhSTJ5AtOfvj03qfcBgqnyxT0QaH0ghnCnTdREEnoQ2CMtddH998LjL1XBQVqK77qxb7XmJv3AyuPknPvU4uT8cc_iSA0"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<!-- Hero Section -->
+<header class="relative mesh-gradient overflow-hidden border-b border-slate-800/50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+<!-- Text Content -->
+<div class="space-y-8">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-secondary text-xs font-semibold tracking-wide uppercase">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                    System Online v3.4
+                </div>
+<h1 class="text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1]">
+                    Master Your Curriculum with <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">AI Precision</span>
+</h1>
+<p class="text-lg text-slate-400 max-w-xl leading-relaxed">
+                    Our neural engine analyzes your study patterns in real-time, predicting exam outcomes and optimizing your learning path for a proven <span class="text-white font-medium">15% score increase</span>.
+                </p>
+<div class="flex flex-wrap gap-4 pt-4">
+<button class="px-8 py-3.5 bg-primary hover:bg-primary-hover text-white rounded-lg font-semibold shadow-neon transition-all hover:-translate-y-0.5 flex items-center gap-2">
+<span class="material-icons text-sm">play_circle</span>
+                        Start Diagnostic Exam
+                    </button>
+<button class="px-8 py-3.5 bg-surface-dark border border-slate-700 hover:border-slate-500 text-slate-200 rounded-lg font-medium transition-colors flex items-center gap-2">
+<span class="material-icons text-sm">analytics</span>
+                        View Prediction Report
+                    </button>
+</div>
+</div>
+<!-- AI Visualization / Predictive Node -->
+<div class="relative lg:h-[400px] w-full flex items-center justify-center">
+<!-- Background Glow -->
+<div class="absolute inset-0 bg-primary/20 blur-[100px] rounded-full"></div>
+<!-- Main Node Card -->
+<div class="relative bg-surface-dark/80 backdrop-blur-xl border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-slate-100 font-semibold flex items-center gap-2">
+<span class="material-icons text-primary">psychology</span>
+                            Predictive Score Node
+                        </h3>
+<span class="text-xs font-mono text-secondary">LIVE UPDATE</span>
+</div>
+<div class="flex items-end justify-between mb-2">
+<div>
+<p class="text-sm text-slate-400">Projected Score</p>
+<p class="text-4xl font-bold text-white">94<span class="text-lg text-slate-500 font-normal">/100</span></p>
+</div>
+<div class="text-right">
+<p class="text-sm text-slate-400">Confidence</p>
+<p class="text-xl font-bold text-secondary">High</p>
+</div>
+</div>
+<!-- Animated Graph Representation -->
+<div class="h-32 w-full mt-6 relative flex items-end justify-between gap-1">
+<!-- Bars -->
+<div class="w-1/6 bg-primary/20 rounded-t h-[40%] relative group cursor-pointer hover:bg-primary/40 transition-all">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-darker text-xs px-2 py-1 rounded border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Week 1</div>
+</div>
+<div class="w-1/6 bg-primary/30 rounded-t h-[55%] relative group cursor-pointer hover:bg-primary/50 transition-all"></div>
+<div class="w-1/6 bg-primary/40 rounded-t h-[45%] relative group cursor-pointer hover:bg-primary/60 transition-all"></div>
+<div class="w-1/6 bg-primary/60 rounded-t h-[70%] relative group cursor-pointer hover:bg-primary/80 transition-all"></div>
+<div class="w-1/6 bg-primary/80 rounded-t h-[85%] relative group cursor-pointer hover:bg-primary transition-all"></div>
+<div class="w-1/6 bg-secondary rounded-t h-[94%] shadow-[0_0_15px_rgba(6,182,212,0.5)] relative group cursor-pointer">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-darker text-secondary text-xs px-2 py-1 rounded border border-secondary/30 font-bold whitespace-nowrap">Current</div>
+</div>
+<!-- Connecting Line (Visual approximation) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" preserveaspectratio="none">
+<path class="opacity-50" d="M 20 80 L 70 60 L 120 75 L 170 40 L 220 20 L 270 10" fill="none" stroke="#06b6d4" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2"></path>
+<circle class="animate-pulse" cx="270" cy="10" fill="#06b6d4" r="4"></circle>
+</svg>
+</div>
+<div class="mt-6 flex items-center justify-between text-xs text-slate-500 border-t border-slate-700/50 pt-4">
+<span>Analysis based on 42 recent quizzes</span>
+<span class="flex items-center gap-1 text-emerald-400">
+<span class="material-icons text-[14px]">trending_up</span> +12% vs last month
+                        </span>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<!-- Filters & Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+<div>
+<h2 class="text-2xl font-bold text-white mb-1">Exam Simulator Dashboard</h2>
+<p class="text-slate-400 text-sm">Manage your mock exams and track your subject mastery.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative">
+<span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+<input class="bg-surface-dark border border-slate-700 text-slate-200 text-sm rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none w-64 placeholder-slate-500" placeholder="Search exams..." type="text"/>
+</div>
+<button class="bg-surface-dark border border-slate-700 text-slate-300 p-2.5 rounded-lg hover:border-primary hover:text-white transition-colors">
+<span class="material-icons text-lg">filter_list</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Knowledge Mastery (Sidebar style on Desktop) -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Quick Stats -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-dark border border-slate-700/50 p-4 rounded-xl">
+<div class="text-slate-400 text-xs uppercase font-semibold mb-1">Current Streak</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-bold text-white">14</span>
+<span class="text-sm text-slate-500 mb-1">days</span>
+</div>
+<div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-secondary h-full rounded-full w-[70%]"></div>
+</div>
+</div>
+<div class="bg-surface-dark border border-slate-700/50 p-4 rounded-xl">
+<div class="text-slate-400 text-xs uppercase font-semibold mb-1">Exams Taken</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-bold text-white">28</span>
+</div>
+<div class="text-xs text-emerald-400 mt-3 flex items-center">
+<span class="material-icons text-[14px] mr-1">arrow_upward</span> Top 5%
+                        </div>
+</div>
+</div>
+<!-- Mastery Rings Card -->
+<div class="bg-surface-dark border border-slate-700/50 rounded-2xl p-6">
+<h3 class="text-lg font-semibold text-white mb-6">Knowledge Mastery</h3>
+<div class="space-y-6">
+<!-- Ring Item 1 -->
+<div class="flex items-center gap-4">
+<div class="relative w-16 h-16">
+<svg class="w-full h-full" viewbox="0 0 100 100">
+<circle class="text-slate-800 stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-width="8"></circle>
+<circle class="text-primary progress-ring__circle stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-dasharray="283" stroke-dashoffset="37" stroke-linecap="round" stroke-width="8" style="--offset: 37"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">87%</div>
+</div>
+<div class="flex-1">
+<h4 class="text-slate-200 font-medium">Physics</h4>
+<p class="text-xs text-slate-500 mt-1">Mechanics &amp; Thermodynamics focus recommended</p>
+</div>
+</div>
+<!-- Ring Item 2 -->
+<div class="flex items-center gap-4">
+<div class="relative w-16 h-16">
+<svg class="w-full h-full" viewbox="0 0 100 100">
+<circle class="text-slate-800 stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-width="8"></circle>
+<circle class="text-secondary progress-ring__circle stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-dasharray="283" stroke-dashoffset="100" stroke-linecap="round" stroke-width="8" style="--offset: 100"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">65%</div>
+</div>
+<div class="flex-1">
+<h4 class="text-slate-200 font-medium">Calculus II</h4>
+<p class="text-xs text-slate-500 mt-1">Improvement in Integration detected</p>
+</div>
+</div>
+<!-- Ring Item 3 -->
+<div class="flex items-center gap-4">
+<div class="relative w-16 h-16">
+<svg class="w-full h-full" viewbox="0 0 100 100">
+<circle class="text-slate-800 stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-width="8"></circle>
+<circle class="text-purple-500 progress-ring__circle stroke-current" cx="50" cy="50" fill="transparent" r="45" stroke-dasharray="283" stroke-dashoffset="20" stroke-linecap="round" stroke-width="8" style="--offset: 20"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">92%</div>
+</div>
+<div class="flex-1">
+<h4 class="text-slate-200 font-medium">World History</h4>
+<p class="text-xs text-slate-500 mt-1">Mastery achieved. Maintain with reviews.</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 py-3 rounded-lg border border-dashed border-slate-600 text-slate-400 text-sm hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2">
+<span class="material-icons text-sm">add</span>
+                        Add Subject
+                    </button>
+</div>
+</div>
+<!-- Right Column: Exam List -->
+<div class="lg:col-span-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Exam Card 1 -->
+<div class="group bg-surface-dark hover:bg-surface-darker border border-slate-700/50 hover:border-primary/50 rounded-xl p-6 transition-all duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
+<span class="material-icons text-6xl text-primary -mr-4 -mt-4 transform rotate-12">assignment</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="px-2.5 py-1 rounded bg-primary/20 text-primary text-xs font-semibold">Physics</span>
+<span class="flex items-center text-xs text-slate-400 font-medium">
+<span class="material-icons text-sm mr-1">schedule</span> 90 min
+                            </span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2 relative z-10">Mid-Term Simulation A</h3>
+<p class="text-slate-400 text-sm mb-6 relative z-10">Comprehensive coverage of kinematics and dynamics. High difficulty.</p>
+<div class="flex items-center justify-between relative z-10">
+<div class="flex -space-x-2">
+<img alt="Avatar of user who took this exam" class="w-8 h-8 rounded-full border-2 border-surface-dark" data-alt="Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTorM4z-3p7u6-w6U1AkHZboO0ak_pS0CxVdafeRS49nSmVZd1VnkbpG2TI-X-EmrYE5lJ4SIXZ7toJabdjfhSPR-eOcAj6t9McqnfEl6cE756q-O-JiwTodHcCy2_6DRgnrgF9bOGqIyl6DzQc96nmhnglkESHhwjMWxA0uvM0tsfEnDNzkLRdGup6SFXAgJd-GMZ4QJI2bbVclm4d12q1jcn4d7TZJ2fTBshiEmObHNVhqAln__vWkPvAg_lN5wGs0QA5fEDn_8"/>
+<img alt="Avatar of user who took this exam" class="w-8 h-8 rounded-full border-2 border-surface-dark" data-alt="Avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmr8qcPtCSPA_X6JNVgjG_5RArHDEuMCfwvLczrTkDyzW8yAJ7lXQ6gEUt3jvAAmdvMa1nLHUYmWaqJ9wEa3ppMt0PugvhF_KbmQYsRcISX6HicFgE_eROl3FLFvOPTdD5LTGwq9rZcMaQIaP71g7wU_SVpyj3I78RPBH2D5y-BvbKdGHG35goDSyBC64Iq40QWd1psjEuNV8C3FPnq11K3Asrciwe2E3-GGDj_B_BuEYN0BMlmJ4ThvQm80-lupWaYVz4n8KO5FE"/>
+<div class="w-8 h-8 rounded-full border-2 border-surface-dark bg-slate-700 flex items-center justify-center text-[10px] text-white font-bold">+120</div>
+</div>
+<button class="px-5 py-2 bg-slate-800 text-white rounded-lg hover:bg-primary transition-colors text-sm font-medium shadow-lg hover:shadow-neon-sm">Start Exam</button>
+</div>
+</div>
+<!-- Exam Card 2 -->
+<div class="group bg-surface-dark hover:bg-surface-darker border border-slate-700/50 hover:border-primary/50 rounded-xl p-6 transition-all duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
+<span class="material-icons text-6xl text-secondary -mr-4 -mt-4 transform rotate-12">bolt</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="px-2.5 py-1 rounded bg-secondary/20 text-secondary text-xs font-semibold">Calculus</span>
+<span class="flex items-center text-xs text-slate-400 font-medium">
+<span class="material-icons text-sm mr-1">schedule</span> 15 min
+                            </span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2 relative z-10">Quick Quiz: Derivatives</h3>
+<p class="text-slate-400 text-sm mb-6 relative z-10">Rapid fire questions to test your speed and accuracy on chain rule.</p>
+<div class="flex items-center justify-between relative z-10">
+<div class="text-xs text-slate-500 font-medium">Difficulty: <span class="text-emerald-400">Medium</span></div>
+<button class="px-5 py-2 bg-slate-800 text-white rounded-lg hover:bg-primary transition-colors text-sm font-medium shadow-lg hover:shadow-neon-sm">Start Exam</button>
+</div>
+</div>
+<!-- Exam Card 3 -->
+<div class="group bg-surface-dark hover:bg-surface-darker border border-slate-700/50 hover:border-primary/50 rounded-xl p-6 transition-all duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
+<span class="material-icons text-6xl text-purple-500 -mr-4 -mt-4 transform rotate-12">history_edu</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 text-xs font-semibold">History</span>
+<span class="flex items-center text-xs text-slate-400 font-medium">
+<span class="material-icons text-sm mr-1">schedule</span> 60 min
+                            </span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2 relative z-10">The Industrial Revolution</h3>
+<p class="text-slate-400 text-sm mb-6 relative z-10">Essay based questions analyzing socio-economic impacts.</p>
+<div class="flex items-center justify-between relative z-10">
+<div class="text-xs text-slate-500 font-medium">Difficulty: <span class="text-orange-400">Hard</span></div>
+<button class="px-5 py-2 bg-slate-800 text-white rounded-lg hover:bg-primary transition-colors text-sm font-medium shadow-lg hover:shadow-neon-sm">Start Exam</button>
+</div>
+</div>
+<!-- Exam Card 4 (New / Promo) -->
+<div class="relative bg-gradient-to-br from-primary/20 to-surface-dark border border-primary/30 rounded-xl p-6 flex flex-col justify-center items-center text-center">
+<div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-4 shadow-neon">
+<span class="material-icons text-white">smart_toy</span>
+</div>
+<h3 class="text-lg font-bold text-white mb-2">Generate AI Mock Exam</h3>
+<p class="text-slate-300 text-sm mb-6">Create a custom exam tailored to your weak spots instantly.</p>
+<button class="w-full px-5 py-2 bg-white text-primary rounded-lg hover:bg-slate-100 transition-colors text-sm font-bold shadow-lg">Generate Now</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

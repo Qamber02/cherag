@@ -74,7 +74,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
     };
 
     return (
-        <div className="p-8 min-h-full bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+        <div className="p-8 min-h-full glass-panel">
             <div className="max-w-2xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-8">
@@ -88,7 +88,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </div>
 
                 {/* Account Section */}
-                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <User className="w-4 h-4" />
@@ -163,7 +163,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* Appearance Section */}
-                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Sparkles className="w-4 h-4" />
@@ -191,7 +191,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* AI Preferences Section */}
-                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Bot className="w-4 h-4" />
@@ -268,7 +268,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* Data Management Section */}
-                <section className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/50 dark:border-gray-700 shadow-lg overflow-hidden">
+                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Database className="w-4 h-4" />
@@ -315,7 +315,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* About Section */}
-                <section className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/50 p-6 text-center">
+                <section className="bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-2xl border border-primary/20 p-6 text-center">
                     <h3 className="font-bold text-lg text-gray-900 mb-1">Cherág</h3>
                     <p className="text-sm text-gray-600 mb-2">AI-Powered Study Assistant</p>
                     <p className="text-xs text-gray-500">Version 3.0 • Production Release</p>

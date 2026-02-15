@@ -71,7 +71,7 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
 
         if (isComplete) {
             return (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-900 dark:to-green-950">
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center glass">
                     <div className="w-24 h-24 bg-gradient-to-tr from-green-400 to-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-500/30 animate-pulse">
                         <CheckCircle className="w-12 h-12 text-white" />
                     </div>
@@ -99,9 +99,9 @@ export default function FlashcardsTab({ flashcards, isLoading, onGenerate, onCle
         }
 
         return (
-            <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50">
+            <div className="flex flex-col h-full glass-panel">
                 {/* Header */}
-                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+                <div className="glass border-b border-white/10 p-4">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
                         <button onClick={exitStudyMode} className="min-h-[44px] px-3 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center">
                             ← Back to Cards
@@ -283,7 +283,7 @@ function FlipCard({ question, answer }: { question: string; answer: string }) {
                 style={{ transformStyle: 'preserve-3d' }}
             >
                 {/* Front */}
-                <div className="absolute w-full h-full backface-hidden bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-2xl shadow-lg group-hover:shadow-xl transition-shadow p-8 flex flex-col items-center justify-center">
+                <div className="absolute w-full h-full backface-hidden glass border border-white/20 rounded-2xl shadow-lg group-hover:shadow-warm-glow transition-all p-8 flex flex-col items-center justify-center">
                     <span className="text-xs uppercase tracking-widest text-gray-400 mb-4 font-bold">Question</span>
                     <div className="text-xl font-semibold text-gray-900 dark:text-white leading-relaxed text-center font-serif w-full prose prose-sm dark:prose-invert">
                         <ReactMarkdown>{question}</ReactMarkdown>
@@ -295,7 +295,7 @@ function FlipCard({ question, answer }: { question: string; answer: string }) {
 
                 {/* Back */}
                 <div
-                    className="absolute w-full h-full backface-hidden bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-8 flex flex-col items-center justify-center"
+                    className="absolute w-full h-full backface-hidden bg-gradient-to-br from-primary to-orange-600 rounded-2xl shadow-xl p-8 flex flex-col items-center justify-center"
                     style={{ transform: 'rotateY(180deg)' }}
                 >
                     <span className="text-xs uppercase tracking-widest text-white/80 mb-4 font-bold">Answer</span>

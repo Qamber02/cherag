@@ -194,18 +194,18 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
     // Empty State
     if (!roadmap && !isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-amber-500/25">
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center glass-panel">
+                <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-warm-glow border border-white/20">
                     <Network className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Learning Roadmap</h2>
-                <p className="text-gray-500 mb-8 max-w-sm">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Learning Roadmap</h2>
+                <p className="text-muted-foreground mb-8 max-w-sm">
                     Generate an interactive learning roadmap. Click any topic for AI explanations.
                 </p>
                 <button
                     onClick={handleGenerateRoadmap}
                     disabled={!hasContext || isLoading}
-                    className="px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-medium rounded-xl hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-3 bg-primary text-white font-medium rounded-xl hover:shadow-warm-glow hover:scale-105 transition-all disabled:opacity-50"
                 >
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-5 h-5" />
@@ -251,16 +251,18 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                 )}
 
                 {/* Scrollable Roadmap Container */}
-                <div className="flex-1 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl overflow-auto border border-slate-200">
-                    <div className="p-8 min-w-max">
+                <div className="flex-1 glass-panel rounded-2xl overflow-auto border border-white/10 relative">
+                    {/* Background Grid Pattern */}
+                    <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:20px_20px] pointer-events-none"></div>
+                    <div className="p-8 min-w-max relative z-10">
                         {roadmap && (
                             <div className="flex flex-col items-center">
                                 {/* Main Topic */}
                                 <button
                                     onClick={(e) => handleNodeClick(roadmap, e)}
                                     className={`px-6 py-3 rounded-xl font-bold text-white shadow-lg transition-all hover:scale-105 cursor-pointer
-                                        bg-gradient-to-r from-amber-400 to-orange-500
-                                        ${selectedNode?.id === roadmap.id ? 'ring-4 ring-amber-300' : ''}`}
+                                        bg-gradient-to-r from-primary to-orange-600 border border-white/20
+                                        ${selectedNode?.id === roadmap.id ? 'ring-4 ring-primary/30 shadow-warm-glow' : ''}`}
                                 >
                                     <span className="flex items-center gap-2">
                                         {roadmap.title}
@@ -360,16 +362,16 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                 <>
                     {/* Mobile overlay backdrop */}
                     <div
-                        className="fixed inset-0 bg-black/40 z-40 md:hidden"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
                         onClick={() => setSelectedNode(null)}
                     />
-                    <div className="fixed inset-x-0 bottom-0 max-h-[80vh] md:relative md:inset-auto md:max-h-none md:w-96 bg-white border-t md:border-t-0 md:border-l border-gray-200 flex flex-col shadow-xl z-50 rounded-t-2xl md:rounded-none">
+                    <div className="fixed inset-x-0 bottom-0 max-h-[80vh] md:relative md:inset-auto md:max-h-none md:w-96 glass border-t md:border-t-0 md:border-l border-white/20 flex flex-col shadow-2xl z-50 rounded-t-2xl md:rounded-none backdrop-blur-xl">
                         {/* Panel Header */}
-                        <div className="p-4 border-b border-gray-100 flex items-start justify-between bg-gradient-to-r from-amber-50 to-orange-50">
+                        <div className="p-4 border-b border-white/10 flex items-start justify-between bg-primary/10">
                             <div className="flex-1 pr-3">
-                                <h3 className="font-bold text-gray-900 text-lg">{selectedNode.title}</h3>
+                                <h3 className="font-bold text-foreground text-lg">{selectedNode.title}</h3>
                                 {selectedNode.description && (
-                                    <p className="text-sm text-gray-600 mt-1">{selectedNode.description}</p>
+                                    <p className="text-sm text-muted-foreground mt-1">{selectedNode.description}</p>
                                 )}
                             </div>
                             <button

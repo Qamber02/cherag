@@ -105,13 +105,13 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                 </button>
 
                                 {showDownloadMenu && (
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 py-2 z-50 animate-fade-in">
+                                    <div className="absolute right-0 top-full mt-1 w-48 glass rounded-xl shadow-xl border border-white/20 py-2 z-50 animate-fade-in backdrop-blur-xl">
                                         <button
                                             onClick={() => {
                                                 downloadAsMarkdown(summary, 'summary');
                                                 setShowDownloadMenu(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-foreground hover:bg-white/10 transition-colors"
                                         >
                                             <FileDown className="w-4 h-4 text-gray-400" />
                                             <span>Markdown (.md)</span>
@@ -121,7 +121,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 downloadAsDOCX(summary, 'summary');
                                                 setShowDownloadMenu(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-foreground hover:bg-white/10 transition-colors"
                                         >
                                             <FileDown className="w-4 h-4 text-blue-500" />
                                             <span>Word (.docx)</span>
@@ -131,7 +131,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                                                 downloadAsPDF(summary, 'summary');
                                                 setShowDownloadMenu(false);
                                             }}
-                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+                                            className="w-full flex items-center gap-3 px-4 py-3 md:py-2 text-left text-sm text-foreground hover:bg-white/10 transition-colors"
                                         >
                                             <FileDown className="w-4 h-4 text-red-500" />
                                             <span>PDF (.pdf)</span>
@@ -141,7 +141,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                             </div>
                             <button
                                 onClick={handleStartEdit}
-                                className="flex items-center space-x-1 md:space-x-2 px-3 py-2.5 md:py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors text-sm active:scale-95 touch-manipulation"
+                                className="flex items-center space-x-1 md:space-x-2 px-3 py-2.5 md:py-2 bg-white/10 hover:bg-white/20 text-foreground rounded-lg transition-colors text-sm active:scale-95 touch-manipulation border border-white/10"
                             >
                                 <Edit3 className="w-4 h-4" />
                                 <span className="hidden sm:inline">Edit</span>
@@ -159,20 +159,20 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
 
                             {/* Options Dropdown - Anchored to Header Right */}
                             {showOptions && (
-                                <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-200 dark:border-zinc-700 p-4 z-50 origin-top-right">
-                                    <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Customize Summary</h4>
+                                <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2.5rem)] glass rounded-xl shadow-xl border border-white/20 p-4 z-50 origin-top-right backdrop-blur-xl">
+                                    <h4 className="font-semibold text-foreground mb-3">Customize Summary</h4>
 
                                     {/* Length Option */}
                                     <div className="mb-4">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 block">Length</label>
+                                        <label className="text-sm font-medium text-muted-foreground mb-2 block">Length</label>
                                         <div className="flex gap-2">
                                             {(['short', 'medium', 'detailed'] as const).map((len) => (
                                                 <button
                                                     key={len}
                                                     onClick={() => setOptions({ ...options, length: len })}
-                                                    className={`flex-1 px-2 py-2.5 md:py-1.5 rounded-lg text-sm capitalize transition-colors touch-manipulation ${options.length === len
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
+                                                    className={`flex-1 px-2 py-2.5 md:py-1.5 rounded-lg text-sm capitalize transition-colors touch-manipulation border ${options.length === len
+                                                        ? 'bg-primary text-white border-primary shadow-warm-glow'
+                                                        : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
                                                         }`}
                                                 >
                                                     {len}
@@ -183,15 +183,15 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
 
                                     {/* Style Option */}
                                     <div className="mb-4">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 block">Format</label>
+                                        <label className="text-sm font-medium text-muted-foreground mb-2 block">Format</label>
                                         <div className="flex gap-2">
                                             {(['bullet', 'paragraph', 'mixed'] as const).map((style) => (
                                                 <button
                                                     key={style}
                                                     onClick={() => setOptions({ ...options, style })}
-                                                    className={`flex-1 px-2 py-2.5 md:py-1.5 rounded-lg text-sm capitalize transition-colors touch-manipulation ${options.style === style
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600'
+                                                    className={`flex-1 px-2 py-2.5 md:py-1.5 rounded-lg text-sm capitalize transition-colors touch-manipulation border ${options.style === style
+                                                        ? 'bg-primary text-white border-primary shadow-warm-glow'
+                                                        : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10'
                                                         }`}
                                                 >
                                                     {style}
@@ -202,20 +202,20 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
 
                                     {/* Focus Area */}
                                     <div className="mb-4">
-                                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2 block">Focus Area (optional)</label>
+                                        <label className="text-sm font-medium text-muted-foreground mb-2 block">Focus Area (optional)</label>
                                         <input
                                             type="text"
                                             value={options.focus}
                                             onChange={(e) => setOptions({ ...options, focus: e.target.value })}
                                             placeholder="e.g., key concepts, definitions..."
-                                            className="w-full px-3 py-2.5 md:py-2 rounded-lg bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 border-none outline-none text-sm"
+                                            className="w-full px-3 py-2.5 md:py-2 rounded-lg bg-white/5 text-foreground border border-white/10 focus:ring-2 focus:ring-primary/50 outline-none text-sm placeholder:text-muted-foreground/50"
                                         />
                                     </div>
 
                                     <button
                                         onClick={handleGenerate}
                                         disabled={isLoading}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors active:scale-95 touch-manipulation"
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 md:py-2 bg-primary text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors active:scale-95 touch-manipulation shadow-warm-glow"
                                     >
                                         {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                                         <span>Generate Summary</span>
@@ -228,7 +228,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                         <button
                             onClick={() => onGenerate()}
                             disabled={isLoading}
-                            className="flex items-center space-x-1 md:space-x-2 px-4 py-2.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm active:scale-95 touch-manipulation font-medium shadow-sm"
+                            className="flex items-center space-x-1 md:space-x-2 px-4 py-2.5 md:px-4 md:py-2 bg-primary text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors text-sm active:scale-95 touch-manipulation font-medium shadow-warm-glow"
                         >
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                             <span className="hidden sm:inline">{summary ? 'Regenerate' : 'Generate'} Summary</span>
@@ -239,7 +239,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-2xl shadow-sm border border-gray-200 dark:border-zinc-700 p-4 md:p-8 relative overflow-hidden group">
+            <div className="flex-1 glass-card p-4 md:p-8 relative overflow-hidden group">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
                         <div className="relative">
@@ -313,11 +313,11 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="w-16 h-16 bg-gray-100 dark:bg-zinc-700/50 rounded-2xl flex items-center justify-center mb-4">
-                            <FileText className="w-8 h-8 text-gray-400" />
+                        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/10">
+                            <FileText className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Ready to Summarize</h3>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+                        <h3 className="text-xl font-bold text-foreground mb-2">Ready to Summarize</h3>
+                        <p className="text-muted-foreground max-w-sm">
                             Generate a concise summary of your uploaded documents to grasp key concepts quickly.
                         </p>
                     </div>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cherág - AI Study Companion</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1337ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#050a1f", 
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    animation: {
+                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        'pulse-glow': {
+                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(19, 55, 236, 0.7)' },
+                            '50%': { opacity: '.9', boxShadow: '0 0 0 10px rgba(19, 55, 236, 0)' },
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(16, 19, 34, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .node-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(19,55,236,0) 0%, rgba(19,55,236,0.6) 50%, rgba(19,55,236,0) 100%);
+            transform-origin: left center;
+            z-index: 0;
+        }
+        .bg-grid-pattern {
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .glow-text {
+            text-shadow: 0 0 20px rgba(19, 55, 236, 0.5);
+        }.toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-200 font-display selection:bg-primary selection:text-white overflow-x-hidden">
+<nav class="fixed top-0 left-0 w-full z-50 glass-panel border-b border-white/5">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-20">
+<div class="flex-shrink-0 flex items-center gap-3 cursor-pointer group">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/30 group-hover:scale-105 transition-transform duration-300">
+<span class="material-icons text-white">auto_awesome</span>
+</div>
+<span class="text-2xl font-bold tracking-tight text-white">Cherág</span>
+</div>
+<div class="hidden md:block">
+<div class="ml-10 flex items-baseline space-x-1 glass-panel rounded-full p-1.5 px-2">
+<a class="bg-primary/20 text-white px-5 py-2 rounded-full text-sm font-medium border border-primary/30 shadow-[0_0_15px_rgba(19,55,236,0.3)] transition-all" href="#">Knowledge Radar</a>
+<a class="text-slate-300 hover:text-white hover:bg-white/5 px-5 py-2 rounded-full text-sm font-medium transition-all" href="#">Smart Notes</a>
+<a class="text-slate-300 hover:text-white hover:bg-white/5 px-5 py-2 rounded-full text-sm font-medium transition-all" href="#">Quiz Generator</a>
+<a class="text-slate-300 hover:text-white hover:bg-white/5 px-5 py-2 rounded-full text-sm font-medium transition-all" href="#">Progress</a>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-4">
+<div class="flex items-center mr-2">
+<label class="flex items-center cursor-pointer relative" for="theme-toggle">
+<input checked="" class="sr-only" id="theme-toggle" type="checkbox"/>
+<div class="w-14 h-7 bg-white/10 rounded-full border border-white/10 shadow-inner flex items-center transition-colors duration-300 hover:bg-white/20">
+<div class="dot absolute left-1 top-1 w-5 h-5 bg-gradient-to-br from-primary to-blue-500 rounded-full shadow-md transform transition-transform duration-300 translate-x-7 flex items-center justify-center">
+<span class="material-icons text-[12px] text-white">dark_mode</span>
+</div>
+<div class="w-full flex justify-between px-2 text-[10px] font-bold text-slate-400">
+<span class="material-icons text-[14px]">light_mode</span>
+</div>
+</div>
+</label>
+</div>
+<button class="text-slate-400 hover:text-white transition-colors">
+<span class="material-icons">notifications</span>
+</button>
+<div class="h-8 w-[1px] bg-white/10"></div>
+<div class="flex items-center gap-3 pl-2 cursor-pointer">
+<div class="text-right hidden lg:block">
+<p class="text-sm font-medium text-white">Alex Morgan</p>
+<p class="text-xs text-primary font-medium">Pro Student</p>
+</div>
+<img alt="User profile photo" class="h-10 w-10 rounded-full border-2 border-primary/50" data-alt="Portrait of a young student with curly hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP_1AUa1q5jkc-KiHZFBtD88wUEZeoG6kUuOJA4JFCOywjb4qeXpceY5j2sIGztB8YgfMDNTG61QeUwKAA-cgLuIHghnSRpijLvb2H_pMpRX4ltoYT781sU1tQYgjKxmhzDMaqmsmRoLaam7YtgsHAZtrj5gZ6-aQWAweX5KrFGpY3_ATFeQH8gGYz-oQN6KYo14n6uGReRHcgufURppQCIqVQw5HGncl8kHmyti2FpponqI3UD9rqggjz_EbSmXugLD6oIjgQELg"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<main class="pt-20 min-h-screen relative overflow-hidden">
+<div class="absolute inset-0 z-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen animate-float"></div>
+<div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" style="animation-delay: -2s;"></div>
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col h-[calc(100vh-80px)]">
+<div class="text-center mb-10 mt-6 relative">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6 uppercase tracking-wider">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                AI Engine v2.4 Active
+            </div>
+<h1 class="text-5xl md:text-7xl font-bold text-white mb-6 glow-text tracking-tight">
+                Master Your Studies <br/>
+<span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">with Cherág</span>
+</h1>
+<p class="max-w-2xl mx-auto text-lg text-slate-400 font-light leading-relaxed">
+                Navigate complex subjects with our AI-powered Knowledge Radar. Visualize connections, identify gaps, and accelerate your learning path.
+            </p>
+</div>
+<div class="flex-1 relative w-full rounded-2xl border border-white/10 shadow-2xl overflow-hidden group">
+<div class="absolute inset-0 bg-background-dark/80 backdrop-blur-sm z-0">
+<img alt="Abstract network nodes and connections glowing in dark space" class="w-full h-full object-cover opacity-20 mix-blend-overlay" data-alt="Abstract dark blue network visualization background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-geP-9NBeQ1uDnNFVoIgJCXRNbQr9dUP9FPi8TaTIyHer3k0lAXcverkXFNjB3oqxTSCT9v6Krf6i4ZvEmoJTPHpCvHXp0xduvp5nEE8Lqb2L3h9tMhsjC7pBRVRxBGbGt8RLAkIOzG3tmnBPQWhvM3PZzTDRXVGzLlgn0J1udL1Cdg8Bye4vy3ipCPJh0o985fxCxFM_vrdYFmi18GPZ3L41GCXSbAW3Zug7pjX906Kv_WyqzosegRqfcjZajqkKfT0NNfVx-Bg"/>
+</div>
+<div class="absolute inset-0 z-10 overflow-hidden" id="radar-container">
+<div class="node-line w-[300px] top-[50%] left-[30%] rotate-12 opacity-40"></div>
+<div class="node-line w-[250px] top-[50%] left-[50%] -rotate-[25deg] opacity-40"></div>
+<div class="node-line w-[200px] top-[40%] left-[55%] rotate-[80deg] opacity-40"></div>
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer z-30 group/node">
+<div class="relative w-24 h-24 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-[0_0_50px_rgba(19,55,236,0.6)] border-4 border-background-dark transition-transform duration-500 group-hover/node:scale-110">
+<span class="material-icons text-4xl text-white">hub</span>
+<div class="absolute inset-0 rounded-full border border-primary/50 animate-ping opacity-20"></div>
+</div>
+<div class="mt-4 glass-panel px-4 py-2 rounded-lg text-center transform transition-all group-hover/node:translate-y-1">
+<h3 class="text-white font-semibold text-lg">Molecular Biology</h3>
+<p class="text-xs text-primary-300">85% Mastery</p>
+</div>
+</div>
+<div class="absolute top-[30%] left-[30%] flex flex-col items-center cursor-pointer z-20 hover:z-40 transition-all duration-300 group/subnode">
+<div class="w-16 h-16 rounded-full glass-panel flex items-center justify-center border border-primary/30 shadow-lg text-white group-hover/subnode:bg-primary/20 group-hover/subnode:border-primary transition-colors">
+<span class="material-icons text-2xl">fingerprint</span>
+</div>
+<div class="mt-2 bg-background-dark/90 px-3 py-1.5 rounded text-center border border-white/5 opacity-70 group-hover/subnode:opacity-100 transition-opacity">
+<span class="text-sm font-medium text-slate-200">DNA Replication</span>
+</div>
+<div class="absolute bottom-full mb-3 w-48 glass-panel p-3 rounded-xl border border-primary/20 opacity-0 group-hover/subnode:opacity-100 transform translate-y-2 group-hover/subnode:translate-y-0 transition-all duration-300 pointer-events-none">
+<p class="text-xs text-slate-400 mb-1">Concept Status</p>
+<div class="w-full bg-white/10 rounded-full h-1.5 mb-2">
+<div class="bg-green-400 h-1.5 rounded-full" style="width: 92%"></div>
+</div>
+<p class="text-[10px] text-slate-300">2 Quizzes Available</p>
+</div>
+</div>
+<div class="absolute top-[60%] left-[70%] flex flex-col items-center cursor-pointer z-20 hover:z-40 transition-all duration-300 group/subnode">
+<div class="w-14 h-14 rounded-full glass-panel flex items-center justify-center border border-yellow-500/30 shadow-lg text-white group-hover/subnode:bg-yellow-500/10 group-hover/subnode:border-yellow-500 transition-colors">
+<span class="material-icons text-xl text-yellow-500">biotech</span>
+</div>
+<div class="mt-2 bg-background-dark/90 px-3 py-1.5 rounded text-center border border-white/5 opacity-70 group-hover/subnode:opacity-100 transition-opacity">
+<span class="text-sm font-medium text-slate-200">Protein Synthesis</span>
+</div>
+</div>
+<div class="absolute top-[75%] left-[40%] flex flex-col items-center cursor-pointer z-20 hover:z-40 transition-all duration-300 group/subnode">
+<div class="w-14 h-14 rounded-full glass-panel flex items-center justify-center border border-purple-500/30 shadow-lg text-white group-hover/subnode:bg-purple-500/10 group-hover/subnode:border-purple-500 transition-colors">
+<span class="material-icons text-xl text-purple-400">grid_view</span>
+</div>
+<div class="mt-2 bg-background-dark/90 px-3 py-1.5 rounded text-center border border-white/5 opacity-70 group-hover/subnode:opacity-100 transition-opacity">
+<span class="text-sm font-medium text-slate-200">Cell Structure</span>
+</div>
+</div>
+</div>
+<div class="absolute bottom-6 right-6 flex flex-col gap-2 z-40">
+<button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10">
+<span class="material-icons text-lg">add</span>
+</button>
+<button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10">
+<span class="material-icons text-lg">remove</span>
+</button>
+<button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10 mt-2">
+<span class="material-icons text-lg">center_focus_strong</span>
+</button>
+</div>
+<div class="absolute top-4 right-4 bottom-4 w-80 glass-panel rounded-xl border border-white/10 p-6 z-40 transform translate-x-0 transition-transform shadow-2xl backdrop-blur-xl bg-background-dark/60 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h4 class="text-white font-semibold">Active Node</h4>
+<button class="text-slate-400 hover:text-white">
+<span class="material-icons text-sm">close</span>
+</button>
+</div>
+<div class="mb-6">
+<div class="text-xs text-primary font-bold uppercase tracking-widest mb-1">Subject</div>
+<h2 class="text-2xl font-bold text-white mb-2">Molecular Biology</h2>
+<p class="text-sm text-slate-300 leading-relaxed">
+                        The study of the molecular basis of biological activity in and between cells, including molecular synthesis, modification, mechanisms and interactions.
+                    </p>
+</div>
+<div class="space-y-4 mb-auto">
+<div class="bg-white/5 p-3 rounded-lg border border-white/5 hover:border-primary/30 transition-colors cursor-pointer group/item">
+<div class="flex items-center justify-between mb-1">
+<span class="text-sm font-medium text-slate-200">Related Flashcards</span>
+<span class="material-icons text-slate-500 text-sm group-hover/item:text-primary">arrow_forward</span>
+</div>
+<div class="text-xs text-slate-400">124 cards • Last reviewed 2h ago</div>
+</div>
+<div class="bg-white/5 p-3 rounded-lg border border-white/5 hover:border-primary/30 transition-colors cursor-pointer group/item">
+<div class="flex items-center justify-between mb-1">
+<span class="text-sm font-medium text-slate-200">Mock Quiz</span>
+<span class="material-icons text-slate-500 text-sm group-hover/item:text-primary">arrow_forward</span>
+</div>
+<div class="text-xs text-slate-400">Diffculty: Hard • 20 Questions</div>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 animate-pulse-glow mt-4">
+<span class="material-icons text-lg">auto_awesome</span>
+                    Generate Deep Dive
+                </button>
+</div>
+<div class="absolute bottom-6 left-6 z-40">
+<div class="glass-panel rounded-xl px-4 py-2 flex items-center gap-4 border border-white/10">
+<div class="flex items-center gap-2 text-xs text-slate-300 border-r border-white/10 pr-4">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Mastered
+                    </div>
+<div class="flex items-center gap-2 text-xs text-slate-300 border-r border-white/10 pr-4">
+<span class="w-2 h-2 rounded-full bg-yellow-500"></span> In Progress
+                    </div>
+<div class="flex items-center gap-2 text-xs text-slate-300">
+<span class="w-2 h-2 rounded-full bg-purple-500"></span> To Learn
+                    </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<div class="fixed top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-blue-500/10 blur-[100px] pointer-events-none rounded-full"></div>
+<div class="fixed bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-primary/10 blur-[100px] pointer-events-none rounded-full"></div>
+<script>
+    // Simple JS to handle theme toggle for demonstration purposes
+    const toggleCheckbox = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement;
+    const toggleDot = document.querySelector('.dot');
+    toggleCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            htmlElement.classList.add('dark');
+            toggleDot.classList.add('translate-x-7');
+            toggleDot.classList.remove('translate-x-0');
+            toggleDot.querySelector('span').textContent = 'dark_mode';
+            // In a real app, save preference to localStorage
+        } else {
+            htmlElement.classList.remove('dark');
+            toggleDot.classList.remove('translate-x-7');
+            toggleDot.classList.add('translate-x-0');
+            toggleDot.querySelector('span').textContent = 'light_mode';
+        }
+    });
+</script>
+
+</body></html>

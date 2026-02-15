@@ -99,12 +99,12 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
 
     if (showFullEmptyState) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-6">
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center glass-panel">
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg border border-white/20">
                     <History className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Activity History</h2>
-                <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Activity History</h2>
+                <p className="text-muted-foreground max-w-sm">
                     Your study activity will appear here. Start by generating flashcards, quizzes, or summaries!
                 </p>
             </div>
@@ -112,7 +112,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
     }
 
     return (
-        <div className="flex flex-col h-full p-6">
+        <div className="flex flex-col h-full p-6 glass-panel">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
@@ -127,9 +127,9 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                     <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${filter === f
-                            ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                            : 'bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700'
+                        className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all border ${filter === f
+                            ? 'bg-primary text-white border-primary shadow-warm-glow'
+                            : 'glass border-white/10 hover:bg-white/20 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -166,7 +166,7 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
                         return (
                             <div
                                 key={activity.id}
-                                className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                                className="glass rounded-xl p-4 hover:bg-white/40 dark:hover:bg-black/40 transition-colors border border-white/10"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0`}>

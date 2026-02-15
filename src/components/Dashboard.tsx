@@ -5,11 +5,13 @@ import { supabase } from '../lib/supabaseClient';
 import { saveSummary, getLastSummary } from '../lib/activityService';
 import { getPreference, setPreference } from '../lib/preferencesService';
 
-import Sidebar from './Sidebar';
+// Layout Components
+import Sidebar from './layout/Sidebar';
+import Header from './layout/Header';
+import AppLayout from './layout/AppLayout';
+import BottomNav from './layout/BottomNav';
 import DashboardHome from './DashboardHome';
 import OnboardingModal from './OnboardingModal';
-import DashboardHeader from './dashboard/DashboardHeader';
-import MobileNav from './dashboard/MobileNav';
 import type { Tab } from './dashboard/types';
 
 // Lazy Load Heavy Components to optimize initial load
@@ -185,25 +187,8 @@ export default function Dashboard({ session }: DashboardProps) {
     };
 
     return (
-        <div className="flex h-[100dvh] bg-scholar overflow-hidden font-sans text-foreground">
-            {/* First-time User Onboarding */}
-            {showOnboarding && (
-                <OnboardingModal
-                    onComplete={handleOnboardingComplete}
-                    onSkip={handleOnboardingComplete}
-                />
-            )}
-
-            {/* Mobile Sidebar Overlay */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-sm"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* Icon Sidebar */}
-            <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-50 transition-transform duration-300 h-full shrink-0`}>
+        <AppLayout
+            sidebar={
                 <Sidebar
                     files={files}
                     isParsing={isParsing}
@@ -212,237 +197,258 @@ export default function Dashboard({ session }: DashboardProps) {
                     onSignOut={handleSignOut}
                     userEmail={session.user.email}
                     activeTab={activeTab}
-                    onTabChange={(tab) => {
-                        handleTabChange(tab);
-                        setSidebarOpen(false);
-                    }}
+                    onTabChange={handleTabChange}
                     session={session}
                 />
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0">
-                {/* Top Bar */}
-                <DashboardHeader
-                    sidebarOpen={sidebarOpen}
+            }
+            mobileSidebar={
+                <div className={`fixed inset-0 z-50 md:hidden ${sidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+                    {/* Backdrop */}
+                    <div
+                        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                    {/* Drawer */}
+                    <div className={`absolute left-0 top-0 h-full w-72 transition-transform duration-300 ease-out z-50 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                        <Sidebar
+                            files={files}
+                            isParsing={isParsing}
+                            onUpload={uploadFile}
+                            onRemove={removeFile}
+                            onSignOut={handleSignOut}
+                            userEmail={session.user.email}
+                            activeTab={activeTab}
+                            onTabChange={(tab) => {
+                                handleTabChange(tab);
+                                setSidebarOpen(false);
+                            }}
+                            session={session}
+                            isMobile={true}
+                            onCloseMobile={() => setSidebarOpen(false)}
+                        />
+                    </div>
+                </div>
+            }
+            header={
+                <Header
                     setSidebarOpen={setSidebarOpen}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     session={session}
                 />
+            }
+        >
+            {/* Page Content */}
+            <div className="h-full relative">
+                {/* Dashboard Tab */}
+                {renderTab('dashboard', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <DashboardHome
+                            files={files}
+                            flashcards={flashcards}
+                            summary={summary}
+                            onNavigate={handleTabChange}
+                            onUpload={uploadFile}
+                            isParsing={isParsing}
+                        />
+                    </div>
+                ), true, true)}
 
-                {/* Content Area */}
-                <main className="flex-1 overflow-hidden relative">
-                    {/* Dashboard Tab */}
-                    {renderTab('dashboard', (
-                        <div className="w-full min-h-full p-3 md:p-6 pb-20 md:pb-6">
-                            <DashboardHome
-                                files={files}
-                                flashcards={flashcards}
-                                summary={summary}
-                                onNavigate={handleTabChange}
-                                onUpload={uploadFile}
-                                isParsing={isParsing}
+                {/* Chat Tab */}
+                {renderTab('chat', (
+                    <div className="h-full w-full pb-20 md:pb-0">
+                        <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
+                            <ChatTab
+                                messages={messages}
+                                onSendMessage={(msg) => sendMessage(msg, context)}
+                                isLoading={isChatLoading}
                             />
                         </div>
-                    ), true, true)}
+                    </div>
+                ), true, false)}
 
-                    {/* Chat Tab - Preserve State, Internal Scroll */}
-                    {renderTab('chat', (
-                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <ChatTab
-                                    messages={messages}
-                                    onSendMessage={(msg) => sendMessage(msg, context)}
-                                    isLoading={isChatLoading}
-                                />
-                            </div>
+                {/* Flashcards Tab */}
+                {renderTab('flashcards', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <FlashcardsTab
+                                flashcards={flashcards}
+                                isLoading={isFlashcardsLoading}
+                                onGenerate={generateFlashcards}
+                                onClear={clearFlashcards}
+                                hasUnknownContext={files.length > 0}
+                            />
                         </div>
-                    ), true, false)}
+                    </div>
+                ), true, true)}
 
-                    {/* Flashcards Tab - Page Scroll */}
-                    {renderTab('flashcards', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <FlashcardsTab
-                                    flashcards={flashcards}
-                                    isLoading={isFlashcardsLoading}
-                                    onGenerate={generateFlashcards}
-                                    onClear={clearFlashcards}
-                                    hasUnknownContext={files.length > 0}
-                                />
-                            </div>
+                {/* Summary Tab */}
+                {renderTab('summary', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <SummaryTab
+                                summary={summary}
+                                isLoading={isSummaryLoading}
+                                onGenerate={handleGenerateSummary}
+                                onUpdateSummary={handleUpdateSummary}
+                                hasUnknownContext={files.length > 0}
+                            />
                         </div>
-                    ), true, true)}
+                    </div>
+                ), true, true)}
 
-                    {/* Summary Tab - Page Scroll */}
-                    {renderTab('summary', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <SummaryTab
-                                    summary={summary}
-                                    isLoading={isSummaryLoading}
-                                    onGenerate={handleGenerateSummary}
-                                    onUpdateSummary={handleUpdateSummary}
-                                    hasUnknownContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Quizzes Tab - Page Scroll */}
-                    {renderTab('quizzes', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <QuizzesTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Mind Map Tab - Internal Scroll (Split View) */}
-                    {renderTab('mindmap', (
-                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <MindMapTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, false)}
-
-                    {/* Knowledge Radar Tab - Page Scroll */}
-                    {renderTab('radar', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <KnowledgeRadarTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                    onAnalyze={analyzeContent}
-                                    knowledgeGraph={knowledgeGraph}
-                                    isLoading={isPremiumLoading}
-                                    onGenerateLesson={generateActiveLessonAction}
-                                    onRecordAnswer={recordAnswer}
-                                    onCompleteLesson={completeLesson}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Exam Engine Tab - Page Scroll */}
-                    {renderTab('exam', (
-                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl h-full overflow-hidden">
-                                <ExamEngineTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, false)}
-
-                    {/* Teach AI Tab - Internal Scroll */}
-                    {renderTab('teaching', (
-                        <div className="h-full w-full p-2 md:p-6 pb-20 md:pb-6">
-                            <TeachAITab
+                {/* Quizzes Tab */}
+                {renderTab('quizzes', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <QuizzesTab
                                 userId={session.user.id}
                                 context={context}
                                 hasContext={files.length > 0}
                             />
                         </div>
-                    ), true, false)}
+                    </div>
+                ), true, true)}
 
-                    {/* Compression Tab - Page Scroll */}
-                    {renderTab('compress', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <ConceptCompressionTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Remix Tab - Page Scroll */}
-                    {renderTab('remix', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <ConceptRemixTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Mental Model Tab - Page Scroll */}
-                    {renderTab('mental', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <MentalModelTab
-                                    userId={session.user.id}
-                                    context={context}
-                                    hasContext={files.length > 0}
-                                />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Study Shorts Tab - Page Scroll */}
-                    {renderTab('videos', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <StudyShortsTab
-                                videos={videos}
-                                isLoading={isVideosLoading}
-                                isLoadingMore={isLoadingMore}
-                                hasMore={hasMore}
-                                onGenerate={generateShorts}
-                                onLoadMore={loadMore}
-                                onReset={resetVideos}
-                                onExit={() => handleTabChange('dashboard')}
-                                hasUnknownContext={files.length > 0}
+                {/* Mind Map Tab */}
+                {renderTab('mindmap', (
+                    <div className="h-full w-full pb-20 md:pb-0">
+                        <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
+                            <MindMapTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
                             />
                         </div>
-                    ), true, true)}
+                    </div>
+                ), true, false)}
 
-                    {/* History Tab - Page Scroll */}
-                    {renderTab('history', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <div className="glass-card rounded-2xl overflow-hidden">
-                                <HistoryTab userId={session.user.id} />
-                            </div>
-                        </div>
-                    ), true, true)}
-
-                    {/* Settings Tab - Page Scroll */}
-                    {renderTab('settings', (
-                        <div className="w-full min-h-full p-2 md:p-6 pb-20 md:pb-6">
-                            <SettingsTab
-                                userEmail={session.user.email}
-                                onSignOut={handleSignOut}
-                                onClearData={handleClearAllData}
+                {/* Knowledge Radar Tab */}
+                {renderTab('radar', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <KnowledgeRadarTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                                onAnalyze={analyzeContent}
+                                knowledgeGraph={knowledgeGraph}
+                                isLoading={isPremiumLoading}
+                                onGenerateLesson={generateActiveLessonAction}
+                                onRecordAnswer={recordAnswer}
+                                onCompleteLesson={completeLesson}
                             />
                         </div>
-                    ), true, true)}
-                </main>
+                    </div>
+                ), true, true)}
 
-                {/* Mobile Bottom Navigation - Touch Optimized */}
-                <MobileNav
-                    activeTab={activeTab}
-                    onTabChange={(tab) => handleTabChange(tab)}
-                    onMoreClick={() => setSidebarOpen(true)}
-                />
+                {/* Exam Engine Tab */}
+                {renderTab('exam', (
+                    <div className="h-full w-full pb-20 md:pb-0">
+                        <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
+                            <ExamEngineTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+                    </div>
+                ), true, false)}
+
+                {/* Teach AI Tab */}
+                {renderTab('teaching', (
+                    <div className="h-full w-full pb-20 md:pb-0">
+                        <TeachAITab
+                            userId={session.user.id}
+                            context={context}
+                            hasContext={files.length > 0}
+                        />
+                    </div>
+                ), true, false)}
+
+                {/* Compression Tab */}
+                {renderTab('compress', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <ConceptCompressionTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+                    </div>
+                ), true, true)}
+
+                {/* Remix Tab */}
+                {renderTab('remix', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <ConceptRemixTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+                    </div>
+                ), true, true)}
+
+                {/* Mental Model Tab */}
+                {renderTab('mental', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <MentalModelTab
+                                userId={session.user.id}
+                                context={context}
+                                hasContext={files.length > 0}
+                            />
+                        </div>
+                    </div>
+                ), true, true)}
+
+                {/* Study Shorts Tab */}
+                {renderTab('videos', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <StudyShortsTab
+                            videos={videos}
+                            isLoading={isVideosLoading}
+                            isLoadingMore={isLoadingMore}
+                            hasMore={hasMore}
+                            onGenerate={generateShorts}
+                            onLoadMore={loadMore}
+                            onReset={resetVideos}
+                            onExit={() => handleTabChange('dashboard')}
+                            hasUnknownContext={files.length > 0}
+                        />
+                    </div>
+                ), true, true)}
+
+                {/* History Tab */}
+                {renderTab('history', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                            <HistoryTab userId={session.user.id} />
+                        </div>
+                    </div>
+                ), true, true)}
+
+                {/* Settings Tab */}
+                {renderTab('settings', (
+                    <div className="w-full min-h-full pb-20 md:pb-6">
+                        <SettingsTab
+                            userEmail={session.user.email}
+                            onSignOut={handleSignOut}
+                            onClearData={handleClearAllData}
+                        />
+                    </div>
+                ), true, true)}
             </div>
-        </div>
+
+            {/* Mobile Bottom Navigation */}
+            <BottomNav
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                onMoreClick={() => setSidebarOpen(true)}
+            />
+        </AppLayout>
     );
 }

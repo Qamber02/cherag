@@ -207,9 +207,9 @@ export default function StudyShortsTab({
     if (videos.length === 0 && !isLoading) {
         return (
             <div className="flex flex-col h-full bg-black relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-purple-600/20 z-0"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-600/20 z-0"></div>
                 <div className="flex-1 flex flex-col items-center justify-center relative z-10 p-8 text-center">
-                    <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-6 animate-pulse">
+                    <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-6 animate-pulse border border-white/20">
                         <Sparkles className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Study Shorts</h2>
@@ -224,12 +224,12 @@ export default function StudyShortsTab({
                                 value={searchTopic}
                                 onChange={(e) => setSearchTopic(e.target.value)}
                                 placeholder="Enter topic..."
-                                className="w-full bg-white/10 border border-white/20 rounded-full px-5 py-4 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500 pr-14"
+                                className="w-full bg-white/10 border border-white/20 rounded-full px-5 py-4 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-primary pr-14 backdrop-blur-md"
                             />
                             <button
                                 type="submit"
                                 disabled={!searchTopic.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-amber-500 rounded-full hover:bg-amber-400 text-white disabled:opacity-50"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-primary rounded-full hover:bg-orange-600 text-white disabled:opacity-50 transition-colors"
                             >
                                 <Search className="w-5 h-5" />
                             </button>
@@ -240,7 +240,7 @@ export default function StudyShortsTab({
                         <button
                             onClick={() => onGenerate()}
                             disabled={isLoading}
-                            className="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 transition-all"
+                            className="px-8 py-4 bg-white text-black font-bold rounded-full hover:scale-105 transition-all shadow-warm-glow"
                         >
                             Generate from Document
                         </button>
@@ -273,7 +273,7 @@ export default function StudyShortsTab({
                 {onReset && (
                     <button
                         onClick={onReset}
-                        className="p-3 bg-amber-500/80 backdrop-blur-md text-white rounded-full hover:bg-amber-400 active:bg-amber-600 transition-all border border-white/20 shadow-lg"
+                        className="p-3 bg-primary/80 backdrop-blur-md text-white rounded-full hover:bg-orange-600 active:bg-orange-700 transition-all border border-white/20 shadow-lg"
                         title="Start Over - Generate New Shorts"
                     >
                         <RotateCcw className="w-5 h-5" />
@@ -310,7 +310,7 @@ export default function StudyShortsTab({
                             className="bg-transparent text-white placeholder-white/50 focus:outline-none flex-1 px-2"
                             autoFocus
                         />
-                        <button type="submit" className="bg-amber-500 text-black px-4 py-2 rounded-lg font-bold">Go</button>
+                        <button type="submit" className="bg-primary text-black px-4 py-2 rounded-lg font-bold hover:bg-orange-500 transition-colors">Go</button>
                         <button type="button" onClick={() => setShowSearch(false)} className="p-2 text-white/70"><X className="w-5 h-5" /></button>
                     </form>
                 </div>

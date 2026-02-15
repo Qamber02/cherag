@@ -98,12 +98,12 @@ export default function AuthPage() {
     return (
         <div className="flex min-h-screen">
             {/* Left Side - Branding */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 relative overflow-hidden">
+            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 via-zinc-900 to-black relative overflow-hidden">
                 {/* Animated background elements */}
                 <div className="absolute inset-0">
-                    <div className="absolute top-20 left-20 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl animate-pulse" />
-                    <div className="absolute bottom-40 right-20 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-                    <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+                    <div className="absolute top-20 left-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+                    <div className="absolute bottom-40 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+                    <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-amber-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
                 </div>
 
                 {/* Content */}
@@ -146,7 +146,7 @@ export default function AuthPage() {
             </div>
 
             {/* Right Side - Auth Form */}
-            <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+            <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-zinc-900 dark:to-black">
                 <div className="w-full max-w-md">
                     {/* Mobile Logo */}
                     <div className="lg:hidden text-center mb-8">
@@ -176,7 +176,7 @@ export default function AuthPage() {
                     </div>
 
                     {/* Card */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none p-8 border border-gray-100 dark:border-gray-700">
+                    <div className="glass-card p-8 relative">
                         {/* Header */}
                         {mode === 'forgot' ? (
                             <div className="flex items-center gap-3 mb-6">
@@ -252,7 +252,7 @@ export default function AuthPage() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="you@example.com"
-                                        className="w-full pl-12 pr-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                                        className="w-full pl-12 pr-4 py-3.5 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 dark:bg-zinc-900/50 text-foreground placeholder-muted-foreground transition-all"
                                     />
                                 </div>
                             </div>
@@ -270,7 +270,7 @@ export default function AuthPage() {
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             placeholder="••••••••"
-                                            className="w-full pl-12 pr-4 py-3.5 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all"
+                                            className="w-full pl-12 pr-4 py-3.5 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-gray-50 dark:bg-zinc-900/50 text-foreground placeholder-muted-foreground transition-all"
                                         />
                                     </div>
                                 </div>
@@ -281,7 +281,7 @@ export default function AuthPage() {
                                     <button
                                         type="button"
                                         onClick={() => setMode('forgot')}
-                                        className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-medium"
+                                        className="text-sm text-primary hover:text-primary/80 font-medium"
                                     >
                                         Forgot password?
                                     </button>
@@ -291,7 +291,7 @@ export default function AuthPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3.5 text-white font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+                                className="w-full py-3.5 text-white font-semibold bg-primary rounded-xl hover:bg-orange-600 focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 transition-all shadow-warm-glow flex items-center justify-center gap-2"
                             >
                                 {loading ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -312,9 +312,9 @@ export default function AuthPage() {
                     {/* Footer */}
                     <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
                         By continuing, you agree to our{' '}
-                        <a href="#" className="text-indigo-600 dark:text-indigo-400 hover:underline">Terms</a>
+                        <a href="#" className="text-primary hover:underline">Terms</a>
                         {' '}and{' '}
-                        <a href="#" className="text-indigo-600 dark:text-indigo-400 hover:underline">Privacy Policy</a>
+                        <a href="#" className="text-primary hover:underline">Privacy Policy</a>
                     </p>
                 </div>
             </div>
