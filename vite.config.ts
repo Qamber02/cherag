@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import output from 'vite-plugin-compression'
@@ -47,7 +48,6 @@ export default defineConfig({
   // Server configuration for development
   server: {
     // Enable CORS
-    // Enable CORS
     cors: true,
     // Proxy for API calls to avoid CORS
     proxy: {
@@ -58,5 +58,15 @@ export default defineConfig({
         secure: true,
       }
     }
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    server: {
+      deps: {
+        inline: ['@asamuzakjp/css-color', '@csstools/css-calc'],
+      },
+    },
   },
 })
