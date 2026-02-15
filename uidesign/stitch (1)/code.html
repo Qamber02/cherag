@@ -4,10 +4,10 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Cherág Hero &amp; Feynman Mode Variant 2</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" crossorigin="anonymous"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -96,10 +96,10 @@
 <a class="hover:text-primary transition-colors" href="#">Community</a>
 </div>
 <div class="flex items-center space-x-4">
-<button class="p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
-<span class="material-icons-outlined text-xl">notifications</span>
-</button>
-<div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 p-[2px]">
+        <button class="p-2 rounded-full hover:bg-white/5 text-slate-400 hover:text-white transition-colors" aria-label="Notifications">
+            <span class="material-icons-outlined text-xl" aria-hidden="true">notifications</span>
+        </button>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-purple-500 p-[2px]">
 <img alt="User Profile Picture" class="w-full h-full rounded-full object-cover border-2 border-background-dark" data-alt="Young woman smiling profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeUVuUFAXcZ0alApHll5l5mMfisVW7jYyogpSg1mKTsxc2-KxXILZZ3S1z6rVPfNR2DB_Dg_uQSPFNbh1Iy-jWQqgpc7S_qMWXQ2C_O2XER-8X0JGSwsqmgLwLx1yjeFSy19UhEpyKtPjDGsL9OCvw6TOJQGWY8udfh6dphg4wDZ7UOXrDFa1FjDH54qArpUrR-4VbGAVlqAGUbWMNR1_8_5sN-tUnqdF5z4ltyZHq2oPDL1_atxyhDrvuNJpSDHDPCw-egbxu-08"/>
 </div>
 </div>
@@ -227,23 +227,25 @@
 </div>
 </div>
 <!-- Input Area -->
-<div class="flex-1 flex flex-col relative">
-<textarea class="w-full h-full bg-transparent border-0 text-lg md:text-xl text-slate-200 placeholder-slate-600 focus:ring-0 resize-none leading-relaxed" placeholder="Start typing your explanation here... Imagine you are telling a story...">So, imagine you have two magic coins. Even if you take one coin to the moon and keep the other one here on Earth, they are still best friends. If you flip the moon coin and it lands on heads, the Earth coin will instantly know and land on tails! They are talking to each other faster than a phone call.</textarea>
-<!-- Floating Controls at Bottom of Text Area -->
-<div class="absolute bottom-0 left-0 right-0 flex items-center justify-between pb-2">
-<div class="flex space-x-2">
-<button class="p-2 text-slate-500 hover:text-white transition-colors" title="Voice Input">
-<span class="material-icons-outlined">mic</span>
-</button>
-<button class="p-2 text-slate-500 hover:text-white transition-colors" title="Upload Image">
-<span class="material-icons-outlined">add_photo_alternate</span>
-</button>
-</div>
-<div class="text-xs text-slate-500 font-mono">
+                <!-- Input Area -->
+                <div class="flex-1 flex flex-col relative">
+                    <textarea id="explanationInput" class="w-full h-full bg-transparent border-0 text-lg md:text-xl text-slate-200 placeholder-slate-600 focus:ring-0 resize-none leading-relaxed" placeholder="Start typing your explanation here... Imagine you are telling a story...">So, imagine you have two magic coins. Even if you take one coin to the moon and keep the other one here on Earth, they are still best friends. If you flip the moon coin and it lands on heads, the Earth coin will instantly know and land on tails! They are talking to each other faster than a phone call.</textarea>
+                    
+                    <!-- Floating Controls at Bottom of Text Area -->
+                    <div class="absolute bottom-0 left-0 right-0 flex items-center justify-between pb-2">
+                        <div class="flex space-x-2">
+                            <button class="p-2 text-slate-500 hover:text-white transition-colors" title="Voice Input" aria-label="Voice Input">
+                                <span class="material-icons-outlined" aria-hidden="true">mic</span>
+                            </button>
+                            <button class="p-2 text-slate-500 hover:text-white transition-colors" title="Upload Image" aria-label="Upload Image">
+                                <span class="material-icons-outlined" aria-hidden="true">add_photo_alternate</span>
+                            </button>
+                        </div>
+                        <div id="charCounter" class="text-xs text-slate-500 font-mono">
                             243 characters
                         </div>
-</div>
-</div>
+                    </div>
+                </div>
 <!-- Footer Action -->
 <div class="mt-6 pt-6 border-t border-white/5 flex justify-end items-center gap-4">
 <span class="text-xs text-slate-500 hidden md:inline-block">Press Cmd + Enter to submit</span>
@@ -290,4 +292,19 @@
 </div>
 </div>
 </main>
+    <script>
+        const textarea = document.getElementById('explanationInput');
+        const counter = document.getElementById('charCounter');
+
+        function updateCounter() {
+            const length = textarea.value.length;
+            counter.textContent = `${length} characters`;
+        }
+
+        if (textarea && counter) {
+            textarea.addEventListener('input', updateCounter);
+            // Initialize
+            updateCounter();
+        }
+    </script>
 </body></html>

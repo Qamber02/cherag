@@ -82,17 +82,11 @@ export async function extractClipsFromVideo(
             }
         }
 
-        // Step 2: Fetch transcript (or use fallback)
-        const transcript = await fetchYouTubeTranscript(videoId);
-
-        // If no transcript, use fallback: create one clip for entire video
-        if (!transcript || transcript.trim().length === 0) {
-            console.warn(`[ClipExtractor] No transcript for ${videoId}, using fallback`);
-            return createFallbackClip(videoId, videoTitle);
-        }
+        // Step 2: Fetch transcript (skipped - handled by backend)
+        // const transcript = await fetchYouTubeTranscript(videoId);
 
         // Step 3: Call AI to extract clips (Now handled by backend)
-        const extractionResult = await extractClipsFromVideo(videoId, videoTitle);
+        const extractionResult = await callExternalClipExtractionService(videoId, videoTitle);
 
         if (!extractionResult || !extractionResult.clips) {
             throw new Error('Backend returned invalid clip data');

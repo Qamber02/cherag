@@ -3,12 +3,12 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Cherág - AI Study Companion</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" crossorigin="anonymous"/>
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" crossorigin="anonymous"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries" crossorigin="anonymous"></script>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -102,9 +102,9 @@
 </div>
 </label>
 </div>
-<button class="text-slate-400 hover:text-white transition-colors">
-<span class="material-icons">notifications</span>
-</button>
+                <button class="text-slate-400 hover:text-white transition-colors" aria-label="Notifications">
+                    <span class="material-icons" aria-hidden="true">notifications</span>
+                </button>
 <div class="h-8 w-[1px] bg-white/10"></div>
 <div class="flex items-center gap-3 pl-2 cursor-pointer">
 <div class="text-right hidden lg:block">
@@ -186,22 +186,22 @@
 </div>
 </div>
 <div class="absolute bottom-6 right-6 flex flex-col gap-2 z-40">
-<button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10">
-<span class="material-icons text-lg">add</span>
-</button>
-<button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10">
-<span class="material-icons text-lg">remove</span>
-</button>
-<button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10 mt-2">
-<span class="material-icons text-lg">center_focus_strong</span>
-</button>
+        <button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10" aria-label="Zoom In">
+            <span class="material-icons text-lg" aria-hidden="true">add</span>
+        </button>
+        <button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10" aria-label="Zoom Out">
+            <span class="material-icons text-lg" aria-hidden="true">remove</span>
+        </button>
+        <button class="w-10 h-10 rounded-lg glass-panel text-white hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10 mt-2" aria-label="Center View">
+            <span class="material-icons text-lg" aria-hidden="true">center_focus_strong</span>
+        </button>
 </div>
 <div class="absolute top-4 right-4 bottom-4 w-80 glass-panel rounded-xl border border-white/10 p-6 z-40 transform translate-x-0 transition-transform shadow-2xl backdrop-blur-xl bg-background-dark/60 flex flex-col">
 <div class="flex items-center justify-between mb-6">
 <h4 class="text-white font-semibold">Active Node</h4>
-<button class="text-slate-400 hover:text-white">
-<span class="material-icons text-sm">close</span>
-</button>
+            <button class="text-slate-400 hover:text-white" aria-label="Close">
+                <span class="material-icons text-sm" aria-hidden="true">close</span>
+            </button>
 </div>
 <div class="mb-6">
 <div class="text-xs text-primary font-bold uppercase tracking-widest mb-1">Subject</div>
@@ -223,7 +223,7 @@
 <span class="text-sm font-medium text-slate-200">Mock Quiz</span>
 <span class="material-icons text-slate-500 text-sm group-hover/item:text-primary">arrow_forward</span>
 </div>
-<div class="text-xs text-slate-400">Diffculty: Hard • 20 Questions</div>
+                        <div class="text-xs text-slate-400">Difficulty: Hard • 20 Questions</div>
 </div>
 </div>
 <button class="w-full bg-primary hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 animate-pulse-glow mt-4">

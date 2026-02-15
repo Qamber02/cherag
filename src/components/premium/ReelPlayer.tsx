@@ -1,7 +1,7 @@
 // Reel Player - Individual clip video player with YouTube iframe
 // Handles playback, time bounds, and interaction tracking
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import type { ReelPlayerProps } from '../../types/videoIntelligence.types';
 import ReelOverlay from './ReelOverlay';
 import { useVideoContext } from './VideoContext';
@@ -25,9 +25,11 @@ export default function ReelPlayer({
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
     const watchStartTimeRef = useRef<number>(Date.now());
+    const isCompletedRef = useRef(false);
 
-    const clipDuration = clip.end_time - clip.start_time;
+    const clipDuration = Math.max(1, clip.end_time - clip.start_time); // Prevent division by zero
     // Add origin to fix localhost playback issues
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -42,7 +44,11 @@ export default function ReelPlayer({
     const shouldPlay = isOnVideosTab && isActive && (activePlayerId === clip.id || activePlayerId === null);
 
     // Note: We use autoplay=0 initially and control via postMessage to prevent race conditions
-    const youtubeUrlRef = useRef(`https://www.youtube.com/embed/${clip.video_id}?enablejsapi=1&version=3&playerapiid=ytplayer&autoplay=0&controls=1&rel=0&modestbranding=1&playsinline=1&start=${clip.start_time}&end=${clip.end_time}&origin=${origin}`);
+    // Note: We use autoplay=0 initially and control via postMessage to prevent race conditions
+    // Use useMemo to avoid recreating URL on every render, but update if clip changes
+    const youtubeUrl = useMemo(() =>
+        `https://www.youtube.com/embed/${clip.video_id}?enablejsapi=1&version=3&playerapiid=ytplayer&autoplay=0&controls=1&rel=0&modestbranding=1&playsinline=1&start=${clip.start_time}&end=${clip.end_time}&origin=${origin}`,
+        [clip.video_id, clip.start_time, clip.end_time, origin]);
 
     // Command helper - safely sends messages
     const sendCommand = (func: string, args: any[] = [], force = false) => {
@@ -92,8 +98,9 @@ export default function ReelPlayer({
                     onWatchProgress(elapsed);
                 }
 
-                // Auto-complete when clip ends
-                if (progress >= 0.95 && onComplete) {
+                // Auto-complete when clip ends - Guard against multiple calls
+                if (progress >= 0.95 && onComplete && !isCompletedRef.current) {
+                    isCompletedRef.current = true;
                     onComplete();
                 }
             }, 500);
@@ -106,6 +113,9 @@ export default function ReelPlayer({
         return () => {
             if (progressTimerRef.current) {
                 clearInterval(progressTimerRef.current);
+            }
+            if (fallbackTimerRef.current) { // Clean up fallback timer
+                clearTimeout(fallbackTimerRef.current);
             }
         };
     }, [isPlaying, isActive, clipDuration, onComplete, onWatchProgress]);
@@ -172,13 +182,14 @@ export default function ReelPlayer({
                 <iframe
                     ref={iframeRef}
                     className="w-full h-full"
-                    src={youtubeUrlRef.current}
+                    src={youtubeUrl}
                     title={clip.concept}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                     onLoad={() => {
                         // Fallback: assume ready after load + short delay if no message received
-                        setTimeout(() => setIsPlayerReady(true), 1000);
+                        // Store in ref for cleanup
+                        fallbackTimerRef.current = setTimeout(() => setIsPlayerReady(true), 1000);
                     }}
                 />
             )}

@@ -87,11 +87,11 @@ async function gatherRankingSignals(userId: string): Promise<ClipRankingSignals>
 
     const recentSkips: string[] = [];
     const recentLikes: string[] = [];
-    const watchedClips = new Set<string>();
+    const watchedClips: string[] = [];
 
     if (interactionsData) {
         for (const interaction of interactionsData) {
-            watchedClips.add(interaction.clip_id);
+            watchedClips.push(interaction.clip_id);
             if (interaction.skipped) {
                 recentSkips.push(interaction.clip_id);
             }
@@ -258,7 +258,7 @@ export async function refreshFeed(
 
     // Add excluded clips to watched set
     for (const clipId of excludeClipIds) {
-        signals.watchedClips.add(clipId);
+        signals.watchedClips.push(clipId);
     }
 
     return generateLearningFeed(userId, 20, DEFAULT_FEED_CONFIG);

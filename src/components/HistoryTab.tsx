@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { History, FileText, Layers, FileQuestion, Play, MessageSquare, Clock } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,11 +35,11 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
     const [activities, setActivities] = useState<ActivityItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const isInitialLoad = useRef(true);
 
     const fetchActivities = useCallback(async () => {
         // Only show full loading on initial load, not on filter change
-        if (isInitialLoad) {
+        if (isInitialLoad.current) {
             setIsLoading(true);
         }
 
@@ -68,9 +68,9 @@ export default function HistoryTab({ userId }: HistoryTabProps) {
             console.error('Unexpected error fetching activities:', err);
         } finally {
             setIsLoading(false);
-            setIsInitialLoad(false);
+            isInitialLoad.current = false;
         }
-    }, [userId, filter, isInitialLoad]);
+    }, [userId, filter]);
 
     useEffect(() => {
         fetchActivities();

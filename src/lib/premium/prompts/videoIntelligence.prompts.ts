@@ -39,23 +39,21 @@ Analyze this transcript and extract educational clips that meet these criteria:
 **OUTPUT FORMAT:**
 Return a valid JSON array with this structure:
 
-\`\`\`json
 [
   {
     "concept": "Specific concept name (max 50 chars)",
-    "start": 125,
-    "end": 210,
+    "start_time": 125,
+    "end_time": 210,
     "difficulty": 3,
     "importance": 8,
     "prerequisites": ["prerequisite1", "prerequisite2"]
   }
 ]
-\`\`\`
 
 **FIELD DEFINITIONS:**
 - \`concept\`: Clear, specific concept name (e.g., "Gradient Descent Algorithm")
-- \`start\`: Start timestamp in seconds (integer)
-- \`end\`: End timestamp in seconds (integer)
+- \`start_time\`: Start timestamp in seconds (integer)
+- \`end_time\`: End timestamp in seconds (integer)
 - \`difficulty\`: 1 (beginner) to 5 (advanced)
 - \`importance\`: 1 (optional) to 10 (critical for understanding)
 - \`prerequisites\`: Array of concepts needed to understand this clip
@@ -110,7 +108,6 @@ Create a single multiple-choice question that tests UNDERSTANDING, not memorizat
 **OUTPUT FORMAT:**
 Return ONLY valid JSON:
 
-\`\`\`json
 {
   "question": "What principle does backpropagation rely on?",
   "options": [
@@ -122,7 +119,6 @@ Return ONLY valid JSON:
   "correctIndex": 0,
   "explanation": "Backpropagation uses the chain rule to compute gradients by propagating errors backward through the network."
 }
-\`\`\`
 
 **CRITICAL:**
 - Return ONLY valid JSON, no markdown blocks

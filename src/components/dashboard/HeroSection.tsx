@@ -4,9 +4,10 @@ import type { Session } from '@supabase/supabase-js';
 interface HeroSectionProps {
     session: Session;
     onUpload: () => void;
+    onViewRoadmap?: () => void;
 }
 
-export default function HeroSection({ session, onUpload }: HeroSectionProps) {
+export default function HeroSection({ session, onUpload, onViewRoadmap }: HeroSectionProps) {
     const userName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Scholar';
 
     return (
@@ -43,7 +44,10 @@ export default function HeroSection({ session, onUpload }: HeroSectionProps) {
                             <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                         </button>
 
-                        <button className="px-6 py-3 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30 text-foreground font-semibold border border-white/20 transition-all backdrop-blur-sm">
+                        <button
+                            onClick={onViewRoadmap}
+                            className="px-6 py-3 rounded-xl bg-white/50 dark:bg-black/20 hover:bg-white/70 dark:hover:bg-black/30 text-foreground font-semibold border border-white/20 transition-all backdrop-blur-sm"
+                        >
                             View Roadmap
                         </button>
                     </div>

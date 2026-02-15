@@ -349,6 +349,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                                     setCurrentIndex(0);
                                     setShowResult(false);
                                     setSelectedAnswer(null);
+                                    setStreak(0);
                                 }}
                                 className="w-full sm:flex-1 py-3 sm:py-2.5 md:py-3 px-4 md:px-6 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium rounded-xl hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors text-sm md:text-base flex items-center justify-center gap-2 order-1 sm:order-2"
                             >
@@ -368,7 +369,7 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                         </button>
                     </div>
                 </div>
-            </div>
+            </div >
         );
     }
 

@@ -14,9 +14,10 @@ import type { UseClipInteractionsReturn } from '../types/videoIntelligence.types
  */
 function isValidClipId(id: string): boolean {
     if (!id) return false;
+    if (id.startsWith('virtual-') || id.startsWith('demo-')) return true;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const youtubeRegex = /^[a-zA-Z0-9_-]{11}$/; // Basic YouTube ID format
-    return uuidRegex.test(id) || youtubeRegex.test(id) || id.length > 5; // Relaxed check for text IDs
+    return uuidRegex.test(id) || youtubeRegex.test(id);
 }
 
 interface PendingInteraction {
@@ -35,11 +36,8 @@ const SYNC_INTERVAL_MS = 30000; // Also sync every 30 seconds
  */
 export function useClipInteractions(): UseClipInteractionsReturn {
     const { user } = useAuth();
-
     const [pendingQueue, setPendingQueue] = useState<PendingInteraction[]>([]);
     const [isSyncing, setIsSyncing] = useState(false);
-
-    const syncTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     /**
      * Add interaction to pending queue
@@ -55,92 +53,41 @@ export function useClipInteractions(): UseClipInteractionsReturn {
         if (pendingQueue.length === 0 || isSyncing) return;
 
         setIsSyncing(true);
+        const batch = [...pendingQueue]; // Snapshot
 
         try {
-            await batchProcessInteractions(pendingQueue);
-            setPendingQueue([]); // Clear queue after successful sync
-            console.log(`[useClipInteractions] Synced ${pendingQueue.length} interactions`);
+            await batchProcessInteractions(batch);
+            // Only remove items that were in the batch
+            setPendingQueue(prev => prev.filter(item => !batch.includes(item)));
+            console.log(`[useClipInteractions] Synced ${batch.length} interactions`);
         } catch (error) {
             console.error('[useClipInteractions] Sync failed:', error);
-            // Keep interactions in queue for retry
+            // Items stay in queue
         } finally {
             setIsSyncing(false);
         }
     }, [pendingQueue, isSyncing]);
 
-    /**
-     * Record watch interaction
-     */
-    const recordWatch = useCallback((clipId: string, duration: number, totalDuration: number) => {
-        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
+    // Auto-sync when queue reaches batch size
+    useEffect(() => {
+        if (pendingQueue.length >= BATCH_SIZE && !isSyncing) {
+            syncNow();
+        }
+    }, [pendingQueue.length, isSyncing, syncNow]);
 
-        addToPending({
-            userId: user.id,
-            clipId,
-            action: 'watch',
-            metadata: { watchDuration: duration, totalDuration },
-            timestamp: Date.now(),
-        });
-    }, [user, addToPending]);
+    // Auto-sync on interval (stabilized)
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (pendingQueue.length > 0 && !isSyncing) {
+                syncNow();
+            }
+        }, SYNC_INTERVAL_MS);
 
-    /**
-     * Record skip interaction
-     */
-    const recordSkip = useCallback((clipId: string) => {
-        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
-
-        addToPending({
-            userId: user.id,
-            clipId,
-            action: 'skip',
-            timestamp: Date.now(),
-        });
-    }, [user, addToPending]);
+        return () => clearInterval(timer);
+    }, [pendingQueue.length, isSyncing, syncNow]);
 
     /**
-     * Record replay interaction
-     */
-    const recordReplay = useCallback((clipId: string) => {
-        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
-
-        addToPending({
-            userId: user.id,
-            clipId,
-            action: 'replay',
-            timestamp: Date.now(),
-        });
-    }, [user, addToPending]);
-
-    /**
-     * Record like interaction
-     */
-    const recordLike = useCallback((clipId: string) => {
-        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
-
-        addToPending({
-            userId: user.id,
-            clipId,
-            action: 'like',
-            timestamp: Date.now(),
-        });
-    }, [user, addToPending]);
-
-    /**
-     * Record pause interaction
-     */
-    const recordPause = useCallback((clipId: string) => {
-        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
-
-        addToPending({
-            userId: user.id,
-            clipId,
-            action: 'pause',
-            timestamp: Date.now(),
-        });
-    }, [user, addToPending]);
-
-    /**
-     * Record recall attempt (sync immediately - important signal)
+     * Record recall attempt
      */
     const recordRecall = useCallback(async (
         clipId: string,
@@ -148,16 +95,15 @@ export function useClipInteractions(): UseClipInteractionsReturn {
         correct: boolean,
         timeTaken: number
     ) => {
-        if (!user || !isValidClipId(clipId)) return; // Skip client-side pseudo-clips
+        if (!user || !isValidClipId(clipId)) return;
 
-        // Recall attempts are synced immediately due to importance
         try {
             await recordRecallAttempt(
                 user.id,
                 clipId,
                 questionId,
-                correct ? 0 : 1, // Simplified - assume first option if correct
-                0, // correctIndex placeholder
+                0, // selected_index placeholder (needs UI update to pass real index)
+                0, // correct_index placeholder
                 timeTaken
             );
         } catch (error) {
@@ -165,37 +111,31 @@ export function useClipInteractions(): UseClipInteractionsReturn {
         }
     }, [user]);
 
-    // Auto-sync when queue reaches batch size
-    useEffect(() => {
-        if (pendingQueue.length >= BATCH_SIZE) {
-            syncNow();
-        }
-    }, [pendingQueue.length, syncNow]);
+    // ... wrappers ...
+    const recordWatch = useCallback((clipId: string, duration: number, totalDuration: number) => {
+        if (!user || !isValidClipId(clipId)) return;
+        addToPending({ userId: user.id, clipId, action: 'watch', metadata: { watchDuration: duration, totalDuration }, timestamp: Date.now() });
+    }, [user, addToPending]);
 
-    // Auto-sync on interval
-    useEffect(() => {
-        syncTimerRef.current = setInterval(() => {
-            if (pendingQueue.length > 0) {
-                syncNow();
-            }
-        }, SYNC_INTERVAL_MS);
+    const recordSkip = useCallback((clipId: string) => {
+        if (!user || !isValidClipId(clipId)) return;
+        addToPending({ userId: user.id, clipId, action: 'skip', timestamp: Date.now() });
+    }, [user, addToPending]);
 
-        return () => {
-            if (syncTimerRef.current) {
-                clearInterval(syncTimerRef.current);
-            }
-        };
-    }, [pendingQueue.length, syncNow]);
+    const recordReplay = useCallback((clipId: string) => {
+        if (!user || !isValidClipId(clipId)) return;
+        addToPending({ userId: user.id, clipId, action: 'replay', timestamp: Date.now() });
+    }, [user, addToPending]);
 
-    // Sync remaining interactions on unmount
-    useEffect(() => {
-        return () => {
-            if (pendingQueue.length > 0) {
-                // Fire and forget - can't await in cleanup
-                batchProcessInteractions(pendingQueue);
-            }
-        };
-    }, [pendingQueue]);
+    const recordLike = useCallback((clipId: string) => {
+        if (!user || !isValidClipId(clipId)) return;
+        addToPending({ userId: user.id, clipId, action: 'like', timestamp: Date.now() });
+    }, [user, addToPending]);
+
+    const recordPause = useCallback((clipId: string) => {
+        if (!user || !isValidClipId(clipId)) return;
+        addToPending({ userId: user.id, clipId, action: 'pause', timestamp: Date.now() });
+    }, [user, addToPending]);
 
     return {
         pendingSync: pendingQueue.length,

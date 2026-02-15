@@ -323,7 +323,7 @@ export default function StudyShortsTab({
 
                 if (!shouldRender) {
                     return (
-                        <div key={`placeholder-${index}`} className="h-screen w-full snap-center bg-black" />
+                        <div key={`placeholder-${index}`} data-index={index} className="h-screen w-full snap-center bg-black" />
                     );
                 }
 

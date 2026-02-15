@@ -69,7 +69,7 @@ export function calculateNextReview(input: ReviewInput): SpacedRepetitionResult 
     nextReview.setDate(nextReview.getDate() + newInterval);
 
     return {
-        next_review: nextReview,
+        next_review: nextReview.toISOString(),
         review_interval: newInterval,
         ease_factor: newEaseFactor,
     };
@@ -120,7 +120,7 @@ export async function scheduleNextReview(
             .upsert({
                 user_id: userId,
                 clip_id: clipId,
-                next_review: result.next_review.toISOString(),
+                next_review: result.next_review,
                 review_interval: result.review_interval,
                 updated_at: new Date().toISOString(),
             }, {
@@ -131,6 +131,7 @@ export async function scheduleNextReview(
 
     } catch (error) {
         console.error('[SpacedScheduler] Failed to schedule review:', error);
+        throw error; // Propagate error so UI can react
     }
 }
 

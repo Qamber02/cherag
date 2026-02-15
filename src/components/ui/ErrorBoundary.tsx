@@ -37,7 +37,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     <AlertTriangle className="w-8 h-8 text-red-500 mb-2" />
                     <h3 className="text-lg font-bold text-red-500 mb-1">Something went wrong</h3>
                     <p className="text-sm text-muted-foreground mb-4 max-w-[250px] mx-auto">
-                        {this.state.error?.message || 'A playback error occurred'}
+                        {this.state.error?.message?.replace('Error:', '') || 'An unexpected error occurred. Please try again.'}
                     </p>
                     <button
                         type="button"

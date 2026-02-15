@@ -38,12 +38,30 @@ export default function OnboardingModal({ onComplete, onSkip }: OnboardingModalP
         return () => clearTimeout(timeoutId);
     }, []);
 
+    const handleComplete = useCallback(() => {
+        setIsVisible(false);
+        setTimeout(onComplete, 300);
+    }, [onComplete]);
+
+    const handleSkip = useCallback(() => {
+        setIsVisible(false);
+        setTimeout(onSkip, 300);
+    }, [onSkip]);
+
+    const handleNext = useCallback(() => {
+        if (currentStep < steps.length - 1) {
+            setCurrentStep(prev => prev + 1);
+        } else {
+            handleComplete();
+        }
+    }, [currentStep, handleComplete]);
+
     // Keyboard handling for accessibility
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Escape') {
             handleSkip();
         }
-    }, []);
+    }, [handleSkip]);
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown);
@@ -51,24 +69,6 @@ export default function OnboardingModal({ onComplete, onSkip }: OnboardingModalP
         modalRef.current?.focus();
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
-
-    const handleNext = () => {
-        if (currentStep < steps.length - 1) {
-            setCurrentStep(prev => prev + 1);
-        } else {
-            handleComplete();
-        }
-    };
-
-    const handleComplete = () => {
-        setIsVisible(false);
-        setTimeout(onComplete, 300);
-    };
-
-    const handleSkip = () => {
-        setIsVisible(false);
-        setTimeout(onSkip, 300);
-    };
 
     const step = steps[currentStep];
     const Icon = step.icon;

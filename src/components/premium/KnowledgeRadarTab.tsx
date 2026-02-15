@@ -45,7 +45,7 @@ interface KnowledgeRadarTabProps {
     onCompleteLesson: (conceptId: string) => void;
 }
 
-// FIXED: Proper lesson state machine
+// Proper lesson state machine
 type LessonState = 'idle' | 'loading' | 'question' | 'answered' | 'feedback' | 'explanation' | 'completed';
 
 interface LessonSession {
@@ -70,14 +70,14 @@ export default function KnowledgeRadarTab({
     const [selectedConcept, setSelectedConcept] = useState<ConceptNode | null>(null);
     const [viewMode, setViewMode] = useState<'list' | 'gaps'>('list');
 
-    // FIXED: Proper state machine implementation
+    // Proper state machine implementation
     const [lessonState, setLessonState] = useState<LessonState>('idle');
     const [lessonData, setLessonData] = useState<MicroLessonResult | null>(null);
     const [quizSelected, setQuizSelected] = useState<number | null>(null);
     const [lessonStartTime, setLessonStartTime] = useState<number>(0);
     const [isCorrect, setIsCorrect] = useState<boolean>(false);
 
-    // FIXED: Comprehensive session tracking
+    // Comprehensive session tracking
     const [lessonSession, setLessonSession] = useState<LessonSession>({
         attemptCount: 0,
         correctCount: 0,
@@ -114,7 +114,7 @@ export default function KnowledgeRadarTab({
         return prereqs.some(p => p.mastery < 60);
     };
 
-    // FIXED: Reset all lesson state when starting fresh
+    // Reset all lesson state when starting fresh
     const resetLessonState = useCallback(() => {
         setLessonState('idle');
         setLessonData(null);
@@ -129,7 +129,7 @@ export default function KnowledgeRadarTab({
         });
     }, []);
 
-    // FIXED: Proper lesson start with state machine
+    // Proper lesson start with state machine
     const handleStartLesson = useCallback(async () => {
         if (!selectedConcept) return;
 
@@ -148,14 +148,14 @@ export default function KnowledgeRadarTab({
 
             if (data) {
                 setLessonData(data);
-                // FIXED: Track question to prevent repeats
+                // Track question to prevent repeats
                 setLessonSession(prev => ({
                     ...prev,
                     questionHistory: [...prev.questionHistory, data.quiz.question],
                     currentQuestionId: data.quiz.question, // Use question as ID
                     attemptCount: prev.attemptCount + 1,
                 }));
-                // FIXED: Move to explanation first, then question
+                // Move to explanation first, then question
                 setLessonState('explanation');
             } else {
                 setLessonState('idle');
@@ -166,14 +166,14 @@ export default function KnowledgeRadarTab({
         }
     }, [selectedConcept, context, lessonSession.questionHistory, onGenerateLesson]);
 
-    // FIXED: Move from explanation to question
+    // Move from explanation to question
     const handleStartQuiz = useCallback(() => {
         if (lessonState === 'explanation') {
             setLessonState('question');
         }
     }, [lessonState]);
 
-    // FIXED: Handle answer submission with proper state transitions
+    // Handle answer submission with proper state transitions
     const handleQuizSubmit = useCallback(() => {
         if (quizSelected === null || !lessonData || !selectedConcept) return;
 
@@ -182,23 +182,30 @@ export default function KnowledgeRadarTab({
 
         setIsCorrect(correct);
 
-        // FIXED: Record answer immediately
+        // Record answer immediately
         onRecordAnswer(correct, timeSpent, selectedConcept.id);
 
-        // FIXED: Update session stats
+        // Update session stats
         setLessonSession(prev => ({
             ...prev,
             correctCount: prev.correctCount + (correct ? 1 : 0),
             totalTime: prev.totalTime + timeSpent,
         }));
 
-        // FIXED: Transition to feedback state
+        // Transition to feedback state
         setLessonState('feedback');
     }, [quizSelected, lessonData, selectedConcept, lessonStartTime, onRecordAnswer]);
 
-    // FIXED: Handle "Next" button - load new question
-    const handleNext = useCallback(async () => {
+    // Handle "Next" button - load new question
+    const handleNext = useCallback(async (retryCount = 0) => {
         if (!selectedConcept) return;
+
+        // Prevent infinite loops
+        if (retryCount > 3) {
+            console.warn('Max retries reached for generating new question');
+            setLessonState('completed');
+            return;
+        }
 
         // Check if we should complete the lesson (e.g., after 5 questions)
         const shouldComplete = lessonSession.attemptCount >= 5;
@@ -209,15 +216,17 @@ export default function KnowledgeRadarTab({
             return;
         }
 
-        // FIXED: Reset question-specific state, keep session data
-        setQuizSelected(null);
-        setIsCorrect(false);
-        setLessonData(null);
-        setLessonState('loading');
-        setLessonStartTime(Date.now());
+        // Reset question-specific state, keep session data
+        if (retryCount === 0) {
+            setQuizSelected(null);
+            setIsCorrect(false);
+            setLessonData(null);
+            setLessonState('loading');
+            setLessonStartTime(Date.now());
+        }
 
         try {
-            // FIXED: Generate NEW question with updated history
+            // Generate NEW question with updated history
             const data = await onGenerateLesson(
                 selectedConcept.name,
                 context,
@@ -225,7 +234,7 @@ export default function KnowledgeRadarTab({
             );
 
             if (data) {
-                // FIXED: Ensure it's actually a new question
+                // Ensure it's actually a new question
                 if (!lessonSession.questionHistory.includes(data.quiz.question)) {
                     setLessonData(data);
                     setLessonSession(prev => ({
@@ -238,7 +247,7 @@ export default function KnowledgeRadarTab({
                 } else {
                     // If somehow we got a repeat, try again
                     console.warn('Received duplicate question, retrying...');
-                    handleNext();
+                    handleNext(retryCount + 1);
                 }
             } else {
                 setLessonState('idle');
@@ -247,16 +256,17 @@ export default function KnowledgeRadarTab({
             console.error('Failed to load next question:', error);
             setLessonState('idle');
         }
-    }, [selectedConcept, context, lessonSession, onGenerateLesson]);
+    }, [selectedConcept, context, lessonSession, onGenerateLesson, onCompleteLesson]);
 
-    // FIXED: Handle retry (wrong answer)
+    // Handle retry (wrong answer)
     const handleRetry = useCallback(() => {
         setQuizSelected(null);
         setIsCorrect(false);
         setLessonState('question');
+        setLessonStartTime(Date.now()); // Reset timer
     }, []);
 
-    // FIXED: Close modal and reset everything
+    // Close modal and reset everything
     const handleCloseModal = useCallback(() => {
         setSelectedConcept(null);
         resetLessonState();
@@ -524,7 +534,7 @@ export default function KnowledgeRadarTab({
                 )}
             </div>
 
-            {/* FIXED: Selected Concept Detail Modal / Active Learning Wizard with proper state machine */}
+            {/* Selected Concept Detail Modal / Active Learning Wizard with proper state machine */}
             <AnimatePresence>
                 {selectedConcept && (
                     <motion.div
@@ -552,7 +562,7 @@ export default function KnowledgeRadarTab({
                                         <div className={`text-xs md:text-sm font-bold ${getMasteryColor(selectedConcept.mastery)}`}>
                                             {Math.round(selectedConcept.mastery)}%
                                         </div>
-                                        {/* FIXED: Show progress indicator during lesson */}
+                                        {/* Show progress indicator during lesson */}
                                         {lessonState !== 'idle' && lessonSession.attemptCount > 0 && (
                                             <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
                                                 Q{lessonSession.attemptCount} • {lessonSession.correctCount}✓
@@ -568,7 +578,7 @@ export default function KnowledgeRadarTab({
                                 </button>
                             </div>
 
-                            {/* FIXED: Modal Content - State Machine Rendering with proper scroll */}
+                            {/* Modal Content - State Machine Rendering with proper scroll */}
                             <div className="overflow-y-auto flex-1 overscroll-contain">
                                 <div className="p-4 md:p-6">
                                     {/* Loading State */}
@@ -583,7 +593,7 @@ export default function KnowledgeRadarTab({
                                         </div>
                                     )}
 
-                                    {/* Explanation State - FIXED: Auto-shown before question */}
+                                    {/* Explanation State - Auto-shown before question */}
                                     {lessonState === 'explanation' && lessonData && (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                             <div className="bg-primary/5 p-3 md:p-4 rounded-xl border border-primary/20">
@@ -604,7 +614,7 @@ export default function KnowledgeRadarTab({
                                                 </p>
                                             </div>
 
-                                            {/* FIXED: Clear CTA to move to quiz */}
+                                            {/* Clear CTA to move to quiz */}
                                             <button
                                                 onClick={handleStartQuiz}
                                                 className="w-full py-2.5 md:py-3 bg-primary text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm md:text-base"
@@ -614,7 +624,7 @@ export default function KnowledgeRadarTab({
                                         </div>
                                     )}
 
-                                    {/* Question State - FIXED: Only show quiz, not explanation */}
+                                    {/* Question State - Only show quiz, not explanation */}
                                     {lessonState === 'question' && lessonData && (
                                         <div className="space-y-4 md:space-y-5 animate-in fade-in slide-in-from-right-8 duration-300">
                                             <h4 className="text-base md:text-lg font-bold text-foreground">Check Your Understanding</h4>
@@ -636,7 +646,7 @@ export default function KnowledgeRadarTab({
                                                 ))}
                                             </div>
 
-                                            {/* FIXED: Proper submit button */}
+                                            {/* Proper submit button */}
                                             <button
                                                 onClick={handleQuizSubmit}
                                                 disabled={quizSelected === null}
@@ -647,7 +657,7 @@ export default function KnowledgeRadarTab({
                                         </div>
                                     )}
 
-                                    {/* Feedback State - FIXED: Show result with Next/Retry buttons */}
+                                    {/* Feedback State - Show result with Next/Retry buttons */}
                                     {lessonState === 'feedback' && lessonData && (
                                         <div className="text-center py-6 md:py-8 animate-in zoom-in-95 duration-300">
                                             {isCorrect ? (
@@ -659,7 +669,7 @@ export default function KnowledgeRadarTab({
                                                     <p className="text-sm md:text-base text-muted-foreground mb-5 md:mb-6 px-2">
                                                         {lessonData.quiz.explanation}
                                                     </p>
-                                                    {/* FIXED: Always show Next button after correct answer */}
+                                                    {/* Always show Next button after correct answer */}
                                                     <div className="flex gap-2 md:gap-3 w-full">
                                                         <button
                                                             onClick={handleCloseModal}
@@ -668,7 +678,7 @@ export default function KnowledgeRadarTab({
                                                             Finish
                                                         </button>
                                                         <button
-                                                            onClick={handleNext}
+                                                            onClick={() => handleNext()}
                                                             className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:brightness-110 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                                                         >
                                                             Next <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -687,7 +697,7 @@ export default function KnowledgeRadarTab({
                                                         <br />
                                                         <span className="text-xs md:text-sm italic mt-2 block">{lessonData.quiz.explanation}</span>
                                                     </p>
-                                                    {/* FIXED: Give options to retry current or move to next */}
+                                                    {/* Give options to retry current or move to next */}
                                                     <div className="flex gap-2 md:gap-3 w-full">
                                                         <button
                                                             onClick={handleRetry}
@@ -696,7 +706,7 @@ export default function KnowledgeRadarTab({
                                                             Try Again
                                                         </button>
                                                         <button
-                                                            onClick={handleNext}
+                                                            onClick={() => handleNext()}
                                                             className="flex-1 px-3 md:px-4 py-2.5 md:py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm md:text-base"
                                                         >
                                                             Next <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
@@ -707,7 +717,7 @@ export default function KnowledgeRadarTab({
                                         </div>
                                     )}
 
-                                    {/* Completed State - FIXED: Show session summary */}
+                                    {/* Completed State - Show session summary */}
                                     {lessonState === 'completed' && (
                                         <div className="text-center py-6 md:py-8">
                                             <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">

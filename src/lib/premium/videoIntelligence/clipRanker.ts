@@ -119,7 +119,7 @@ function calculateClipScore(
     }
 
     // 8. Already Watched Penalty
-    if (signals.watchedClips.has(clip.id)) {
+    if (signals.watchedClips.includes(clip.id)) {
         score -= 1.0;
     }
 
@@ -181,7 +181,7 @@ function applyDiversityFilter(
 
     for (const clip of clips) {
         // Check if this concept appears too many times in recent window
-        const recentCount = conceptWindow.filter(c => c === clip.concept).length;
+        const recentCount = conceptWindow.filter(c => c.toLowerCase() === clip.concept.toLowerCase()).length;
 
         if (recentCount < maxSameConcept) {
             filtered.push(clip);

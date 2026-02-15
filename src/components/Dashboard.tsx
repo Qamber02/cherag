@@ -158,7 +158,7 @@ export default function Dashboard({ session }: DashboardProps) {
         if (activeTab && setVideoContextTab) {
             setVideoContextTab(activeTab);
         }
-    }, [setVideoContextTab]); // Run once on mount when context is available
+    }, [setVideoContextTab, activeTab]);
 
     // Helper to render tabs with preservation or conditional mounting
     const renderTab = (tabName: Tab, component: React.ReactNode, preserveState = true, isScrollable = true) => {
@@ -252,6 +252,7 @@ export default function Dashboard({ session }: DashboardProps) {
                             onNavigate={handleTabChange}
                             onUpload={uploadFile}
                             isParsing={isParsing}
+                            session={session}
                         />
                     </div>
                 ), true, true)}
@@ -451,6 +452,7 @@ export default function Dashboard({ session }: DashboardProps) {
                 onTabChange={handleTabChange}
                 onMoreClick={() => setSidebarOpen(true)}
             />
+            {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} onSkip={handleOnboardingComplete} />}
         </AppLayout>
     );
 }

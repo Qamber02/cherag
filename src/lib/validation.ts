@@ -16,7 +16,7 @@ export const flashcardOptionsSchema = z.object({
 });
 
 export const quizOptionsSchema = z.object({
-    context: z.string().min(10, "Context is too short"),
+    context: z.string().min(10, "Context is too short").max(100000, "Context is too long"),
     count: z.number().min(1).max(20).optional().default(5),
     difficulty: z.enum(['easy', 'medium', 'hard']).optional().default('medium'),
     forceRefresh: z.boolean().optional(),

@@ -19,6 +19,7 @@ export default function RecallPrompt({
     const [timeRemaining, setTimeRemaining] = useState(timeoutSeconds);
     const [answerStartTime] = useState(Date.now());
     const skipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const hasSkippedRef = useRef(false);
 
     // Countdown timer
     useEffect(() => {
@@ -28,10 +29,13 @@ export default function RecallPrompt({
             setTimeRemaining(prev => {
                 if (prev <= 1) {
                     // Timeout - auto-skip
-                    setState('skipped');
-                    skipTimeoutRef.current = setTimeout(() => {
-                        onSkip();
-                    }, 1500);
+                    if (!hasSkippedRef.current) {
+                        hasSkippedRef.current = true;
+                        setState('skipped');
+                        skipTimeoutRef.current = setTimeout(() => {
+                            onSkip();
+                        }, 1500);
+                    }
                     return 0;
                 }
                 return prev - 1;
@@ -153,9 +157,13 @@ export default function RecallPrompt({
                 {state === 'showing' && (
                     <button
                         type="button"
-                        onClick={() => {
-                            setState('skipped');
-                            skipTimeoutRef.current = setTimeout(onSkip, 500);
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!hasSkippedRef.current) {
+                                hasSkippedRef.current = true;
+                                setState('skipped');
+                                skipTimeoutRef.current = setTimeout(onSkip, 500);
+                            }
                         }}
                         className="w-full bg-white/5 backdrop-blur-md text-white/60 rounded-full py-3 text-sm hover:bg-white/10 transition-all"
                     >

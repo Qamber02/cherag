@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { FileText, Layers, Play, ArrowRight, Sparkles, Brain, Clock, Plus } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
 import type { Flashcard } from '../hooks/useFlashcards';
+import type { Session } from '@supabase/supabase-js';
 import HeroSection from './dashboard/HeroSection';
 
 interface DashboardHomeProps {
@@ -11,6 +12,7 @@ interface DashboardHomeProps {
     onNavigate: (tab: string) => void;
     onUpload: (file: File) => void;
     isParsing: boolean;
+    session: Session;
 }
 
 export default function DashboardHome({
@@ -19,7 +21,8 @@ export default function DashboardHome({
     summary,
     onNavigate,
     onUpload,
-    isParsing
+    isParsing,
+    session
 }: DashboardHomeProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,8 +49,9 @@ export default function DashboardHome({
 
             {/* Hero Section */}
             <HeroSection
-                session={{ user: { email: 'user@example.com', user_metadata: { full_name: 'Scholar' } } } as any}
+                session={session}
                 onUpload={() => fileInputRef.current?.click()}
+                onViewRoadmap={() => onNavigate('roadmap')}
             />
 
             {/* Main Grid */}
@@ -78,7 +82,8 @@ export default function DashboardHome({
                                     <div className="p-4 rounded-xl bg-white/50 dark:bg-black/20 border border-white/10">
                                         <div className="flex items-center gap-2 mb-2 text-xs font-bold text-primary uppercase tracking-wider">
                                             <FileText className="w-3 h-3" />
-                                            {files[0]?.filename || 'Document'}
+                                            {files[0]?.filename?.substring(0, 30) || 'Document'}
+                                            {files[0]?.filename?.length > 30 ? '...' : ''}
                                         </div>
                                         <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
                                             {summary}

@@ -113,22 +113,17 @@ export default function ExamSimulator({
     }, [answers, currentQuestionIndex, timeLeft, flagged, questions, isFinished]);
 
     // Timer effect
+    // Timer mechanism - Independent of other state
     useEffect(() => {
         if (isFinished) return;
 
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    finishExam();
-                    return 0;
-                }
-                return prev - 1;
-            });
+            setTimeLeft((prev) => Math.max(0, prev - 1));
         }, 1000);
 
         return () => clearInterval(timer);
     }, [isFinished]);
+
 
     const formatTime = (seconds: number) => {
         const h = Math.floor(seconds / 3600);
@@ -161,8 +156,6 @@ export default function ExamSimulator({
             if (q.type === 'mcq') {
                 const userAnswer = answers[idx] || "";
                 if (userAnswer.trim().toUpperCase() === q.correct_answer.trim().toUpperCase()) {
-                    calculatedScore++;
-                } else if (q.correct_answer.length > 1 && userAnswer === q.correct_answer) {
                     calculatedScore++;
                 }
             }

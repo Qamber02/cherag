@@ -284,7 +284,11 @@ export default function Sidebar({
                                     <FileText size={16} className="text-primary shrink-0" />
                                     <span className="text-sm truncate text-muted-foreground">{file.filename}</span>
                                 </div>
-                                <button onClick={() => onRemove(file.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all">
+                                <button
+                                    onClick={() => onRemove(file.id)}
+                                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 hover:text-red-500 transition-all"
+                                    aria-label={`Remove ${file.filename}`}
+                                >
                                     <X size={14} />
                                 </button>
                             </div>

@@ -109,30 +109,43 @@ export function useFiles(user: User | null) {
         },
         onSuccess: (newDoc: Document) => {
             queryClient.invalidateQueries({ queryKey: ['files', user?.id] });
-            queryClient.setQueryData(['files', user?.id], (old: Document[] | undefined) => {
-                return old ? [newDoc, ...old] : [newDoc];
-            });
+        },
+        onError: async (error, file) => {
+            // Basic orphan cleanup if needed, though hard to know if DB insert worked if we are here
+            console.error("Upload failed", error);
         }
     });
 
     // Mutation for removing files
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            // 1. Get file path
+            const { data: doc } = await supabase.from('documents').select('file_path').eq('id', id).single();
+
+            // 2. Delete from Storage
+            if (doc?.file_path) {
+                await supabase.storage.from('documents').remove([doc.file_path]);
+            }
+
+            // 3. Delete from DB
             const { error } = await supabase.from('documents').delete().eq('id', id);
             if (error) throw error;
             return id;
         },
         onSuccess: (id: string) => {
-            queryClient.setQueryData(['files', user?.id], (old: Document[] | undefined) => {
-                return old ? old.filter((f: Document) => f.id !== id) : [];
-            });
+            queryClient.invalidateQueries({ queryKey: ['files', user?.id] });
         }
     });
+
+    const activeProgress = files
+        .filter((f: Document) => f.processing_status === 'processing')
+        .map((f: Document) => f.processing_progress || 0);
+    const maxProgress = activeProgress.length > 0 ? Math.max(...activeProgress) : 0;
 
     return {
         files,
         isParsing,
-        processingProgress: 0,
+        processingProgress: maxProgress,
         error: (queryError as Error)?.message || (uploadMutation.error as Error)?.message || null,
         isLoading,
         uploadFile: (file: File) => uploadMutation.mutateAsync(file),

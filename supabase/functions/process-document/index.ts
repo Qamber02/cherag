@@ -14,6 +14,11 @@ serve(async (req) => {
 
     try {
         const { document_id, content, chunk_offset = 0 } = await req.json()
+
+        if (!document_id || typeof document_id !== 'string') throw new Error('Invalid or missing document_id');
+        if (!content || typeof content !== 'string') throw new Error('Invalid or missing content');
+        if (typeof chunk_offset !== 'number') throw new Error('Invalid chunk_offset');
+
         const geminiKey = Deno.env.get('GEMINI_API_KEY')
         if (!geminiKey) throw new Error('Missing GEMINI_API_KEY')
 

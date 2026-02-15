@@ -23,6 +23,34 @@ vi.mock('../lib/supabaseClient', () => ({
     }
 }));
 
+// Mock custom hooks to prevent actual logic/network calls during component test
+vi.mock('../hooks/useFiles', () => ({
+    useFiles: () => ({ files: [], isParsing: false, uploadFile: vi.fn(), removeFile: vi.fn() })
+}));
+vi.mock('../hooks/useChat', () => ({
+    useChat: () => ({ messages: [], sendMessage: vi.fn(), isLoading: false })
+}));
+vi.mock('../hooks/useFlashcards', () => ({
+    useFlashcards: () => ({ flashcards: [], generateFlashcards: vi.fn(), clearFlashcards: vi.fn(), isLoading: false })
+}));
+vi.mock('../hooks/useStudyShorts', () => ({
+    useStudyShorts: () => ({ videos: [], generateShorts: vi.fn(), loadMore: vi.fn(), resetVideos: vi.fn(), isLoading: false, isLoadingMore: false, hasMore: false })
+}));
+vi.mock('../hooks/usePremiumFeatures', () => ({
+    usePremiumFeatures: () => ({
+        knowledgeGraph: { nodes: [], edges: [] },
+        isLoading: false,
+        analyzeContent: vi.fn(),
+        generateActiveLessonAction: vi.fn(),
+        recordAnswer: vi.fn(),
+        completeLesson: vi.fn()
+    })
+}));
+vi.mock('./premium/VideoContext', () => ({
+    useVideoContext: () => ({ setActiveTab: vi.fn() })
+}));
+
+
 describe('Dashboard Component', () => {
     it('renders without crashing', () => {
         render(

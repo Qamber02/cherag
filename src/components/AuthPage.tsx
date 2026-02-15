@@ -312,9 +312,9 @@ export default function AuthPage() {
                     {/* Footer */}
                     <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
                         By continuing, you agree to our{' '}
-                        <a href="#" className="text-primary hover:underline">Terms</a>
+                        <a href="/terms" className="text-primary hover:underline">Terms</a>
                         {' '}and{' '}
-                        <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                        <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
                     </p>
                 </div>
             </div>

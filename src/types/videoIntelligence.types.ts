@@ -84,7 +84,7 @@ export interface ClipRankingSignals {
     // Interaction history
     recentSkips: string[]; // clip_ids skipped in last session
     recentLikes: string[]; // clip_ids liked
-    watchedClips: Set<string>; // already watched clip_ids
+    watchedClips: string[]; // already watched clip_ids
 
     // Quiz/flashcard performance
     failedConcepts: string[]; // from recent quizzes
@@ -227,7 +227,7 @@ export interface RecallGenerationPromptData {
 // ============================================
 
 export interface SpacedRepetitionResult {
-    next_review: Date;
+    next_review: string;
     review_interval: number; // days
     ease_factor: number;
 }

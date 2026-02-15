@@ -4,12 +4,12 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Cherág Hero &amp; Exam Simulator Variant 3</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" crossorigin="anonymous"/>
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" crossorigin="anonymous"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -100,10 +100,10 @@
 </div>
 <!-- User Profile -->
 <div class="flex items-center gap-4">
-<button class="p-2 text-slate-500 hover:text-primary transition-colors relative">
-<span class="material-icons">notifications</span>
-<span class="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full"></span>
-</button>
+            <button class="p-2 text-slate-500 hover:text-primary transition-colors relative" aria-label="Notifications">
+                <span class="material-icons" aria-hidden="true">notifications</span>
+                <span class="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full"></span>
+            </button>
 <div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-surface-dark border-2 border-slate-300 dark:border-slate-700 overflow-hidden cursor-pointer hover:border-primary transition-colors">
 <img alt="User profile avatar showing a young woman" class="h-full w-full object-cover" data-alt="Portrait of a user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOLnxtGNqZ4o_sloDC-f3L_ezYiDlDg9qOrHlaG6d8l6yjKsYftCsskUBDa06kxe5156x0LOiFLdXBfZgPweorYLlDmemB-dNQFwhTP9HRzS7QJB9FwINsNG1wxpFjepH7z6fLQqlqNzheQEU5RCv-FN-OMOvldibF7FTr_wLI4NxZJgLhSTJ5AtOfvj03qfcBgqnyxT0QaH0ghnCnTdREEnoQ2CMtddH998LjL1XBQVqK77qxb7XmJv3AyuPknPvU4uT8cc_iSA0"/>
 </div>
@@ -173,8 +173,8 @@
 <div class="w-1/6 bg-secondary rounded-t h-[94%] shadow-[0_0_15px_rgba(6,182,212,0.5)] relative group cursor-pointer">
 <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-darker text-secondary text-xs px-2 py-1 rounded border border-secondary/30 font-bold whitespace-nowrap">Current</div>
 </div>
-<!-- Connecting Line (Visual approximation) -->
-<svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" preserveaspectratio="none">
+                            <!-- Connecting Line (Visual approximation) -->
+                            <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" preserveAspectRatio="none">
 <path class="opacity-50" d="M 20 80 L 70 60 L 120 75 L 170 40 L 220 20 L 270 10" fill="none" stroke="#06b6d4" stroke-dasharray="4 4" stroke-linecap="round" stroke-width="2"></path>
 <circle class="animate-pulse" cx="270" cy="10" fill="#06b6d4" r="4"></circle>
 </svg>
@@ -198,13 +198,13 @@
 <p class="text-slate-400 text-sm">Manage your mock exams and track your subject mastery.</p>
 </div>
 <div class="flex items-center gap-3">
-<div class="relative">
-<span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
-<input class="bg-surface-dark border border-slate-700 text-slate-200 text-sm rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none w-64 placeholder-slate-500" placeholder="Search exams..." type="text"/>
-</div>
-<button class="bg-surface-dark border border-slate-700 text-slate-300 p-2.5 rounded-lg hover:border-primary hover:text-white transition-colors">
-<span class="material-icons text-lg">filter_list</span>
-</button>
+                <div class="relative">
+                    <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+                    <input class="bg-surface-dark border border-slate-700 text-slate-200 text-sm rounded-lg pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none w-64 placeholder-slate-500" placeholder="Search exams..." type="text" aria-label="Search exams"/>
+                </div>
+                <button class="bg-surface-dark border border-slate-700 text-slate-300 p-2.5 rounded-lg hover:border-primary hover:text-white transition-colors" aria-label="Filter">
+                    <span class="material-icons text-lg" aria-hidden="true">filter_list</span>
+                </button>
 </div>
 </div>
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">

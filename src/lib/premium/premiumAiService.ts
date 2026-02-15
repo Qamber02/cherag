@@ -31,7 +31,8 @@ async function authorizedRequest(endpoint: string, body: any) {
     const token = session?.access_token;
 
     if (!token) {
-        console.warn('[PremiumAI] No auth token available - Request might fail 401');
+        console.warn('[PremiumAI] No auth token available');
+        throw new Error('Authentication required for Premium features. Please log in.');
     } else {
         console.log('[PremiumAI] Auth token present');
     }
@@ -62,7 +63,7 @@ async function authorizedRequest(endpoint: string, body: any) {
         }
 
         const data = await response.json();
-        console.log(`[PremiumAI] Success data from ${endpoint}:`, data);
+        console.log(`[PremiumAI] Success from ${endpoint}`);
         return data;
     } catch (error) {
         console.error(`[PremiumAI] Network/Parsing Error for ${endpoint}:`, error);
@@ -208,7 +209,14 @@ export async function callPremiumAI() {
 
 export function parseJSONResponse<T>(response: string | any): T {
     if (typeof response === 'string') {
-        try { return JSON.parse(response); } catch { return {} as T; }
+        try {
+            // Remove markdown code blocks if present
+            const cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
+            return JSON.parse(cleaned);
+        } catch (error) {
+            console.error('[PremiumAI] JSON Parse Error:', error);
+            throw new Error('Failed to parse AI response');
+        }
     }
     return response as T;
 }
@@ -228,6 +236,7 @@ export async function generateDailyPlan(metrics: any) {
 }
 
 export async function analyzeLivingNotes(notes: string) {
+    // Stub for now
     return { insights: [] };
 }
 
@@ -243,5 +252,6 @@ export function getKnowledgeTwinPrompt(concept: string): string {
 }
 
 export async function executePromptChain<T>(prompts: any[], taskType: string): Promise<T> {
-    return {} as T;
+    console.warn(`[PremiumAI] executePromptChain stub called for ${taskType}`);
+    throw new Error('executePromptChain is not implemented on the client. Use backend.');
 }

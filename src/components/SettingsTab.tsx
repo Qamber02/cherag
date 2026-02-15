@@ -88,7 +88,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </div>
 
                 {/* Account Section */}
-                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+                <section className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <User className="w-4 h-4" />
@@ -163,7 +163,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* Appearance Section */}
-                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+                <section className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Sparkles className="w-4 h-4" />
@@ -191,7 +191,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* AI Preferences Section */}
-                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+                <section className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Bot className="w-4 h-4" />
@@ -268,7 +268,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                 </section>
 
                 {/* Data Management Section */}
-                <section className="glass rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+                <section className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <Database className="w-4 h-4" />

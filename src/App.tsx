@@ -1,10 +1,9 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { supabase } from './lib/supabaseClient'
-import type { Session } from '@supabase/supabase-js'
 import { Loader2 } from 'lucide-react'
 import { ToastProvider } from './components/ui/ToastContext'
 import { VideoProvider } from './components/premium/VideoContext'
+import { useAuth } from './hooks/useAuth'
 
 // Lazy load pages for better performance
 const AuthPage = lazy(() => import('./components/AuthPage'));
@@ -12,8 +11,7 @@ const ResetPasswordPage = lazy(() => import('./components/ResetPasswordPage'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 
 function App() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { session, loading } = useAuth();
 
   // Initialize theme from localStorage or system preference right away
   useEffect(() => {
@@ -26,22 +24,6 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, []);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>

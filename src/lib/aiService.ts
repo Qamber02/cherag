@@ -176,6 +176,7 @@ export async function generateQuizzes(
         context,
         count: options.count,
         difficulty: options.difficulty,
+        seed: options.seed,
         force_refresh: options.forceRefresh
     });
 

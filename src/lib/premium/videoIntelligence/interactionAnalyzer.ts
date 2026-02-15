@@ -107,6 +107,9 @@ export async function recordLikeInteraction(
             liked: true,
             mastery_delta: 0.2, // Strong positive signal
         });
+
+        // Also update the concept graph
+        await updateConceptMastery(userId, clipId, 0.2);
     } catch (error) {
         console.error('[InteractionAnalyzer] Failed to record like:', error);
     }
