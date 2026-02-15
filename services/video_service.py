@@ -27,8 +27,8 @@ async def search_youtube_videos(topic: str, page_token: Optional[str] = None) ->
         except Exception:
             search_topic = topic[:50]
     
-    # Clean search topic
-    search_topic = re.sub(r'[^\w\s]', ' ', search_topic)
+    # Clean search topic (preserve C++, C#)
+    search_topic = re.sub(r'[^\w\s\+#]', ' ', search_topic)
     search_topic = re.sub(r'\s+', ' ', search_topic).strip()
     
     async with httpx.AsyncClient(timeout=30.0) as client:

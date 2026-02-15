@@ -33,4 +33,4 @@ jobs:
       run: npm run build
       env:
         # Prevent treating warnings as errors if not intended, but strict is good for prod
-        CI: false 
+        # CI: false # Removed to enforce strict checks

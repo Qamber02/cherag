@@ -327,7 +327,7 @@ async def get_document_status(
             status=result.data.get('processing_status', 'pending'),
             progress=result.data.get('processing_progress', 0),
             chunks_count=chunks_count,
-            error=result.data.get('error_message')
+            error=result.data.get('error_message') if result.data.get('processing_status') == 'failed' else None
         )
     except HTTPException:
         raise

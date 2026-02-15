@@ -52,10 +52,12 @@ This is where you define what keys the frontend can see.
 |:---|:---|
 | `VITE_SUPABASE_URL` | `https://<your-supabase-project>.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | *(Your public anon key starting with eyJ...)* |
+| `VITE_BACKEND_URL` | `https://<your-railway-app>.railway.app` |
 
 1.  Click **Environment variables (advanced)** to expand the section.
 2.  Add `VITE_SUPABASE_URL` and paste the value.
 3.  Add `VITE_SUPABASE_ANON_KEY` and paste the value.
+4.  Add `VITE_BACKEND_URL` and paste the Railway backend URL.
 
 ---
 

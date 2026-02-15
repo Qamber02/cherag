@@ -34,3 +34,4 @@ tsconfig.tsbuildinfo
 
 # Wrangler backup files
 *.bak
+vite.config.ts.timestamp-*.mjs

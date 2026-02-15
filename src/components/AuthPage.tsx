@@ -208,7 +208,7 @@ export default function AuthPage() {
                                 <button
                                     className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${mode === 'login'
                                         ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                                         }`}
                                     onClick={() => setMode('login')}
                                 >
@@ -217,7 +217,7 @@ export default function AuthPage() {
                                 <button
                                     className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${mode === 'signup'
                                         ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                                        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                                         }`}
                                     onClick={() => setMode('signup')}
                                 >

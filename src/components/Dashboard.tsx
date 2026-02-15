@@ -97,11 +97,13 @@ export default function Dashboard({ session }: DashboardProps) {
 
     // Load saved summary on mount
     useEffect(() => {
+        let active = true;
         async function loadSaved() {
             const saved = await getLastSummary(session.user.id);
-            if (saved) setSummary(saved);
+            if (active && saved) setSummary(saved);
         }
         loadSaved();
+        return () => { active = false; };
     }, [session.user.id]);
 
     const handleGenerateSummary = async (options?: { length?: string; style?: string; focus?: string }) => {

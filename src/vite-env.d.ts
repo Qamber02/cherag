@@ -3,10 +3,7 @@
 interface ImportMetaEnv {
     readonly VITE_SUPABASE_URL: string
     readonly VITE_SUPABASE_ANON_KEY: string
-    readonly VITE_GEMINI_API_KEY: string
-    readonly VITE_YOUTUBE_API_KEY?: string
-    readonly VITE_OPENROUTER_API_KEY?: string
-    readonly VITE_HUGGINGFACE_API_KEY?: string
+    // Moved to backend: GEMINI, YOUTUBE, OPENROUTER, HUGGINGFACE
     // more env variables...
 }
 

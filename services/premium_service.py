@@ -144,7 +144,7 @@ Student (AI):"""
         response = await call_ai_with_fallback(full_prompt)
         return response
     except Exception as e:
-        logger.error(f"Teaching Chat Error: {e}")
+        logger.error(f"Teaching Chat Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def evaluate_teaching_session(concept: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
@@ -153,7 +153,7 @@ async def evaluate_teaching_session(concept: str, history: List[Dict[str, str]])
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Teaching Evaluation Error: {e}")
+        logger.error(f"Teaching Evaluation Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # =============================================================================
@@ -166,7 +166,7 @@ async def calculate_exam_readiness(syllabus: Dict, user_mastery: Dict[str, int])
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Readiness Error: {e}")
+        logger.error(f"Readiness Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_exam_questions(topics: List[str], count: int, difficulty: str) -> List[Dict[str, Any]]:
@@ -175,7 +175,7 @@ async def generate_exam_questions(topics: List[str], count: int, difficulty: str
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Exam Generation Error: {e}")
+        logger.error(f"Exam Generation Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_stress_test(concept: str, current_level: int, failed_level: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -184,7 +184,7 @@ async def generate_stress_test(concept: str, current_level: int, failed_level: O
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Stress Test Error: {e}")
+        logger.error(f"Stress Test Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def analyze_syllabus(syllabus_text: str) -> Dict[str, Any]:
@@ -193,7 +193,7 @@ async def analyze_syllabus(syllabus_text: str) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Syllabus Error: {e}")
+        logger.error(f"Syllabus Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # =============================================================================
@@ -206,7 +206,7 @@ async def analyze_learning_dna(activity_data: Dict) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Learning DNA Error: {e}")
+        logger.error(f"Learning DNA Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_daily_plan(goals: List[str], available_minutes: int, learning_dna: Dict, current_progress: Dict, current_hour: int) -> Dict[str, Any]:
@@ -215,7 +215,7 @@ async def generate_daily_plan(goals: List[str], available_minutes: int, learning
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Daily Plan Error: {e}")
+        logger.error(f"Daily Plan Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))        
 
 async def assess_cognitive_load(metrics: Dict) -> Dict[str, Any]:
@@ -224,7 +224,7 @@ async def assess_cognitive_load(metrics: Dict) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Cognitive Load Error: {e}")
+        logger.error(f"Cognitive Load Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def compress_concept(content: str, concept_name: str) -> Dict[str, Any]:
@@ -233,7 +233,7 @@ async def compress_concept(content: str, concept_name: str) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Compress Error: {e}")
+        logger.error(f"Compress Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def remix_concepts(concepts: List[Dict]) -> Dict[str, Any]:
@@ -242,7 +242,7 @@ async def remix_concepts(concepts: List[Dict]) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Remix Error: {e}")
+        logger.error(f"Remix Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 async def analyze_mental_model(content: str, model: str) -> Dict[str, Any]:
@@ -251,6 +251,6 @@ async def analyze_mental_model(content: str, model: str) -> Dict[str, Any]:
         response = await call_ai_with_fallback(prompt)
         return json.loads(extract_json(response))
     except Exception as e:
-        logger.error(f"Mental Model Error: {e}")
+        logger.error(f"Mental Model Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

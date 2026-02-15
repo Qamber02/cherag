@@ -216,7 +216,7 @@ Then redeploy the backend.
 | **Build Failed (Railway)** | Check `requirements.txt` has all deps |
 | **Build Failed (Cloudflare)** | Ensure `VITE_` env vars are set |
 | **AI returns errors** | Check API key balances/quotas |
-| **"Network Error"** | Verify `API_BASE` URL in `aiService.ts` |
+| **"Network Error"** | Verify `VITE_API_BASE_URL` URL in `aiService.ts` |
 
 ---
 

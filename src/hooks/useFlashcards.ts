@@ -14,11 +14,17 @@ export function useFlashcards(user: User | null, context: string) {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        if (user) fetchFlashcards();
+        let active = true;
+        if (user) {
+            fetchFlashcards().then(data => {
+                if (active && data) setFlashcards(data);
+            });
+        }
+        return () => { active = false; };
     }, [user]);
 
     const fetchFlashcards = async () => {
-        if (!user) return;
+        if (!user) return null;
         const { data, error } = await supabase
             .from('flashcards')
             .select('*')
@@ -27,18 +33,18 @@ export function useFlashcards(user: User | null, context: string) {
 
         if (error) {
             console.error('Error fetching flashcards:', error);
-            return;
+            return null;
         }
 
         if (data) {
             // Map DB columns (front/back) to UI props (question/answer)
-            const mapped: Flashcard[] = data.map((item: any) => ({
+            return data.map((item: any) => ({
                 id: item.id,
                 question: item.front || item.question,
                 answer: item.back || item.answer
             }));
-            setFlashcards(mapped);
         }
+        return null;
     };
 
     const generateFlashcards = async () => {

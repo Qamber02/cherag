@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2, Flame } from 'lucide-react';
 // Server Action for secure server-side AI generation
@@ -41,7 +41,11 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
     const [showStreakAnimation, setShowStreakAnimation] = useState(false);
 
     useEffect(() => {
-        fetchQuizzes();
+        let active = true;
+        fetchQuizzes().then(data => {
+            if (active && data) setQuizzes(data);
+        });
+        return () => { active = false; };
     }, [userId]);
 
     const fetchQuizzes = async () => {
@@ -51,8 +55,14 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
-        if (data && data.length > 0) setQuizzes(data);
+        return data as Quiz[] || [];
     };
+
+    // Ref to track mount status for async operations
+    const isMounted = useRef(true);
+    useEffect(() => {
+        return () => { isMounted.current = false; };
+    }, []);
 
     const handleGenerateQuizzes = async () => {
         const quizContext = topicInput ? `Topic: ${topicInput}` : context;
@@ -67,6 +77,8 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         try {
             const generated = await generateQuizzes(quizContext, { count: questionCount, difficulty: difficulty as 'easy' | 'medium' | 'hard', seed: Date.now(), forceRefresh: true });
             if (!generated || generated.length === 0) throw new Error("No quizzes generated");
+
+            if (!isMounted.current) return;
 
             // Save to DB
             const quizzesToInsert = generated.map((q: any) => ({
@@ -91,17 +103,21 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                 user_answer: null
             }));
 
-            setQuizzes(newQuizzes);
-            setCurrentIndex(0);
-            setIsTopicMode(false);
+            if (isMounted.current) {
+                setQuizzes(newQuizzes);
+                setCurrentIndex(0);
+                setIsTopicMode(false);
 
-            // Background fetch to get real IDs
-            fetchQuizzes();
+                // Fetch real IDs in background
+                fetchQuizzes().then(data => {
+                    if (isMounted.current && data) setQuizzes(data);
+                });
+            }
         } catch (err: any) {
             console.error('Quiz generation error:', err);
             // alert(`Error generating quizzes: ${err.message || 'Unknown error'}`); 
         } finally {
-            setIsLoading(false);
+            if (isMounted.current) setIsLoading(false);
         }
     };
 

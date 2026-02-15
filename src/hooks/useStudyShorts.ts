@@ -23,17 +23,19 @@ export function useStudyShorts(user: User | null, context: string) {
 
     // Load saved videos on mount
     useEffect(() => {
+        let active = true;
         if (!user) return;
 
         async function loadSavedVideos() {
-            if (!user) return;
             try {
                 const { data, error } = await supabase
                     .from('study_shorts')
                     .select('*')
-                    .eq('user_id', user.id)
+                    .eq('user_id', user!.id)
                     .order('created_at', { ascending: false })
                     .limit(50);
+
+                if (!active) return;
 
                 if (!error && data && data.length > 0) {
                     const mappedVideos: Video[] = data
@@ -55,6 +57,7 @@ export function useStudyShorts(user: User | null, context: string) {
         }
 
         loadSavedVideos();
+        return () => { active = false; };
     }, [user]);
 
     // Save videos to database
