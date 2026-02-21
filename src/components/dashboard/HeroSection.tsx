@@ -1,5 +1,6 @@
-import { ArrowRight, Sparkles, Brain } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
+import StreakRing from './StreakRing';
 
 interface HeroSectionProps {
     session: Session;
@@ -9,6 +10,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ session, onUpload, onViewRoadmap }: HeroSectionProps) {
     const userName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Scholar';
+    const userId = session.user.id;
 
     return (
         <div className="relative w-full rounded-3xl overflow-hidden glass-card border-none shadow-warm-glow mb-8 transition-all duration-500 group">
@@ -53,23 +55,8 @@ export default function HeroSection({ session, onUpload, onViewRoadmap }: HeroSe
                     </div>
                 </div>
 
-                {/* Visual / Illustration */}
-                <div className="relative shrink-0 w-64 h-64 md:w-80 md:h-80 flex items-center justify-center hidden md:flex">
-                    {/* Central Brain with Glow */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/40 to-orange-500/40 rounded-full blur-3xl animate-pulse-slow" />
-
-                    <div className="relative w-48 h-48 bg-white/10 backdrop-blur-md rounded-full border border-white/20 flex items-center justify-center shadow-warm-glow animate-float">
-                        <Brain className="w-24 h-24 text-primary drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
-
-                        {/* Orbiting Elements */}
-                        <div className="absolute inset-0 animate-spin-slow">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 w-3 h-3 bg-blue-400 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.8)]" />
-                        </div>
-                        <div className="absolute inset-0 animate-spin-reverse-slower">
-                            <div className="absolute bottom-4 right-8 w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                        </div>
-                    </div>
-                </div>
+                {/* Streak Ring (replaces Brain illustration) */}
+                <StreakRing userId={userId} />
             </div>
         </div>
     );

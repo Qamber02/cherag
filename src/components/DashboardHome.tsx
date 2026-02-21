@@ -1,9 +1,10 @@
 import { useRef } from 'react';
-import { FileText, Layers, Play, ArrowRight, Sparkles, Brain, Clock, Plus } from 'lucide-react';
+import { FileText, Play, ArrowRight, Sparkles, Brain, Clock, Plus } from 'lucide-react';
 import type { Document } from '../hooks/useFiles';
 import type { Flashcard } from '../hooks/useFlashcards';
 import type { Session } from '@supabase/supabase-js';
 import HeroSection from './dashboard/HeroSection';
+import StreakHeatmap from './dashboard/StreakHeatmap';
 
 interface DashboardHomeProps {
     files: Document[];
@@ -148,25 +149,8 @@ export default function DashboardHome({
                 {/* Right Column - Actions & Status (Span 4) */}
                 <div className="lg:col-span-4 space-y-6">
 
-                    {/* Flashcards Status */}
-                    <div className="glass-card rounded-2xl p-5 border border-white/20 relative overflow-hidden">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-sm">Flashcards Due</h3>
-                            <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-1 rounded-full">{flashcards.length}</span>
-                        </div>
-
-                        <div className="relative h-32 w-full rounded-xl bg-gradient-to-br from-primary/20 to-orange-500/20 flex items-center justify-center mb-4 group cursor-pointer" onClick={() => onNavigate('flashcards')}>
-                            <Layers className="w-10 h-10 text-primary group-hover:scale-110 transition-transform" />
-                            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
-                        </div>
-
-                        <button
-                            onClick={() => onNavigate('flashcards')}
-                            className="w-full py-2.5 rounded-xl bg-white/50 dark:bg-white/10 hover:bg-white/80 dark:hover:bg-white/20 text-foreground font-medium text-sm transition-colors border border-white/10"
-                        >
-                            Review Now
-                        </button>
-                    </div>
+                    {/* Streak Heatmap */}
+                    <StreakHeatmap userId={session.user.id} onReview={() => onNavigate('flashcards')} />
 
                     {/* Quick Actions Grid */}
                     <div className="grid grid-cols-2 gap-3">
