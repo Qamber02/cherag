@@ -80,7 +80,7 @@ We use a split deployment strategy for maximum performance and security.
 
 ### 1. Backend Deployment (Railway)
 Hosting the FastAPI server.
-👉 **[Read the Railway Setup Guide](docs/RAILWAY_SETUP.md)**
+ **[Read the Railway Setup Guide](docs/RAILWAY_SETUP.md)**
 
 ### 2. Frontend Deployment (Cloudflare Pages)
 Hosting the React SPA.
