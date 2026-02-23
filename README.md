@@ -88,7 +88,7 @@ Hosting the React SPA.
 
 ---
 
-## 🔑 Key Features
+##  Key Features
 
 ### Knowledge Intelligence
 *   **Knowledge Radar**: Visualizes concept dependencies and tracks mastery.
