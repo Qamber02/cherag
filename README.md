@@ -7,7 +7,7 @@ Cherág is an advanced AI-powered study companion designed to help students lear
 ##  Architecture
 
 *   **Frontend**: React (v19) + Vite + TailwindCSS (Deployed on **Cloudflare Pages**)
-*   **Backend**: Python FastAPI (Deployed on **Railway**)
+*   **Backend**: Python FastAPI (Deployed on **Hugging face Spaces**)
 *   **Database**: Supabase (PostgreSQL + Auth)
 *   **AI Orchestration**: Server-side processing with secure API key management, rate-limit handling, and multi-model fallback.
 
