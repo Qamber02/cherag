@@ -57,7 +57,7 @@ export default function StreakHeatmap({ userId, onReview }: StreakHeatmapProps) 
                             return (
                                 <div
                                     key={row}
-                                    className={`w-4 h-4 md:w-5 md:h-5 rounded-sm transition-all duration-300 ${loaded && day
+                                                className={`w-3 h-3 md:w-5 md:h-5 rounded-sm transition-all duration-300 ${loaded && day
                                         ? getIntensity(day.count)
                                         : 'bg-white/5'
                                         }`}

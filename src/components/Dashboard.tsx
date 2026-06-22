@@ -326,10 +326,10 @@ export default function Dashboard({ session }: DashboardProps) {
                     </div>
                 ), true, false)}
 
-                {/* Knowledge Radar Tab */}
+                {/* Knowledge Radar Tab — full height for internal flex layout */}
                 {renderTab('radar', (
-                    <div className="w-full min-h-full pb-20 md:pb-6">
-                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
+                    <div className="absolute inset-0 w-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
                             <KnowledgeRadarTab
                                 userId={session.user.id}
                                 context={context}
@@ -343,7 +343,7 @@ export default function Dashboard({ session }: DashboardProps) {
                             />
                         </div>
                     </div>
-                ), true, true)}
+                ), true, false)}
 
                 {/* Exam Engine Tab */}
                 {renderTab('exam', (
@@ -408,9 +408,9 @@ export default function Dashboard({ session }: DashboardProps) {
                     </div>
                 ), true, true)}
 
-                {/* Study Shorts Tab */}
+                {/* Study Shorts Tab — full viewport height, self-scrolling (SnapScroll) */}
                 {renderTab('videos', (
-                    <div className="w-full min-h-full pb-20 md:pb-6">
+                    <div className="absolute inset-0 w-full">
                         <StudyShortsTab
                             videos={videos}
                             isLoading={isVideosLoading}
@@ -423,7 +423,7 @@ export default function Dashboard({ session }: DashboardProps) {
                             hasUnknownContext={files.length > 0}
                         />
                     </div>
-                ), true, true)}
+                ), true, false)}
 
                 {/* History Tab */}
                 {renderTab('history', (

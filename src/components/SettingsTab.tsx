@@ -178,6 +178,9 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                             </div>
                             <button
                                 onClick={toggleDarkMode}
+                                role="switch"
+                                aria-checked={isDarkMode}
+                                aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
                                 className={`relative w-14 h-8 rounded-full transition-colors ${isDarkMode ? 'bg-amber-500' : 'bg-gray-200'
                                     }`}
                             >

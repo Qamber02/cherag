@@ -301,10 +301,10 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
                             <ReactMarkdown>{summary}</ReactMarkdown>
                         </article>
 
-                        {/* Back to Top Button - Scroll-position based visibility */}
+                        {/* Back to Top Button - Positioned above bottom nav on mobile */}
                         <button
                             onClick={() => summaryContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className={`fixed bottom-6 right-6 md:absolute md:bottom-4 md:right-4 w-10 h-10 bg-white dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-xl transition-all z-10 ${showBackToTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
+                            className={`fixed bottom-24 right-6 md:absolute md:bottom-4 md:right-4 w-10 h-10 bg-white dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 rounded-full shadow-lg flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:shadow-xl transition-all z-10 ${showBackToTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}
                             title="Back to top"
                             type="button"
                         >

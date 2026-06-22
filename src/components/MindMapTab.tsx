@@ -136,7 +136,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
 
     const handleGenerateRoadmap = async () => {
         if (!context) {
-            alert('Please upload a document first!');
+            setError('Please upload a document first.');
             return;
         }
         setIsLoading(true);

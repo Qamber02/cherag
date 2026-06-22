@@ -192,10 +192,10 @@ export default function StudyShortsTab({
         }
     };
 
-    // Loading State (Initial)
+    // Loading State (Initial) — fills container fully, stays centered throughout generation
     if (isLoading && videos.length === 0) {
         return (
-            <div className="flex flex-col h-full bg-black items-center justify-center">
+            <div className="absolute inset-0 flex flex-col bg-black items-center justify-center">
                 <Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" />
                 <p className="text-white/60">Curating your customized feed...</p>
                 <p className="text-white/40 text-sm mt-2">Finding the best educational shorts</p>
@@ -206,8 +206,8 @@ export default function StudyShortsTab({
     // Empty State
     if (videos.length === 0 && !isLoading) {
         return (
-            <div className="flex flex-col h-full bg-black relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-600/20 z-0"></div>
+            <div className="absolute inset-0 flex flex-col bg-black overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-600/20 pointer-events-none" />
                 <div className="flex-1 flex flex-col items-center justify-center relative z-10 p-8 text-center">
                     <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mb-6 animate-pulse border border-white/20">
                         <Sparkles className="w-10 h-10 text-white" />
@@ -300,7 +300,7 @@ export default function StudyShortsTab({
 
             {/* Search Popup */}
             {showSearch && (
-                <div className="fixed top-20 left-4 right-16 md:right-20 z-50">
+                <div className="fixed top-20 left-4 right-4 md:right-20 z-[60]">
                     <form onSubmit={handleSearch} className="flex gap-2 bg-black/90 backdrop-blur-xl p-3 rounded-xl border border-white/20 shadow-xl">
                         <input
                             type="text"
