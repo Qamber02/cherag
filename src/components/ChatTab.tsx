@@ -190,7 +190,7 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                                         <div className="absolute -bottom-5 left-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100">
                                             <button
                                                 onClick={() => copyToClipboard(msg.content, msgId)}
-                                                className="min-w-[36px] min-h-[36px] p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                                                className="min-w-[44px] min-h-[44px] p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
                                                 title="Copy"
                                             >
                                                 {copiedId === msgId ? (
@@ -201,7 +201,6 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    // Find the last user message before this assistant message
                                                     const userMessages = messages.slice(0, idx).filter(m => m.role === 'user');
                                                     const lastUserMsg = userMessages.length > 0 ? userMessages[userMessages.length - 1] : null;
                                                     if (lastUserMsg) {
@@ -209,7 +208,7 @@ export default function ChatTab({ messages, onSendMessage, isLoading, onClearCha
                                                     }
                                                 }}
                                                 disabled={!messages.slice(0, idx).some(m => m.role === 'user')}
-                                                className="min-w-[36px] min-h-[36px] p-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="min-w-[44px] min-h-[44px] p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Regenerate"
                                             >
                                                 <RotateCcw className="w-4 h-4 text-gray-400" />

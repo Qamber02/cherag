@@ -18,10 +18,7 @@ export default function ReelPlayer({
 }: ReelPlayerProps) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [watchProgress, setWatchProgress] = useState(0);
-    const [showWhyTooltip] = useState(false); // setShowWhyTooltip is unused
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-
-
 
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -43,7 +40,6 @@ export default function ReelPlayer({
     const isOnVideosTab = activeTab === 'videos';
     const shouldPlay = isOnVideosTab && isActive && (activePlayerId === clip.id || activePlayerId === null);
 
-    // Note: We use autoplay=0 initially and control via postMessage to prevent race conditions
     // Note: We use autoplay=0 initially and control via postMessage to prevent race conditions
     // Use useMemo to avoid recreating URL on every render, but update if clip changes
     const youtubeUrl = useMemo(() =>
@@ -202,7 +198,6 @@ export default function ReelPlayer({
                 watchProgress={watchProgress}
                 onLike={onLike}
                 onReplay={handleReplay}
-                showWhyTooltip={showWhyTooltip}
                 whyReason={(clip.metadata as any)?.why_recommended || 'Recommended for you'}
             />
 

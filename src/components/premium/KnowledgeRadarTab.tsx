@@ -376,7 +376,7 @@ export default function KnowledgeRadarTab({
 
                 {/* Coverage Stats */}
                 {coverage && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="bg-card rounded-xl p-4 border border-border">
                             <div className="text-2xl font-bold text-foreground">{coverage.overall}%</div>
                             <div className="text-xs text-muted-foreground">Overall Mastery</div>
@@ -490,7 +490,7 @@ export default function KnowledgeRadarTab({
                                     className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${selectedConcept?.id === concept.id
                                         ? 'border-primary bg-primary/5'
                                         : 'border-border bg-card hover:border-primary/50'
-                                        } ${locked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        } ${locked ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}
                                 >
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${locked ? 'bg-muted' : 'bg-secondary'}`}>
                                         {locked ? <Lock className="w-4 h-4" /> : index + 1}
@@ -549,7 +549,7 @@ export default function KnowledgeRadarTab({
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0, y: 20 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[92vh] md:max-h-[90vh] flex flex-col"
+                            className="bg-card w-full max-w-2xl rounded-2xl shadow-2xl border border-border overflow-hidden max-h-[95dvh] md:max-h-[90vh] flex flex-col"
                         >
                             {/* Modal Header - Compact */}
                             <div className="p-4 md:p-5 border-b border-border flex items-start justify-between bg-secondary/30 shrink-0">
@@ -572,6 +572,7 @@ export default function KnowledgeRadarTab({
                                 </div>
                                 <button
                                     onClick={handleCloseModal}
+                                    aria-label="Close modal"
                                     className="p-1.5 md:p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors shrink-0"
                                 >
                                     <X className="w-5 h-5 text-muted-foreground" />
