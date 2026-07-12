@@ -258,7 +258,7 @@ export default function Sidebar({
                         onClick={() => fileInputRef.current?.click()}
                         className={`
                             drop-zone rounded-xl p-6 text-center cursor-pointer mb-4 transition-all duration-300 border-2 border-dashed
-                            ${isDragging ? 'border-primary bg-primary/5' : 'border-muted/40 hover:border-primary/50 hover:bg-white/40'}
+                            ${isDragging ? 'border-primary bg-primary/5' : 'border-muted/40 hover:border-primary/50 hover:bg-white/40 dark:hover:bg-white/5'}
                         `}
                     >
                         {isParsing ? (
@@ -279,7 +279,7 @@ export default function Sidebar({
                     {/* Simple File List */}
                     <div className="space-y-2">
                         {files.map(file => (
-                            <div key={file.id} className="flex items-center justify-between p-3 rounded-lg bg-white/40 border border-white/20 hover:border-primary/20 transition-all group">
+                            <div key={file.id} className="flex items-center justify-between p-3 rounded-lg bg-white/40 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:border-primary/20 transition-all group">
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     <FileText size={16} className="text-primary shrink-0" />
                                     <span className="text-sm truncate text-muted-foreground">{file.filename}</span>

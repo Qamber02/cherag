@@ -103,7 +103,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                                 <p className="text-sm text-gray-500 dark:text-gray-400">{userEmail || 'Not signed in'}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                <span className="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
                                     Active
                                 </span>
                                 <button
@@ -117,7 +117,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
 
                         {/* Email Change Form */}
                         {showEmailChange && (
-                            <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+                            <div className="p-4 bg-gray-50 dark:bg-zinc-800 rounded-xl space-y-3">
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -126,7 +126,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                                             value={newEmail}
                                             onChange={(e) => setNewEmail(e.target.value)}
                                             placeholder="New email address"
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-zinc-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-zinc-700 text-foreground"
                                         />
                                     </div>
                                     <button
@@ -138,7 +138,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                                     </button>
                                     <button
                                         onClick={() => setShowEmailChange(false)}
-                                        className="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors"
+                                        className="px-3 py-2 bg-gray-200 dark:bg-zinc-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-zinc-500 transition-colors"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
@@ -154,7 +154,7 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                         {/* Sign Out Button */}
                         <button
                             onClick={onSignOut}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-medium"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors font-medium"
                         >
                             <LogOut className="w-4 h-4" />
                             Sign Out
@@ -287,20 +287,20 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                         {!showConfirmClear ? (
                             <button
                                 onClick={() => setShowConfirmClear(true)}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors font-medium"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 Clear All Data
                             </button>
                         ) : (
-                            <div className="p-4 bg-red-50 rounded-xl space-y-3">
-                                <p className="text-sm text-red-600 font-medium">
+                            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl space-y-3">
+                                <p className="text-sm text-red-600 dark:text-red-400 font-medium">
                                     ⚠️ This action cannot be undone. All your data will be permanently deleted.
                                 </p>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setShowConfirmClear(false)}
-                                        className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
                                     >
                                         Cancel
                                     </button>
@@ -319,9 +319,9 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
 
                 {/* About Section */}
                 <section className="bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-2xl border border-primary/20 p-6 text-center">
-                    <h3 className="font-bold text-lg text-gray-900 mb-1">Cherág</h3>
-                    <p className="text-sm text-gray-600 mb-2">AI-Powered Study Assistant</p>
-                    <p className="text-xs text-gray-500">Version 3.0 • Production Release</p>
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">Cherág</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">AI-Powered Study Assistant</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Version 3.0 • Production Release</p>
                 </section>
             </div>
         </div>

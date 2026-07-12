@@ -93,8 +93,8 @@ export default function ResetPasswordPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-100 mb-4">
                         <AlertCircle className="w-8 h-8 text-red-500" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">Invalid or Expired Link</h1>
-                    <p className="text-gray-600">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invalid or Expired Link</h1>
+                    <p className="text-gray-600 dark:text-gray-400">
                         This password reset link is invalid or has expired. Please request a new one.
                     </p>
                     <button
@@ -115,8 +115,8 @@ export default function ResetPasswordPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-green-100 mb-4">
                         <CheckCircle className="w-8 h-8 text-green-500" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">Password Updated!</h1>
-                    <p className="text-gray-600">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Password Updated!</h1>
+                    <p className="text-gray-600 dark:text-gray-400">
                         Your password has been successfully updated. Redirecting to dashboard...
                     </p>
                 </div>
@@ -132,15 +132,15 @@ export default function ResetPasswordPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 mb-4">
                         <Sparkles className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900">Create New Password</h1>
-                    <p className="mt-2 text-sm text-gray-600">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Password</h1>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         Enter your new password below
                     </p>
                 </div>
 
                 {/* Error Message */}
                 {error && (
-                    <div className="p-3 text-sm text-red-600 bg-red-50 rounded-xl border border-red-100 flex items-center gap-2">
+                    <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         {error}
                     </div>
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
                 {/* Form */}
                 <form onSubmit={handleResetPassword} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             New Password
                         </label>
                         <div className="relative">
@@ -167,7 +167,7 @@ export default function ResetPasswordPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Confirm Password
                         </label>
                         <div className="relative">
@@ -200,7 +200,7 @@ export default function ResetPasswordPage() {
                 <div className="text-center">
                     <button
                         onClick={() => navigate('/auth')}
-                        className="text-sm text-gray-500 hover:text-gray-700"
+                        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     >
                         Back to Login
                     </button>
