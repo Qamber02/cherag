@@ -241,7 +241,7 @@ export default function SummaryTab({ summary, isLoading, onGenerate, onUpdateSum
             {/* Content Area */}
             <div className="flex-1 glass-card p-4 md:p-8 relative overflow-hidden group">
                 {isLoading ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 space-y-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 animate-pulse"></div>
                             <Loader2 className="w-10 h-10 animate-spin text-blue-500 relative z-10" />

@@ -1,6 +1,9 @@
 @import "@fontsource/lexend";
 @import "tailwindcss";
 
+/* Enable class-based dark mode (.dark on <html>) instead of media query */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Warm Off-White Background */
   --background: 40 20% 97%;
@@ -11,6 +14,10 @@
   /* Surface / Cards */
   --card: 0 0% 100%;
   --card-foreground: 20 10% 20%;
+
+  /* Popover (missing from root) */
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 10% 20%;
 
   /* Primary Brand: Warm Amber / Soft Saffron */
   --primary: 35 90% 55%;
@@ -487,20 +494,29 @@
   }
 
   .dark .glass-card {
-    @apply bg-white/60 dark:bg-gray-900/40 backdrop-blur-lg border border-white/20 dark:border-white/10 shadow-sm transition-all duration-300;
+    background: rgba(17, 24, 39, 0.5);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Premium Card with Depth */
   .glass-card-premium {
-    @apply bg-white/80 dark:bg-gray-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-lg transition-all duration-300;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -1px rgba(0, 0, 0, 0.06),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-    /* Top highlight for depth */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark .glass-card-premium {
+    background: rgba(17, 24, 39, 0.6);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.3),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
@@ -508,12 +524,23 @@
 
   /* Glass Sidebar */
   .glass-sidebar {
-    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-800/50;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(209, 213, 219, 0.5);
+  }
+
+  .dark .glass-sidebar {
+    background: rgba(17, 24, 39, 0.8);
+    border-right: 1px solid rgba(31, 41, 55, 0.5);
   }
 
   /* Custom Focus Ring for Accessibility */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+  }
+
+  .dark .focus-ring {
+    @apply focus:ring-offset-gray-900;
   }
 
   /* Global Focus Override */
@@ -524,7 +551,14 @@
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, #2563eb, #4f46e5);
+  }
+
+  .dark .text-gradient {
+    background-image: linear-gradient(to right, #60a5fa, #818cf8);
   }
 
   /* Icon Button */
@@ -557,11 +591,17 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   }
 
+  .dark .search-bar {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+
   /* Bold AI Text */
   .ai-text strong,
   .ai-text b {
     font-weight: 700;
-    color: #1a365d;
+    color: hsl(var(--foreground));
   }
 
   .ai-text ul,
@@ -583,10 +623,21 @@
     transition: all 0.3s ease;
   }
 
+  .dark .drop-zone {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
   .drop-zone:hover,
   .drop-zone.dragging {
     border-color: rgba(59, 130, 246, 0.6);
     background: rgba(59, 130, 246, 0.05);
+  }
+
+  .dark .drop-zone:hover,
+  .dark .drop-zone.dragging {
+    border-color: rgba(99, 157, 255, 0.6);
+    background: rgba(59, 130, 246, 0.1);
   }
 
   /* Smooth scrollbar */
@@ -601,15 +652,21 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.05);
-    /* Very subtle */
+    background: rgba(0, 0, 0, 0.12);
     border-radius: 10px;
     transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.2);
-    /* Visible on hover */
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
   }
 
   /* Utility to hide scrollbar but keep functionality */
@@ -727,13 +784,13 @@
   .glass-card,
   .glass-card-premium {
     backdrop-filter: none !important;
-    background: rgba(255, 255, 255, 0.95) !important;
+    background: rgba(255, 255, 255, 0.97) !important;
   }
 
   .dark .glass-sidebar,
   .dark .glass-card,
   .dark .glass-card-premium {
-    background: rgba(17, 24, 39, 0.95) !important;
+    background: rgba(17, 24, 39, 0.97) !important;
   }
 
   * {

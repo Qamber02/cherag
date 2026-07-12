@@ -22,7 +22,7 @@ function formatExplanation(text: string): React.ReactNode[] {
             elements.push(
                 <ul key={`list-${elements.length}`} className="space-y-1.5 my-3 pl-4">
                     {listItems.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-gray-700">
+                        <li key={i} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
                             <span className="text-amber-500 mt-1">•</span>
                             <span>{parseInlineFormatting(item)}</span>
                         </li>
@@ -45,14 +45,14 @@ function formatExplanation(text: string): React.ReactNode[] {
         if (line.startsWith('###')) {
             flushList();
             elements.push(
-                <h4 key={i} className="font-bold text-gray-900 text-base mt-4 mb-2">
+                <h4 key={i} className="font-bold text-gray-900 dark:text-white text-base mt-4 mb-2">
                     {parseInlineFormatting(line.replace(/^#+\s*/, ''))}
                 </h4>
             );
         } else if (line.startsWith('##') || line.startsWith('**') && line.endsWith('**') && line.length < 60) {
             flushList();
             elements.push(
-                <h4 key={i} className="font-semibold text-gray-900 mt-4 mb-2 text-sm uppercase tracking-wide">
+                <h4 key={i} className="font-semibold text-gray-900 dark:text-white mt-4 mb-2 text-sm uppercase tracking-wide">
                     {parseInlineFormatting(line.replace(/^#+\s*/, '').replace(/\*\*/g, ''))}
                 </h4>
             );
@@ -65,7 +65,7 @@ function formatExplanation(text: string): React.ReactNode[] {
         else if (line.match(/^\d+[\.\)]\s/)) {
             flushList();
             elements.push(
-                <p key={i} className="text-gray-700 pl-4 border-l-2 border-blue-400 my-1.5">
+                <p key={i} className="text-gray-700 dark:text-gray-300 pl-4 border-l-2 border-blue-400 my-1.5">
                     {parseInlineFormatting(line)}
                 </p>
             );
@@ -74,7 +74,7 @@ function formatExplanation(text: string): React.ReactNode[] {
         else {
             flushList();
             elements.push(
-                <p key={i} className="text-gray-700 leading-relaxed my-2">
+                <p key={i} className="text-gray-700 dark:text-gray-300 leading-relaxed my-2">
                     {parseInlineFormatting(line)}
                 </p>
             );
@@ -97,7 +97,7 @@ function parseInlineFormatting(text: string): React.ReactNode[] {
             parts.push(text.slice(lastIndex, match.index));
         }
         parts.push(
-            <strong key={match.index} className="font-semibold text-gray-900">
+            <strong key={match.index} className="font-semibold text-gray-900 dark:text-white">
                 {match[1]}
             </strong>
         );
@@ -222,7 +222,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
         return (
             <div className="flex flex-col items-center justify-center h-full">
                 <Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" />
-                <p className="text-gray-600 font-medium">Building your roadmap...</p>
+                <p className="text-gray-600 dark:text-gray-400 font-medium">Building your roadmap...</p>
             </div>
         );
     }
@@ -234,10 +234,10 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
             <div className="flex-1 flex flex-col p-3 md:p-6 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3 md:mb-4 flex-shrink-0">
-                    <h2 className="text-lg md:text-xl font-bold text-gray-900">Learning Roadmap</h2>
+                    <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Learning Roadmap</h2>
                     <button
                         onClick={handleGenerateRoadmap}
-                        className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-amber-100 text-amber-700 text-xs md:text-sm font-medium rounded-lg hover:bg-amber-200"
+                        className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs md:text-sm font-medium rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50"
                     >
                         <RefreshCw className="w-3.5 md:w-4 h-3.5 md:h-4" />
                         Regenerate
@@ -245,7 +245,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                 </div>
 
                 {error && (
-                    <div className="p-3 bg-red-50 text-red-600 rounded-xl mb-4 text-sm flex-shrink-0">
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl mb-4 text-sm flex-shrink-0">
                         {error}
                     </div>
                 )}
@@ -274,7 +274,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                 {roadmap.children && roadmap.children.length > 0 && (
                                     <>
                                         {/* Connector from main to horizontal line */}
-                                        <div className="w-0.5 h-8 bg-slate-400"></div>
+                                        <div className="w-0.5 h-8 bg-slate-400 dark:bg-slate-600"></div>
 
                                         {/* Horizontal connector bar */}
                                         <div className="relative w-full">
@@ -282,7 +282,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                             <div className="flex gap-8 relative">
                                                 {/* Horizontal line spanning across topics */}
                                                 <div
-                                                    className="absolute top-0 h-0.5 bg-slate-400"
+                                                    className="absolute top-0 h-0.5 bg-slate-400 dark:bg-slate-600"
                                                     style={{
                                                         left: 'calc(100px)',
                                                         right: 'calc(100px)',
@@ -292,7 +292,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                                 {roadmap.children.map((topic) => (
                                                     <div key={topic.id} className="flex flex-col items-center relative" style={{ minWidth: '200px' }}>
                                                         {/* Vertical connector from horizontal line to topic */}
-                                                        <div className="w-0.5 h-8 bg-slate-400"></div>
+                                                        <div className="w-0.5 h-8 bg-slate-400 dark:bg-slate-600"></div>
 
                                                         {/* Topic Node */}
                                                         <button
@@ -310,7 +310,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                                         {/* Subtopics */}
                                                         {topic.children && topic.children.length > 0 && (
                                                             <>
-                                                                <div className="w-0.5 h-6 bg-slate-400"></div>
+                                                                <div className="w-0.5 h-6 bg-slate-400 dark:bg-slate-600"></div>
                                                                 <div className="flex gap-3 flex-wrap justify-center max-w-xs">
                                                                     {topic.children.map((sub) => (
                                                                         <button
@@ -341,7 +341,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                 </div>
 
                 {/* Legend */}
-                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 flex-shrink-0">
+                <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
                     <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 rounded bg-gradient-to-r from-amber-400 to-orange-500"></div>
                         <span>Main Topic</span>
@@ -376,9 +376,9 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                             </div>
                             <button
                                 onClick={() => setSelectedNode(null)}
-                                className="p-1.5 hover:bg-white/70 rounded-lg"
+                                className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg"
                             >
-                                <X className="w-5 h-5 text-gray-400" />
+                                <X className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                             </button>
                         </div>
 
@@ -387,7 +387,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                             {isLoadingExplanation ? (
                                 <div className="flex flex-col items-center justify-center py-16">
                                     <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-                                    <p className="text-sm text-gray-500">Generating explanation...</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Generating explanation...</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -397,8 +397,8 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                     </div>
 
                                     {/* Resources Section */}
-                                    <div className="pt-4 mt-4 border-t border-gray-100">
-                                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                    <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700">
+                                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                                             <BookOpen className="w-4 h-4 text-amber-500" />
                                             Learn More
                                         </h4>
@@ -409,7 +409,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                                 )}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition-colors text-sm"
+                                                className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-sm"
                                             >
                                                 <Video className="w-4 h-4" />
                                                 <span className="flex-1 font-medium">YouTube Tutorials</span>
@@ -421,7 +421,7 @@ export default function MindMapTab({ userId, context, hasContext }: MindMapTabPr
                                                 )}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm"
+                                                className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm"
                                             >
                                                 <FileText className="w-4 h-4" />
                                                 <span className="flex-1 font-medium">Articles & Guides</span>
