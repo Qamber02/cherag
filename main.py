@@ -94,6 +94,7 @@ async def log_requests(request: Request, call_next):
 # =============================================================================
 
 @app.get("/health")
+@app.head("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "cherag-backend"}
