@@ -18,7 +18,6 @@ from .premium_prompts import (
     get_stress_test_prompt,
     get_learning_dna_prompt,
     get_cognitive_load_prompt,
-    get_compress_concept_prompt,
     get_remix_concepts_prompt,
     get_mental_model_prompt,
     get_syllabus_analysis_prompt,
@@ -227,15 +226,6 @@ async def assess_cognitive_load(metrics: Dict) -> Dict[str, Any]:
         logger.error(f"Cognitive Load Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-async def compress_concept(content: str, concept_name: str) -> Dict[str, Any]:
-    try:
-        prompt = get_compress_concept_prompt(content, concept_name)
-        response = await call_ai_with_fallback(prompt)
-        return json.loads(extract_json(response))
-    except Exception as e:
-        logger.error(f"Compress Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-
 async def remix_concepts(concepts: List[Dict]) -> Dict[str, Any]:
     try:
         prompt = get_remix_concepts_prompt(concepts)
@@ -253,4 +243,3 @@ async def analyze_mental_model(content: str, model: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Mental Model Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-

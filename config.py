@@ -71,7 +71,7 @@ PREVIEW_DEPLOYMENT_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000"
 ]
-PREVIEW_DEPLOYMENT_REGEX = r"https://.*\.cherag\.pages\.dev"
+PREVIEW_DEPLOYMENT_REGEX = r"^https://.*\.cherag\.pages\.dev$"
 
 # Models
 GEMINI_MODELS = [

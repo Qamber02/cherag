@@ -4,6 +4,7 @@ import asyncio
 import httpx
 import fitz # PyMuPDF
 from typing import List, Optional, Dict, Any
+from urllib.parse import urlparse
 from supabase import create_client, Client
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -132,6 +133,13 @@ async def process_document_background(document_id: str, file_url: str):
     """Background task: Extract text from PDF using slide-aware processor, chunk, embed, and store."""
     try:
         await update_document_status(document_id, 'processing', 0)
+
+        # SSRF Protection: Validate file_url matches SUPABASE_URL domain
+        if SUPABASE_URL:
+            parsed_base = urlparse(SUPABASE_URL)
+            parsed_file = urlparse(file_url)
+            if parsed_file.netloc != parsed_base.netloc or parsed_file.scheme != parsed_base.scheme:
+                raise Exception(f"Security check failed: file_url domain does not match Supabase URL ({parsed_base.netloc})")
         
         # Download file from Supabase Storage
         async with httpx.AsyncClient(timeout=300.0) as client:

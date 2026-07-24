@@ -22,7 +22,7 @@ from schemas import (
     MicroLessonRequest, VideoExtractionRequest, TeachingChatRequest,
     TeachingEvaluationRequest, ExamReadinessRequest, ExamQuestionsRequest,
     StressTestRequest, LearningDNARequest, CognitiveLoadRequest,
-    CompressConceptRequest, RemixConceptsRequest, MentalModelRequest
+    RemixConceptsRequest, MentalModelRequest, BeliefUpdateRequest
 )
 
 # Services
@@ -34,6 +34,7 @@ from services.ai_utils import (
 import services.video_service as video_service
 import services.premium_service as premium_service
 import services.rag_service as rag_service
+import services.belief_service as belief_service
 
 # =============================================================================
 # Lifecycle & App Setup
@@ -427,10 +428,6 @@ async def api_learning_dna(request: LearningDNARequest, user: dict = Depends(ver
 async def api_cognitive_load(request: CognitiveLoadRequest, user: dict = Depends(verify_jwt)):
     return await premium_service.assess_cognitive_load(request.metrics)
 
-@app.post("/premium/tools/compress")
-async def api_compress(request: CompressConceptRequest, user: dict = Depends(verify_jwt)):
-    return await premium_service.compress_concept(request.content, request.concept_name)
-
 @app.post("/premium/tools/remix")
 async def api_remix(request: RemixConceptsRequest, user: dict = Depends(verify_jwt)):
     return await premium_service.remix_concepts(request.concepts)
@@ -438,6 +435,24 @@ async def api_remix(request: RemixConceptsRequest, user: dict = Depends(verify_j
 @app.post("/premium/tools/mental-model")
 async def api_mental_model(request: MentalModelRequest, user: dict = Depends(verify_jwt)):
     return await premium_service.analyze_mental_model(request.content, request.model)
+
+@app.post("/belief/update")
+async def api_update_belief(request: BeliefUpdateRequest, user: dict = Depends(verify_jwt)):
+    if request.student_id != user.get("sub"):
+        raise HTTPException(status_code=403, detail="Cannot update another student's belief graph")
+
+    try:
+        return await belief_service.update_belief(
+            student_id=request.student_id,
+            course_id=request.course_id,
+            concept_id=request.concept_id,
+            student_answer=request.student_answer,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Belief update failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Belief update failed")
 
 if __name__ == "__main__":
     import uvicorn
