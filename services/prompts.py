@@ -36,13 +36,25 @@ def get_quizzes_prompt(count: int, difficulty: str, difficulty_prompt: str, vari
     return f"""Generate {count} multiple choice questions as a JSON array.
 Format: [{{"question": "...", "options": ["A) text", "B) text", "C) text", "D) text"], "correct_answer": "A", "explanation": "..."}}]
 
-CRITICAL RULES:
-1. correct_answer must be just the letter (A, B, C, or D)
-2. VARY the correct answers - do NOT make all answers the same letter!
-3. Each option should start with its letter like "A) answer text"
-4. Difficulty Level: {difficulty}. {difficulty_prompt}
-5. No markdown, ONLY valid JSON array
+CRITICAL LOGICAL CONSISTENCY & CONCEPT DEFINITION RULES:
+1. LOGICAL CONSISTENCY BETWEEN ANSWER AND EXPLANATION:
+   - Ensure the `correct_answer` letter (e.g. "C") is 100% logically consistent with its `explanation`.
+   - Verify that `explanation` accurately describes the selected option text, not a different option or letter.
+2. ACCURATE STANDARD DEFINITIONS (Especially Computer Architecture & Systems):
+   - Control Unit (CU): Fetches, decodes, and interprets instructions, and directs/coordinates the operation of CPU and components. It does NOT perform arithmetic or logical calculations.
+   - Arithmetic Logic Unit (ALU): Performs arithmetic and logical operations.
+   - Registers: Provide temporary storage for data and instructions inside the CPU.
+3. VARY correct answers - do NOT make all answers the same letter (mix A, B, C, D across questions).
+4. Each option MUST start with its letter like "A) text", "B) text", "C) text", "D) text".
+5. Difficulty Level: {difficulty}. {difficulty_prompt}
+6. Output ONLY valid JSON array, no markdown.
 {variance_instruction}
+
+MANDATORY 3-STEP SELF-CONSISTENCY VERIFICATION CHECK BEFORE RETURNING:
+Before returning JSON, perform this internal consistency check on every question:
+1. Confirm the option letter in `correct_answer` matches the target option text in `options`.
+2. Confirm `explanation` accurately explains why that specific option is correct using standard accepted definitions.
+3. If a mismatch is detected, regenerate or fix the item until `correct_answer`, `options`, and `explanation` are completely consistent.
 
 Text:
 {sanitized_content}"""

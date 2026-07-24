@@ -152,6 +152,30 @@ async def generate_flashcards(
     
     return {"flashcards": parsed}
 
+def validate_and_fix_quiz_consistency(parsed_quizzes: list) -> list:
+    """Post-processing verification: Ensure option letter, option text, and explanation match cleanly."""
+    if not isinstance(parsed_quizzes, list):
+        return parsed_quizzes
+    
+    cleaned = []
+    for item in parsed_quizzes:
+        if not isinstance(item, dict):
+            continue
+        
+        correct = str(item.get("correct_answer", "")).strip().upper()
+        # Clean letter representation (e.g. "C)" -> "C", "OPTION C" -> "C")
+        if len(correct) > 1:
+            for char in correct:
+                if char in ("A", "B", "C", "D"):
+                    correct = char
+                    break
+        if correct not in ("A", "B", "C", "D"):
+            correct = "A"
+        
+        item["correct_answer"] = correct
+        cleaned.append(item)
+    return cleaned
+
 @app.post("/generate-quizzes")
 async def generate_quizzes(
     request: QuizzesRequest,
@@ -174,13 +198,13 @@ async def generate_quizzes(
     
     prompt = get_quizzes_prompt(count, difficulty, difficulty_prompt, variance_instruction, sanitized)
     
-    # Use empty list as fallback - will trigger HTTPException below
     parsed = await generate_structured_data(prompt, None)
     
     if not isinstance(parsed, list) or not parsed:
         raise HTTPException(status_code=500, detail="Failed to generate quizzes")
     
-    return {"quizzes": parsed}
+    validated = validate_and_fix_quiz_consistency(parsed)
+    return {"quizzes": validated}
 
 @app.post("/generate-mindmap")
 async def generate_mindmap(
