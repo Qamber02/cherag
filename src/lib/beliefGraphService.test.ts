@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { detectRecursionConceptId, RECURSION_CONCEPTS, fetchBeliefGraph } from './beliefGraphService';
+import { detectRecursionConceptId, resolveConceptId, RECURSION_CONCEPTS, fetchBeliefGraph } from './beliefGraphService';
 
 vi.mock('./supabaseClient', () => ({
     supabase: {
@@ -41,6 +41,23 @@ describe('beliefGraphService', () => {
 
         it('defaults to recursive call for general recursion query', () => {
             expect(detectRecursionConceptId('What happens when a function calls itself?')).toBe('recursion.recursive_call');
+        });
+    });
+
+    describe('resolveConceptId', () => {
+        it('resolves recursion sub-concepts correctly', () => {
+            const res = resolveConceptId('What causes a stack overflow?');
+            expect(res).toEqual({
+                courseId: 'recursion',
+                conceptId: 'recursion.stack_overflow'
+            });
+        });
+
+        it('resolves non-recursion topics dynamically without hardcoding recursion.recursive_call', () => {
+            const res = resolveConceptId('Which component interprets instructions?', 'Computer Architecture');
+            expect(res.courseId).toBe('computer_architecture');
+            expect(res.conceptId).toContain('computer_architecture.');
+            expect(res.conceptId).not.toContain('recursion');
         });
     });
 

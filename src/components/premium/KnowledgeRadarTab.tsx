@@ -173,11 +173,29 @@ export default function KnowledgeRadarTab({
         }
     }, [lessonState]);
 
+    const getCorrectIndex = (quiz?: { options: string[]; correct_index?: number; correct_answer_text?: string }): number => {
+        if (!quiz) return 0;
+        if (typeof quiz.correct_index === 'number' && quiz.correct_index >= 0 && quiz.correct_index < quiz.options.length) {
+            return quiz.correct_index;
+        }
+        if (quiz.correct_answer_text && quiz.options?.length) {
+            const target = quiz.correct_answer_text.trim().toLowerCase();
+            const idx = quiz.options.findIndex(opt => {
+                const clean = opt.trim().toLowerCase();
+                const stripped = clean.length > 3 && [')', '.', ':'].includes(clean[1]) ? clean.slice(2).trim() : clean;
+                return clean === target || stripped === target || clean.includes(target) || target.includes(clean);
+            });
+            if (idx !== -1) return idx;
+        }
+        return 0;
+    };
+
     // Handle answer submission with proper state transitions
     const handleQuizSubmit = useCallback(() => {
         if (quizSelected === null || !lessonData || !selectedConcept) return;
 
-        const correct = quizSelected === lessonData.quiz.correct_index;
+        const targetCorrectIndex = getCorrectIndex(lessonData.quiz);
+        const correct = quizSelected === targetCorrectIndex;
         const timeSpent = Date.now() - lessonStartTime;
 
         setIsCorrect(correct);
@@ -694,7 +712,7 @@ export default function KnowledgeRadarTab({
                                                     <h3 className="text-xl md:text-2xl font-bold text-red-600 dark:text-red-400 mb-2">Not quite...</h3>
                                                     <p className="text-sm md:text-base text-foreground font-medium mb-1">Correct Answer:</p>
                                                     <p className="text-sm md:text-base text-muted-foreground mb-5 md:mb-6 px-2">
-                                                        <span className="font-semibold text-foreground">{String.fromCharCode(65 + (lessonData.quiz.correct_index || 0))}. {lessonData.quiz.options[lessonData.quiz.correct_index || 0]}</span>
+                                                        <span className="font-semibold text-foreground">{String.fromCharCode(65 + getCorrectIndex(lessonData.quiz))}. {lessonData.quiz.options[getCorrectIndex(lessonData.quiz)]}</span>
                                                         <br />
                                                         <span className="text-xs md:text-sm italic mt-2 block">{lessonData.quiz.explanation}</span>
                                                     </p>

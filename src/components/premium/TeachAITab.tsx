@@ -1,7 +1,7 @@
 // Teach AI Tab (Feynman Technique)
 // User teaches the AI a concept, AI acts as a curious student
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
     GraduationCap,
     MessageCircle,
@@ -12,11 +12,52 @@ import {
     User,
     Bot,
     ChevronRight,
-    ArrowDown
+    ArrowDown,
+    FileText,
+    Sparkles,
 } from 'lucide-react';
 import { usePremiumFeatures } from '../../hooks/usePremiumFeatures';
 import { saveTeachingSessionState, getLastTeachingSessionState, saveActivity } from '../../lib/activityService';
-import { updateBeliefInBackground, detectRecursionConceptId } from '../../lib/beliefGraphService';
+import { updateBeliefInBackground, resolveConceptId } from '../../lib/beliefGraphService';
+
+function extractTopicsFromContext(text: string): string[] {
+    if (!text || !text.trim()) return [];
+
+    const topics: string[] = [];
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const headingMatch = trimmed.match(/^#{1,3}\s+(.+)$/);
+        if (headingMatch && headingMatch[1]) {
+            const cleanHeading = headingMatch[1].replace(/[*_~`]/g, '').trim();
+            if (cleanHeading.length > 2 && cleanHeading.length < 60 && !topics.includes(cleanHeading)) {
+                topics.push(cleanHeading);
+            }
+        }
+    }
+
+    if (topics.length === 0) {
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('• ')) {
+                const item = trimmed.replace(/^[-*•]\s+/, '').replace(/[*_~`]/g, '').trim();
+                if (item.length > 3 && item.length < 50 && !topics.includes(item)) {
+                    topics.push(item);
+                }
+            }
+        }
+    }
+
+    if (topics.length === 0 && lines.length > 0) {
+        const firstLine = lines.find(l => l.trim().length > 3)?.trim().replace(/[*_~`#]/g, '') || '';
+        if (firstLine && firstLine.length < 60) {
+            topics.push(firstLine);
+        }
+    }
+
+    return topics.slice(0, 6);
+}
 
 interface TeachAITabProps {
     userId: string;
@@ -45,6 +86,7 @@ export default function TeachAITab({
     const [evaluation, setEvaluation] = useState<any | null>(null);
 
     const [showScrollButton, setShowScrollButton] = useState(false);
+    const extractedTopics = useMemo(() => extractTopicsFromContext(context), [context]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -156,10 +198,10 @@ export default function TeachAITab({
             setMessages(prev => [...prev, aiMsg]);
 
             // Fire belief graph update in background from teacher's explanation
-            const conceptId = detectRecursionConceptId(input + ' ' + concept);
+            const { courseId, conceptId } = resolveConceptId(input, concept);
             updateBeliefInBackground(
                 userId,
-                'recursion',
+                courseId,
                 conceptId,
                 `Teaching explanation about ${concept}: ${input}`
             );
@@ -222,9 +264,37 @@ export default function TeachAITab({
                 </p>
 
                 <div className="w-full space-y-4 bg-card border border-border p-6 rounded-2xl shadow-sm">
+                    {extractedTopics.length > 0 && (
+                        <div>
+                            <label className="block text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5" /> Select from Uploaded Document
+                            </label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {extractedTopics.map((topicItem, idx) => {
+                                    const isSelected = concept === topicItem;
+                                    return (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => setConcept(topicItem)}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border flex items-center gap-1.5 ${
+                                                isSelected
+                                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white border-amber-600 shadow-sm ring-2 ring-amber-500/20'
+                                                    : 'bg-secondary hover:bg-secondary/80 text-foreground border-border'
+                                            }`}
+                                        >
+                                            <Sparkles className={`w-3 h-3 shrink-0 ${isSelected ? 'text-white' : 'text-amber-500 opacity-70'}`} />
+                                            {topicItem}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-medium text-foreground mb-2">
-                            What do you want to teach me?
+                            What do you want to teach me? {extractedTopics.length > 0 && <span className="text-xs text-muted-foreground font-normal">(select above or type any)</span>}
                         </label>
                         <input
                             type="text"

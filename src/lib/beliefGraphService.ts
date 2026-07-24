@@ -149,13 +149,51 @@ export function updateBeliefInBackground(
     });
 }
 
+function slugify(str: string): string {
+    return str
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'general';
+}
+
+export interface ResolvedConcept {
+    courseId: string;
+    conceptId: string;
+}
+
+export function resolveConceptId(text: string, contextTopic?: string): ResolvedConcept {
+    const combined = `${text} ${contextTopic || ''}`.toLowerCase();
+
+    // Check if it matches a specific recursion concept first
+    if (combined.includes('stack overflow') || combined.includes('overflow')) {
+        return { courseId: 'recursion', conceptId: 'recursion.stack_overflow' };
+    }
+    if (combined.includes('call stack') || combined.includes('stack frame') || combined.includes('stack depth')) {
+        return { courseId: 'recursion', conceptId: 'recursion.call_stack' };
+    }
+    if (combined.includes('tail recursion') || combined.includes('tail-recursive')) {
+        return { courseId: 'recursion', conceptId: 'recursion.tail_recursion' };
+    }
+    if (combined.includes('mutual recursion') || combined.includes('mutually recursive')) {
+        return { courseId: 'recursion', conceptId: 'recursion.mutual_recursion' };
+    }
+    if (combined.includes('base case') || combined.includes('termination') || combined.includes('stop condition')) {
+        return { courseId: 'recursion', conceptId: 'recursion.base_case' };
+    }
+    if (combined.includes('recursive call') || combined.includes('calls itself') || combined.includes('recursion')) {
+        return { courseId: 'recursion', conceptId: 'recursion.recursive_call' };
+    }
+
+    // Dynamic resolution for non-recursion topics:
+    const courseSlug = contextTopic ? slugify(contextTopic) : 'general';
+    const textSlug = slugify(text).slice(0, 40);
+
+    return {
+        courseId: courseSlug,
+        conceptId: `${courseSlug}.${textSlug || 'concept'}`,
+    };
+}
+
 export function detectRecursionConceptId(text: string): string {
-    const lower = text.toLowerCase();
-    if (lower.includes('stack overflow') || lower.includes('overflow')) return 'recursion.stack_overflow';
-    if (lower.includes('call stack') || lower.includes('stack frame') || lower.includes('stack depth')) return 'recursion.call_stack';
-    if (lower.includes('tail recursion') || lower.includes('tail-recursive')) return 'recursion.tail_recursion';
-    if (lower.includes('mutual recursion') || lower.includes('mutually recursive')) return 'recursion.mutual_recursion';
-    if (lower.includes('base case') || lower.includes('termination') || lower.includes('stop condition')) return 'recursion.base_case';
-    if (lower.includes('recursive call') || lower.includes('calls itself') || lower.includes('recursion')) return 'recursion.recursive_call';
-    return 'recursion.recursive_call';
+    return resolveConceptId(text).conceptId;
 }

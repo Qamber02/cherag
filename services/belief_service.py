@@ -40,6 +40,7 @@ def _normalize_belief_payload(payload: Dict[str, Any], fallback_statement: str) 
         confidence = 0.0
 
     return {
+        "relevant": bool(payload.get("relevant", True)),
         "belief_statement": str(payload.get("belief_statement") or fallback_statement).strip()[:1200],
         "correctness": correctness,
         "confidence": max(0.0, min(1.0, confidence)),
@@ -151,22 +152,28 @@ def _build_extraction_prompt(
     student_answer: str,
 ) -> str:
     return f"""You are a cognitive modeling engine, not a grader. Your job is to infer what
-a student genuinely believes about a concept based on their answer, including
-incorrect or partially-formed beliefs. Do not simply mark answers right or
-wrong.
+a student genuinely believes about a specific target concept based on their answer, including
+incorrect or partially-formed beliefs.
 
 Given:
-- The concept being tested: {concept_label}
+- Target concept being evaluated: {concept_label}
 - The student's previous belief (if any): {previous_belief_statement}
-- The student's new answer: {student_answer}
+- The student's new answer/input: {student_answer}
+
+CRITICAL RELEVANCE RULE:
+- First, evaluate if the student's answer provides GENUINE, DIRECT evidence about the target concept "{concept_label}".
+- If the student's answer is about a completely DIFFERENT or UNRELATED topic (for instance, discussing ALU flags or databases when evaluating "recursive call structure"), set `"relevant": false`.
+- Set `"relevant": false` whenever the answer does NOT provide evidence about "{concept_label}", regardless of whether the answer itself was correct or intelligent for whatever unrelated topic it addressed.
+- Set `"relevant": true` ONLY if the answer genuinely addresses or provides evidence regarding "{concept_label}".
 
 Return JSON:
 {{
-  "belief_statement": "a plain-language description of what the student currently seems to think is true",
+  "relevant": true,
+  "belief_statement": "a plain-language description of what the student currently seems to think is true about {concept_label}",
   "correctness": "correct | partially_correct | misconception | unknown",
   "confidence": 0.0,
   "changed_from_previous": true,
-  "reasoning": "brief note on why you updated it this way"
+  "reasoning": "brief note on why you updated it this way or why it is irrelevant"
 }}
 
 Be specific. Vague statements like "student doesn't understand recursion" are
@@ -213,6 +220,24 @@ async def update_belief(
     prompt = _build_extraction_prompt(concept_label, previous_statement, sanitized_answer)
     fallback_statement = f"Student gave new evidence about {concept_label}, but the belief could not be modeled."
     belief = await _call_belief_llm(prompt, fallback_statement)
+
+    # RELEVANCE GATE: If the answer is irrelevant to the target concept, skip updates entirely
+    if not belief.get("relevant", True):
+        logger.info(
+            "Belief update skipped for concept '%s': answer is irrelevant (reasoning: %s)",
+            concept_id,
+            belief.get("reasoning", "Unrelated answer"),
+        )
+        return {
+            "status": "skipped",
+            "reason": "irrelevant",
+            "message": f"Answer is not relevant to concept '{concept_label}'",
+            "concept_id": concept_id,
+            "concept_label": concept_label,
+            "student_id": student_id,
+            "course_id": course_id,
+            "belief_node": existing,
+        }
 
     updated_node = _upsert_belief_node(student_id, course_id, concept_id, concept_label, belief)
     _insert_history(student_id, concept_id, belief, sanitized_answer)

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2, Flame } from 'lucide-react';
 import { generateQuizzes } from '../lib/aiService';
-import { updateBeliefInBackground, detectRecursionConceptId } from '../lib/beliefGraphService';
+import { updateBeliefInBackground, resolveConceptId } from '../lib/beliefGraphService';
 import { saveQuizActivity } from '../lib/activityService';
 import ReactMarkdown from 'react-markdown';
 
@@ -161,11 +161,12 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
         }
 
         // Fire belief graph update in background (non-blocking)
-        const conceptId = detectRecursionConceptId(currentQuiz.question);
+        const quizTopic = topicInput || (isTopicMode ? 'Topic Quiz' : 'Document Quiz');
+        const { courseId, conceptId } = resolveConceptId(currentQuiz.question, quizTopic);
         const answerOption = currentQuiz.options?.[answer.charCodeAt(0) - 65] || answer;
         updateBeliefInBackground(
             userId,
-            'recursion',
+            courseId,
             conceptId,
             `Question: ${currentQuiz.question}\nStudent answered: ${answerOption}\nCorrect answer: ${currentQuiz.correct_answer}`
         );

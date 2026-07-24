@@ -60,7 +60,29 @@ async def generate_micro_lesson(concept: str, context: str, previous_questions: 
     try:
         prompt = get_micro_lesson_prompt(concept, context, previous_questions)
         response = await call_ai_with_fallback(prompt)
-        return json.loads(extract_json(response))
+        data = json.loads(extract_json(response))
+
+        # Calculate correct_index from correct_answer_text vs options array
+        if isinstance(data, dict) and "quiz" in data and isinstance(data["quiz"], dict):
+            quiz = data["quiz"]
+            options = quiz.get("options", [])
+            target_text = str(quiz.get("correct_answer_text", "")).strip().lower()
+
+            correct_idx = 0
+            if target_text and options:
+                for idx, opt in enumerate(options):
+                    opt_clean = str(opt).strip().lower()
+                    opt_stripped = opt_clean
+                    if len(opt_clean) > 3 and opt_clean[1] in (")", ".", ":"):
+                        opt_stripped = opt_clean[2:].strip()
+
+                    if opt_clean == target_text or opt_stripped == target_text or target_text in opt_clean or opt_clean in target_text:
+                        correct_idx = idx
+                        break
+
+            quiz["correct_index"] = correct_idx
+
+        return data
     except Exception as e:
         logger.error(f"Micro-Lesson Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
