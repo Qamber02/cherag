@@ -208,30 +208,105 @@ export default function SettingsTab({ userEmail, onSignOut, onClearData }: Setti
                                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Preferred AI Model</p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Choose which AI powers your experience</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+
+                            {/* Base providers */}
+                            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Base Providers</p>
+                            <div className="grid grid-cols-2 gap-2 mb-4">
                                 {[
-                                    { id: 'auto', label: 'Auto (Best)' },
-                                    { id: 'deepseek', label: 'DeepSeek' },
-                                    { id: 'gemini', label: 'Gemini' },
-                                    { id: 'openrouter', label: 'OpenRouter' }
+                                    { id: 'auto',        label: '⚡ Auto (Best)',    desc: 'Smart fallback chain' },
+                                    { id: 'gemini',      label: '✦ Gemini',          desc: 'Google Gemini models' },
+                                    { id: 'deepseek',    label: '🔷 DeepSeek',       desc: 'DeepSeek Chat' },
+                                    { id: 'openrouter',  label: '🔀 OpenRouter',      desc: 'OpenRouter models' },
                                 ].map((option) => {
                                     const isSelected = preferences.aiModel === option.id;
-
                                     return (
                                         <button
                                             key={option.id}
-                                            onClick={() => {
-                                                updatePreference('aiModel', option.id as any);
-                                                // Theme sync is automatic via effect in hook/main component usually, 
-                                                // but local state update here is fine for immediate feedback if needed.
-                                            }}
-                                            className={`px-4 py-3 rounded-xl text-sm font-medium transition-all border flex items-center justify-center gap-2 ${isSelected
-                                                ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 ring-1 ring-indigo-500/20'
-                                                : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700'
-                                                }`}
+                                            id={`model-btn-${option.id}`}
+                                            onClick={() => updatePreference('aiModel', option.id as any)}
+                                            title={option.desc}
+                                            className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all border flex flex-col items-start gap-0.5 ${
+                                                isSelected
+                                                    ? 'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 ring-1 ring-indigo-500/20'
+                                                    : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700'
+                                            }`}
                                         >
-                                            {option.label}
-                                            {isSelected && <Check className="w-3 h-3" />}
+                                            <span className="flex items-center gap-1.5 w-full">
+                                                {option.label}
+                                                {isSelected && <Check className="w-3 h-3 ml-auto shrink-0" />}
+                                            </span>
+                                            <span className="text-xs opacity-60 font-normal">{option.desc}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Groq — Production Models */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs font-semibold text-orange-500 dark:text-orange-400 uppercase tracking-wider">⚡ Groq — Production</span>
+                                <div className="flex-1 h-px bg-orange-200 dark:bg-orange-900/50" />
+                            </div>
+                            <div className="grid grid-cols-1 gap-1.5 mb-4">
+                                {[
+                                    { id: 'llama-3.1-8b-instant',   label: 'Llama 3.1 8B',        speed: '560 t/s',  price: '$0.05/$0.08 per 1M' },
+                                    { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B',       speed: '280 t/s',  price: '$0.59/$0.79 per 1M' },
+                                    { id: 'openai/gpt-oss-120b',    label: 'GPT-OSS 120B',         speed: '500 t/s',  price: '$0.15/$0.60 per 1M' },
+                                    { id: 'openai/gpt-oss-20b',     label: 'GPT-OSS 20B',          speed: '1000 t/s', price: '$0.075/$0.30 per 1M' },
+                                    { id: 'groq/compound',          label: 'Groq Compound',         speed: '~450 t/s', price: 'Free (web+code)' },
+                                    { id: 'groq/compound-mini',     label: 'Groq Compound Mini',    speed: '~450 t/s', price: 'Free (web+code)' },
+                                ].map((option) => {
+                                    const isSelected = preferences.aiModel === option.id;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            id={`model-btn-${option.id.replace(/\//g, '-')}`}
+                                            onClick={() => updatePreference('aiModel', option.id as any)}
+                                            className={`w-full px-3 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-3 ${
+                                                isSelected
+                                                    ? 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800 ring-1 ring-orange-500/20'
+                                                    : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700'
+                                            }`}
+                                        >
+                                            <span className="flex-1 text-left font-medium">{option.label}</span>
+                                            <span className="text-xs opacity-60 shrink-0">{option.speed}</span>
+                                            <span className="text-xs opacity-50 shrink-0 hidden sm:inline">{option.price}</span>
+                                            {isSelected && <Check className="w-3 h-3 shrink-0 text-orange-500" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Groq — Preview Models */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-xs font-semibold text-purple-500 dark:text-purple-400 uppercase tracking-wider">🔬 Groq — Preview</span>
+                                <div className="flex-1 h-px bg-purple-200 dark:bg-purple-900/50" />
+                            </div>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Preview models may be discontinued. Not recommended for production.</p>
+                            <div className="grid grid-cols-1 gap-1.5">
+                                {[
+                                    { id: 'openai/gpt-oss-safeguard-20b',         label: 'Safety GPT-OSS 20B',       speed: '1000 t/s', price: '$0.075/$0.30 per 1M' },
+                                    { id: 'qwen/qwen3.6-27b',                     label: 'Qwen 3.6-27B',             speed: '500 t/s',  price: '$0.60/$3.00 per 1M' },
+                                    { id: 'meta-llama/llama-prompt-guard-2-22m',  label: 'Prompt Guard 2 22M',       speed: '—',        price: '$0.03/$0.03 per 1M' },
+                                    { id: 'meta-llama/llama-prompt-guard-2-86m',  label: 'Prompt Guard 2 86M',       speed: '—',        price: '$0.04/$0.04 per 1M' },
+                                    { id: 'canopylabs/orpheus-v1-english',         label: 'Orpheus English TTS',      speed: '—',        price: '$22/1M chars' },
+                                    { id: 'canopylabs/orpheus-arabic-saudi',       label: 'Orpheus Arabic TTS',       speed: '—',        price: '$40/1M chars' },
+                                ].map((option) => {
+                                    const isSelected = preferences.aiModel === option.id;
+                                    return (
+                                        <button
+                                            key={option.id}
+                                            id={`model-btn-${option.id.replace(/\//g, '-')}`}
+                                            onClick={() => updatePreference('aiModel', option.id as any)}
+                                            className={`w-full px-3 py-2 rounded-xl text-sm font-medium transition-all border flex items-center gap-3 ${
+                                                isSelected
+                                                    ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800 ring-1 ring-purple-500/20'
+                                                    : 'bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100 dark:bg-gray-700/50 dark:text-gray-400 dark:border-gray-700'
+                                            }`}
+                                        >
+                                            <span className="flex-1 text-left font-medium">{option.label}</span>
+                                            <span className="text-xs opacity-60 shrink-0">{option.speed}</span>
+                                            <span className="text-xs opacity-50 shrink-0 hidden sm:inline">{option.price}</span>
+                                            {isSelected && <Check className="w-3 h-3 shrink-0 text-purple-500" />}
                                         </button>
                                     );
                                 })}

@@ -12,6 +12,7 @@ from config import (
     GEMINI_KEYS, GEMINI_MODELS,
     OPENROUTER_KEYS, OPENROUTER_MODEL,
     DEEPSEEK_API_KEY, FRONTEND_ORIGIN,
+    GROQ_KEYS, GROQ_DEFAULT_MODEL,
     logger
 )
 from services.prompts import get_deepseek_system_prompt
@@ -244,12 +245,106 @@ async def _execute_openrouter_request(client: httpx.AsyncClient, prompt: str) ->
     return None
 
 
-async def call_ai_with_fallback(prompt: str) -> str:
-    """Call AI with multi-model fallback: Gemini -> DeepSeek -> OpenRouter."""
+async def call_groq(prompt: str, model: Optional[str] = None) -> Optional[str]:
+    """Call Groq API with key rotation. Model defaults to GROQ_DEFAULT_MODEL."""
+    if not GROQ_KEYS:
+        return None
+
+    groq_model = model or GROQ_DEFAULT_MODEL
+
+    try:
+        async with get_client(FALLBACK_TIMEOUT) as client:
+            return await _execute_groq_request(client, prompt, groq_model)
+    except Exception as e:
+        logger.error(f"Groq call failed: {e}", exc_info=True)
+        return None
+
+async def _execute_groq_request(
+    client: httpx.AsyncClient, prompt: str, model: str
+) -> Optional[str]:
+    shuffled_keys = GROQ_KEYS.copy()
+    random.shuffle(shuffled_keys)
+
+    for key in shuffled_keys:
+        try:
+            logger.info(f"Trying Groq model: {model}")
+            start_t = time.time()
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 2000,
+                    "temperature": 0.5,
+                    "stream": False,
+                },
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content")
+                if content:
+                    duration = time.time() - start_t
+                    logger.info(f"Groq Success: {model} in {duration:.2f}s")
+                    return content
+
+            if response.status_code == 429:
+                logger.warning(f"Groq 429 Rate Limit: {model}")
+                continue
+            else:
+                logger.warning(f"Groq Error {response.status_code} for {model}: {response.text[:100]}")
+
+        except Exception as e:
+            logger.error(f"Groq Exception: {e}")
+            continue
+    return None
+
+
+async def call_ai_with_fallback(prompt: str, preferred_provider: Optional[str] = None) -> str:
+    """Call AI with multi-model fallback: Gemini -> DeepSeek -> Groq -> OpenRouter.
+    
+    Args:
+        prompt: The prompt text.
+        preferred_provider: One of 'gemini', 'deepseek', 'groq', 'openrouter',
+                            or a specific Groq model ID (e.g. 'llama-3.3-70b-versatile').
+                            If None/'auto', uses the default cascade.
+    """
     sanitized_prompt = sanitize_input(prompt, 15000)
     if not sanitized_prompt:
         raise HTTPException(status_code=400, detail="Invalid input provided")
-    
+
+    # --- Explicit model preference ---
+    if preferred_provider and preferred_provider not in ("auto", "gemini", "deepseek", "openrouter"):
+        # Treat as a specific Groq model ID
+        result = await call_groq(sanitized_prompt, model=preferred_provider)
+        if result:
+            return result
+        # Fall through to default cascade on failure
+        logger.warning(f"Preferred Groq model '{preferred_provider}' failed, falling back to cascade")
+
+    elif preferred_provider == "deepseek":
+        result = await call_deepseek(sanitized_prompt)
+        if result:
+            return result
+        logger.warning("Preferred DeepSeek failed, falling back to cascade")
+
+    elif preferred_provider == "groq":
+        result = await call_groq(sanitized_prompt)
+        if result:
+            return result
+        logger.warning("Preferred Groq failed, falling back to cascade")
+
+    elif preferred_provider == "openrouter":
+        result = await call_openrouter(sanitized_prompt)
+        if result:
+            return result
+        logger.warning("Preferred OpenRouter failed, falling back to cascade")
+
+    # --- Default cascade ---
     # 1. Try Gemini first (primary)
     result = await call_gemini(sanitized_prompt)
     if result:
@@ -260,7 +355,12 @@ async def call_ai_with_fallback(prompt: str) -> str:
     if result:
         return result
     
-    # 3. Try OpenRouter (final fallback)
+    # 3. Try Groq (fallback)
+    result = await call_groq(sanitized_prompt)
+    if result:
+        return result
+
+    # 4. Try OpenRouter (final fallback)
     result = await call_openrouter(sanitized_prompt)
     if result:
         return result
@@ -364,37 +464,128 @@ async def stream_deepseek(prompt: str) -> AsyncGenerator[str, None]:
         logger.warning(f"DeepSeek streaming failed: {e}")
 
 
-async def stream_ai_with_fallback(prompt: str) -> AsyncGenerator[str, None]:
-    """Stream AI response with fallback: Gemini -> DeepSeek.
-    
+async def stream_groq(prompt: str, model: Optional[str] = None) -> AsyncGenerator[str, None]:
+    """Stream response from Groq API."""
+    if not GROQ_KEYS:
+        return
+
+    groq_model = model or GROQ_DEFAULT_MODEL
+    shuffled_keys = GROQ_KEYS.copy()
+    random.shuffle(shuffled_keys)
+
+    for key in shuffled_keys:
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream(
+                    "POST",
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": groq_model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 2000,
+                        "temperature": 0.5,
+                        "stream": True,
+                    },
+                ) as response:
+                    if response.status_code != 200:
+                        continue
+
+                    async for line in response.aiter_lines():
+                        if not line or not line.startswith("data: "):
+                            continue
+
+                        data_str = line[6:]  # Remove "data: " prefix
+                        if data_str == "[DONE]":
+                            return
+
+                        try:
+                            data = json.loads(data_str)
+                            delta = data.get("choices", [{}])[0].get("delta", {})
+                            content = delta.get("content", "")
+                            if content:
+                                yield content
+                        except json.JSONDecodeError:
+                            continue
+
+                    return  # Success
+        except Exception as e:
+            logger.warning(f"Groq streaming failed: {e}")
+            continue
+
+
+async def stream_ai_with_fallback(
+    prompt: str, preferred_provider: Optional[str] = None
+) -> AsyncGenerator[str, None]:
+    """Stream AI response with fallback: Gemini -> Groq -> DeepSeek.
+
     Yields chunks as they arrive from the AI provider.
     Falls back to next provider if streaming fails.
+
+    Args:
+        prompt: The prompt text.
+        preferred_provider: A specific Groq model ID or 'groq'/'gemini'/'deepseek'.
+                            If None/'auto', uses the default streaming cascade.
     """
     sanitized_prompt = sanitize_input(prompt, 15000)
     if not sanitized_prompt:
         yield "Error: Invalid input provided"
         return
-    
-    # Track if we got any content
+
     got_content = False
-    
+
+    # --- Explicit Groq model preference ---
+    if preferred_provider and preferred_provider not in ("auto", "gemini", "deepseek", "openrouter"):
+        try:
+            async for chunk in stream_groq(sanitized_prompt, model=preferred_provider):
+                got_content = True
+                yield chunk
+            if got_content:
+                return
+        except Exception as e:
+            logger.warning(f"Groq preferred stream fallback triggered: {e}")
+
+    elif preferred_provider == "groq":
+        try:
+            async for chunk in stream_groq(sanitized_prompt):
+                got_content = True
+                yield chunk
+            if got_content:
+                return
+        except Exception as e:
+            logger.warning(f"Groq stream fallback triggered: {e}")
+
     # 1. Try Gemini streaming first
     try:
         async for chunk in stream_gemini(sanitized_prompt):
             got_content = True
             yield chunk
-        
+
         if got_content:
             return
     except Exception as e:
         logger.warning(f"Gemini stream fallback triggered: {e}")
-    
-    # 2. Fall back to DeepSeek streaming
+
+    # 2. Try Groq streaming (fast fallback)
+    try:
+        async for chunk in stream_groq(sanitized_prompt):
+            got_content = True
+            yield chunk
+
+        if got_content:
+            return
+    except Exception as e:
+        logger.warning(f"Groq stream fallback triggered: {e}")
+
+    # 3. Fall back to DeepSeek streaming
     try:
         async for chunk in stream_deepseek(sanitized_prompt):
             got_content = True
             yield chunk
-        
+
         if got_content:
             return
     except Exception as e:

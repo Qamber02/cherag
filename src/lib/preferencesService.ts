@@ -4,6 +4,20 @@
 const PREFS_KEY = 'cherag_preferences';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 1 year in seconds
 
+export type GroqModelId =
+    | 'llama-3.1-8b-instant'
+    | 'llama-3.3-70b-versatile'
+    | 'openai/gpt-oss-120b'
+    | 'openai/gpt-oss-20b'
+    | 'groq/compound'
+    | 'groq/compound-mini'
+    | 'openai/gpt-oss-safeguard-20b'
+    | 'qwen/qwen3.6-27b'
+    | 'meta-llama/llama-prompt-guard-2-22m'
+    | 'meta-llama/llama-prompt-guard-2-86m'
+    | 'canopylabs/orpheus-v1-english'
+    | 'canopylabs/orpheus-arabic-saudi';
+
 export interface UserPreferences {
     theme: 'light' | 'dark' | 'system';
     lastActiveTab: string;
@@ -14,7 +28,7 @@ export interface UserPreferences {
         length?: string;
         style?: string;
     };
-    aiModel: 'auto' | 'deepseek' | 'gemini' | 'huggingface' | 'openrouter';
+    aiModel: 'auto' | 'deepseek' | 'gemini' | 'openrouter' | 'groq' | GroqModelId;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {

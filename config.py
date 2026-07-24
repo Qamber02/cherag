@@ -38,6 +38,15 @@ OPENROUTER_KEYS = [k for k in [
     os.getenv("OPENROUTER_API_KEY_5")
 ] if k]
 
+# Groq Keys (Rotation) — optional, but enables Groq model access
+GROQ_KEYS = [k for k in [
+    os.getenv("GROQ_API_KEY"),
+    os.getenv("GROQ_API_KEY_2"),
+    os.getenv("GROQ_API_KEY_3"),
+    os.getenv("GROQ_API_KEY_4"),
+    os.getenv("GROQ_API_KEY_5")
+] if k]
+
 # Validate required API keys at startup
 if not GEMINI_KEYS:
     raise RuntimeError(
@@ -81,3 +90,26 @@ GEMINI_MODELS = [
     "gemini-2.5-pro",
 ]
 OPENROUTER_MODEL = "allenai/molmo-2-8b:free"
+
+# Groq model catalogue — grouped by tier
+# Each entry: (model_id, display_label, tier)
+GROQ_MODELS = [
+    # --- Production Models ---
+    ("llama-3.1-8b-instant",      "Llama 3.1 8B (560 t/s)",    "production"),
+    ("llama-3.3-70b-versatile",   "Llama 3.3 70B (280 t/s)",   "production"),
+    ("openai/gpt-oss-120b",       "GPT-OSS 120B (500 t/s)",    "production"),
+    ("openai/gpt-oss-20b",        "GPT-OSS 20B (1000 t/s)",    "production"),
+    # --- Production Systems ---
+    ("groq/compound",             "Groq Compound (~450 t/s)",  "production"),
+    ("groq/compound-mini",        "Groq Compound Mini (~450 t/s)", "production"),
+    # --- Preview Models ---
+    ("openai/gpt-oss-safeguard-20b", "Safety GPT-OSS 20B",     "preview"),
+    ("qwen/qwen3.6-27b",          "Qwen 3.6-27B (500 t/s)",    "preview"),
+    ("meta-llama/llama-prompt-guard-2-22m", "Prompt Guard 2 22M", "preview"),
+    ("meta-llama/llama-prompt-guard-2-86m", "Prompt Guard 2 86M", "preview"),
+    ("canopylabs/orpheus-v1-english", "Orpheus English TTS",    "preview"),
+    ("canopylabs/orpheus-arabic-saudi", "Orpheus Arabic TTS",   "preview"),
+]
+
+# Default Groq model for the fallback chain (fast production model)
+GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile"
