@@ -45,11 +45,16 @@ create index if not exists idx_belief_history_student_concept
   on belief_history(student_id, concept_id, created_at desc);
 
 alter table belief_nodes enable row level security;
+alter table belief_edges enable row level security;
 alter table belief_history enable row level security;
 
 drop policy if exists "students see own belief nodes" on belief_nodes;
 create policy "students see own belief nodes" on belief_nodes
   for select using (auth.uid() = student_id);
+
+drop policy if exists "anyone can read belief edges" on belief_edges;
+create policy "anyone can read belief edges" on belief_edges
+  for select using (true);
 
 drop policy if exists "students see own belief history" on belief_history;
 create policy "students see own belief history" on belief_history
