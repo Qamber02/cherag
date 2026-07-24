@@ -178,13 +178,6 @@ export async function assessCognitiveLoad(metrics: any) {
     });
 }
 
-export async function compressConcept(content: string, conceptName: string) {
-    return authorizedRequest('/premium/tools/compress', {
-        content,
-        concept_name: conceptName
-    });
-}
-
 export async function remixConcepts(concepts: any[]) {
     return authorizedRequest('/premium/tools/remix', {
         concepts

@@ -18,7 +18,7 @@ import type { Tab } from './dashboard/types';
 import {
     ExamEngineTab,
     TeachAITab,
-    ConceptCompressionTab,
+    BeliefGraphTab,
     ConceptRemixTab,
     MentalModelTab
 } from './premium';
@@ -38,6 +38,12 @@ const SettingsTab = lazy(() => import('./SettingsTab'));
 const ChatTab = lazy(() => import('./ChatTab'));
 const FlashcardsTab = lazy(() => import('./FlashcardsTab'));
 const SummaryTab = lazy(() => import('./SummaryTab'));
+
+const VALID_TABS: readonly Tab[] = [
+    'dashboard', 'chat', 'flashcards', 'summary', 'quizzes', 'mindmap',
+    'beliefGraph', 'radar', 'confidence', 'exam', 'teaching', 'remix',
+    'mental', 'videos', 'reels', 'history', 'settings'
+];
 
 // Loading Fallback
 const TabLoading = () => (
@@ -62,7 +68,7 @@ export default function Dashboard({ session }: DashboardProps) {
     const hasCompletedOnboarding = getPreference('hasCompletedOnboarding');
 
     // State
-    const [activeTab, setActiveTab] = useState<Tab>(savedTab || 'dashboard');
+    const [activeTab, setActiveTab] = useState<Tab>(VALID_TABS.includes(savedTab) ? savedTab : 'dashboard');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(!hasCompletedOnboarding);
@@ -327,6 +333,18 @@ export default function Dashboard({ session }: DashboardProps) {
                 ), true, false)}
 
                 {/* Knowledge Radar Tab — full height for internal flex layout */}
+                {renderTab('beliefGraph', (
+                    <div className="absolute inset-0 w-full pb-20 md:pb-6">
+                        <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
+                            <BeliefGraphTab
+                                userId={session.user.id}
+                                courseId="recursion"
+                            />
+                        </div>
+                    </div>
+                ), true, false)}
+
+                {/* Knowledge Radar Tab — full height for internal flex layout */}
                 {renderTab('radar', (
                     <div className="absolute inset-0 w-full pb-20 md:pb-6">
                         <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
@@ -368,19 +386,6 @@ export default function Dashboard({ session }: DashboardProps) {
                         />
                     </div>
                 ), true, false)}
-
-                {/* Compression Tab */}
-                {renderTab('compress', (
-                    <div className="w-full min-h-full pb-20 md:pb-6">
-                        <div className="glass-card rounded-2xl overflow-hidden shadow-warm-glow">
-                            <ConceptCompressionTab
-                                userId={session.user.id}
-                                context={context}
-                                hasContext={files.length > 0}
-                            />
-                        </div>
-                    </div>
-                ), true, true)}
 
                 {/* Remix Tab */}
                 {renderTab('remix', (

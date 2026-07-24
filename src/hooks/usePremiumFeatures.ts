@@ -9,7 +9,6 @@ import {
     analyzeKnowledgeRadar,
     assessCognitiveLoad,
     generateLearningDNA,
-    compressConcept,
     remixConcepts,
     generateDailyPlan,
     // Teaching Mode
@@ -56,7 +55,6 @@ interface UsePremiumFeaturesReturn {
     checkCognitiveLoad: () => Promise<CognitiveLoadResult | null>;
     generateDNA: () => Promise<LearningDNAResult | null>;
     createDailyPlan: (availableMinutes: number) => Promise<DailyPlan | null>;
-    compressConceptAction: (content: string, name: string) => Promise<any>;
     remixConceptsAction: (concepts: Array<{ name: string; description: string }>) => Promise<any>;
 
     // Active Learning
@@ -240,21 +238,6 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
     }, [userId]);
 
     /**
-     * Compress a concept
-     */
-    const compressConceptAction = useCallback(async (content: string, name: string) => {
-        setIsLoading(true);
-        try {
-            return await compressConcept(content, name);
-        } catch (err: any) {
-            setError(err.message);
-            return null;
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    /**
      * Remix concepts to find connections
      */
     const remixConceptsAction = useCallback(async (
@@ -373,7 +356,6 @@ export function usePremiumFeatures(userId: string | undefined): UsePremiumFeatur
         checkCognitiveLoad,
         generateDNA,
         createDailyPlan,
-        compressConceptAction,
         remixConceptsAction,
 
         // Study Session

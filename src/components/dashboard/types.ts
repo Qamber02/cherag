@@ -1,1 +1,1 @@
-export type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'radar' | 'confidence' | 'exam' | 'teaching' | 'compress' | 'remix' | 'mental' | 'videos' | 'reels' | 'history' | 'settings';
+export type Tab = 'dashboard' | 'chat' | 'flashcards' | 'summary' | 'quizzes' | 'mindmap' | 'beliefGraph' | 'radar' | 'confidence' | 'exam' | 'teaching' | 'remix' | 'mental' | 'videos' | 'reels' | 'history' | 'settings';

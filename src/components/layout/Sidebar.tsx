@@ -2,7 +2,7 @@ import { useRef, useState, useCallback } from 'react';
 import {
     Upload, LayoutDashboard, Layers, FileQuestion,
     Play, Settings, User, FileText, X, MessageCircle, FileCheck,
-    Map, Clock, Radar, Target, GraduationCap, Minimize2, GitMerge, Brain,
+    Map, Clock, Radar, Target, GraduationCap, GitMerge, Brain, BrainCircuit,
     ChevronLeft, ChevronRight, LogOut
 } from 'lucide-react';
 import type { Document } from '../../hooks/useFiles';
@@ -34,10 +34,10 @@ const navItems = [
     { id: 'mindmap', icon: Map, label: 'Roadmap' },
     { id: 'videos', icon: Play, label: 'Study Shorts' },
 
+    { id: 'beliefGraph', icon: BrainCircuit, label: 'Belief Graph' },
     { id: 'radar', icon: Radar, label: 'Knowledge Radar' },
     { id: 'exam', icon: Target, label: 'Exam Engine' },
     { id: 'teaching', icon: GraduationCap, label: 'Feynman Mode' },
-    { id: 'compress', icon: Minimize2, label: 'Compression' },
     { id: 'remix', icon: GitMerge, label: 'Concept Remix' },
     { id: 'mental', icon: Brain, label: 'Mental Models' },
     { id: 'history', icon: Clock, label: 'History' },

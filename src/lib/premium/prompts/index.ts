@@ -30,7 +30,6 @@ export type {
 
 export { CONTENT_PROCESSING_PROMPTS } from './contentProcessing.prompts';
 export type {
-    CompressionResult,
     RemixResult,
     VideoSegmentResult
 } from './contentProcessing.prompts';

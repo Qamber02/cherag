@@ -438,27 +438,6 @@ RULES:
 - Load 9-10: Burnout zone, stop immediately
 - No markdown, only valid JSON"""
 
-def get_compress_concept_prompt(content: str, concept_name: str) -> str:
-    return f"""Compress the concept "{concept_name}" into multiple study-friendly formats.
-
-Full content:
-{content[:4000]}
-
-Return as JSON:
-{{
-  "analogy": "A relatable analogy to understand the concept (e.g. 'The mitochondria is like a power plant...')",
-  "eli5": "Explain Like I'm 5 (simple explanation using basic language)",
-  "tldr": "Too Long, Didn't Read (one concise summary sentence)",
-  "mnemonic": "A memorable mnemonic phrase or acronym to help recall",
-  "common_mistakes": ["mistake 1 to avoid"]
-}}
-
-RULES:
-- Every format must capture ESSENTIAL information
-- No loss of critical meaning in compression
-- Mnemonic must be actually memorable
-- Analogy should be vivid and easy to grasp
-- No markdown, only valid JSON"""
 
 def get_remix_concepts_prompt(concepts: List[Dict]) -> str:
     return f"""Find hidden connections between these concepts.

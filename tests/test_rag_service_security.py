@@ -31,7 +31,7 @@ async def test_ssrf_mitigated():
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch("httpx.AsyncClient", return_value=mock_client) as mock_httpx_cls, \
+        with patch("services.rag_service.httpx.AsyncClient", return_value=mock_client) as mock_httpx_cls, \
              patch("services.rag_service.pdf_processor") as mock_pdf_processor, \
              patch("services.rag_service.update_document_status", new_callable=AsyncMock) as mock_update_status:
 
@@ -88,16 +88,20 @@ async def test_valid_url_processing():
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
 
-        with patch("httpx.AsyncClient", return_value=mock_client) as mock_httpx_cls, \
+        with patch("services.rag_service.httpx.AsyncClient", return_value=mock_client) as mock_httpx_cls, \
              patch("services.rag_service.pdf_processor") as mock_pdf_processor, \
+             patch("services.rag_service.generate_embedding", new_callable=AsyncMock) as mock_embed, \
              patch("services.rag_service.update_document_status", new_callable=AsyncMock) as mock_update_status:
 
-            mock_pdf_processor.process_pdf_bytes.return_value = []
+            mock_pdf_processor.process_pdf_bytes.return_value = [
+                {"page": 1, "text": "Valid document content for test", "type": "text", "char_count": 30}
+            ]
+            mock_embed.return_value = [0.1] * 768
 
             await rag_service.process_document_background(document_id, valid_url)
 
-            # Verify client.get WAS called
-            mock_client.get.assert_awaited_with(valid_url)
+            # Verify client.get WAS called with valid_url
+            mock_client.get.assert_called_with(valid_url)
 
     finally:
         rag_service.SUPABASE_URL = original_url

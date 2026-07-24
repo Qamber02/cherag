@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { FileQuestion, CheckCircle, XCircle, Sparkles, Loader2, RefreshCw, ArrowRight, Trash2, Flame } from 'lucide-react';
-// Server Action for secure server-side AI generation
-// import { generateQuizzes } from '@/app/actions/ai';
 import { generateQuizzes } from '../lib/aiService';
+import { updateBeliefInBackground, detectRecursionConceptId } from '../lib/beliefGraphService';
+import { saveQuizActivity } from '../lib/activityService';
 import ReactMarkdown from 'react-markdown';
 
 interface Quiz {
@@ -159,6 +159,24 @@ export default function QuizzesTab({ userId, context, hasContext }: QuizzesTabPr
                 .update({ answered: true, user_answer: answer })
                 .eq('id', currentQuiz.id);
         }
+
+        // Fire belief graph update in background (non-blocking)
+        const conceptId = detectRecursionConceptId(currentQuiz.question);
+        const answerOption = currentQuiz.options?.[answer.charCodeAt(0) - 65] || answer;
+        updateBeliefInBackground(
+            userId,
+            'recursion',
+            conceptId,
+            `Question: ${currentQuiz.question}\nStudent answered: ${answerOption}\nCorrect answer: ${currentQuiz.correct_answer}`
+        );
+
+        // Log activity for dashboard streak tracking
+        saveQuizActivity(
+            userId,
+            topicInput || 'Document Quiz',
+            isCorrect ? 1 : 0,
+            1
+        ).catch(() => {});
     };
 
     const nextQuestion = () => {

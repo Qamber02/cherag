@@ -15,7 +15,8 @@ import {
     ArrowDown
 } from 'lucide-react';
 import { usePremiumFeatures } from '../../hooks/usePremiumFeatures';
-import { saveTeachingSessionState, getLastTeachingSessionState } from '../../lib/activityService';
+import { saveTeachingSessionState, getLastTeachingSessionState, saveActivity } from '../../lib/activityService';
+import { updateBeliefInBackground, detectRecursionConceptId } from '../../lib/beliefGraphService';
 
 interface TeachAITabProps {
     userId: string;
@@ -153,6 +154,23 @@ export default function TeachAITab({
             };
 
             setMessages(prev => [...prev, aiMsg]);
+
+            // Fire belief graph update in background from teacher's explanation
+            const conceptId = detectRecursionConceptId(input + ' ' + concept);
+            updateBeliefInBackground(
+                userId,
+                'recursion',
+                conceptId,
+                `Teaching explanation about ${concept}: ${input}`
+            );
+
+            // Log activity for dashboard streak
+            saveActivity({
+                user_id: userId,
+                activity_type: 'teaching_session',
+                title: `Teaching: ${concept}`,
+                content_preview: input.slice(0, 100),
+            }).catch(() => {});
         } catch (error: any) {
             console.error('Failed to send message:', error);
             // Add error message to chat

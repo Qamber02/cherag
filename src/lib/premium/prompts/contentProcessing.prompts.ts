@@ -1,31 +1,7 @@
 // Premium AI Prompts - Content Processing
-// Handles concept compression, remix, mental models, and video intelligence
+// Handles concept remix, mental models, and video intelligence
 
 export const CONTENT_PROCESSING_PROMPTS = {
-  /**
-   * Compress concept into multiple memorable formats
-   */
-  conceptCompression: (content: string, conceptName: string) => `Compress the concept "${conceptName}" into multiple study-friendly formats.
-
-Full content:
-${content.slice(0, 4000)}
-
-Return as JSON:
-{
-  "analogy": "A relatable analogy to understand the concept (e.g. 'The mitochondriona is like a power plant...')",
-  "eli5": "Explain Like I'm 5 (simple explanation using basic language)",
-  "tldr": "Too Long, Didn't Read (one concise summary sentence)",
-  "mnemonic": "A memorable mnemonic phrase or acronym to help recall",
-  "common_mistakes": ["mistake 1 to avoid"]
-}
-
-RULES:
-- Every format must capture ESSENTIAL information
-- No loss of critical meaning in compression
-- Mnemonic must be actually memorable
-- Analogy should be vivid and easy to grasp
-- No markdown, only valid JSON`,
-
   /**
    * Find connections between concepts (Remix Mode)
    */
@@ -193,14 +169,6 @@ RULES:
 - Keep daily review under 15 minutes
 - Prioritize at-risk concepts
 - No markdown, only valid JSON`
-};
-
-export type CompressionResult = {
-  analogy: string;
-  eli5: string;
-  tldr: string;
-  mnemonic: string;
-  common_mistakes: string[];
 };
 
 export type RemixResult = {

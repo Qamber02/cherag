@@ -1,6 +1,6 @@
 
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+from typing import List, Optional, Dict, Any, Literal
+from pydantic import BaseModel, Field
 
 # =============================================================================
 # Standard Features
@@ -140,13 +140,32 @@ class LearningDNARequest(BaseModel):
 class CognitiveLoadRequest(BaseModel):
     metrics: dict
 
-class CompressConceptRequest(BaseModel):
-    content: str
-    concept_name: str
-
 class RemixConceptsRequest(BaseModel):
     concepts: List[dict]
 
 class MentalModelRequest(BaseModel):
     content: str
     model: str
+
+# =============================================================================
+# Belief Graph
+# =============================================================================
+
+BeliefCorrectness = Literal['correct', 'partially_correct', 'misconception', 'unknown']
+
+class BeliefUpdateRequest(BaseModel):
+    student_id: str
+    course_id: str
+    concept_id: str
+    student_answer: str = Field(min_length=1, max_length=8000)
+
+class BeliefNodeResponse(BaseModel):
+    id: Optional[str] = None
+    student_id: str
+    course_id: str
+    concept_id: str
+    concept_label: str
+    belief_statement: Optional[str] = None
+    correctness: BeliefCorrectness = 'unknown'
+    confidence: float = 0.0
+    last_updated: Optional[str] = None
