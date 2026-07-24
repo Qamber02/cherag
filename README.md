@@ -1,3 +1,13 @@
+---
+title: Cherag Backend
+emoji: 🔥
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 <div align="center">
   <h1>Cherág</h1>
   <p><strong>The Ultimate AI Study Partner</strong></p>
