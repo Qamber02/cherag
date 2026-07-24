@@ -332,7 +332,7 @@ export default function Dashboard({ session }: DashboardProps) {
                     </div>
                 ), true, false)}
 
-                {/* Knowledge Radar Tab — full height for internal flex layout */}
+                {/* Belief Graph Tab */}
                 {renderTab('beliefGraph', (
                     <div className="absolute inset-0 w-full pb-20 md:pb-6">
                         <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
