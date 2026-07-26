@@ -22,7 +22,8 @@ from schemas import (
     MicroLessonRequest, VideoExtractionRequest, TeachingChatRequest,
     TeachingEvaluationRequest, ExamReadinessRequest, ExamQuestionsRequest,
     StressTestRequest, LearningDNARequest, CognitiveLoadRequest,
-    RemixConceptsRequest, MentalModelRequest, BeliefUpdateRequest
+    RemixConceptsRequest, MentalModelRequest, BeliefUpdateRequest,
+    SessionEndRequest
 )
 
 # Services
@@ -35,6 +36,7 @@ import services.video_service as video_service
 import services.premium_service as premium_service
 import services.rag_service as rag_service
 import services.belief_service as belief_service
+import services.session_memory_service as session_memory_service
 
 # =============================================================================
 # Lifecycle & App Setup
@@ -186,6 +188,11 @@ async def generate_quizzes(
     import time
     
     sanitized = sanitize_input(request.context)
+    if request.course_id:
+        memory_ctx = session_memory_service.get_session_memory_context(user.get("sub"), request.course_id)
+        if memory_ctx:
+            sanitized = f"{memory_ctx}\n\n---\n\n{sanitized}"
+
     count = request.count or 5
     difficulty = request.difficulty or "medium"
     
@@ -240,6 +247,11 @@ async def chat_with_ai(
     from services.prompts import get_chat_prompt
     
     sanitized_context = sanitize_input(request.context)
+    if request.course_id:
+        memory_ctx = session_memory_service.get_session_memory_context(user.get("sub"), request.course_id)
+        if memory_ctx:
+            sanitized_context = f"{memory_ctx}\n\n---\n\n{sanitized_context}"
+
     sanitized_query = sanitize_input(request.query, 1000)
     
     prompt = get_chat_prompt(sanitized_context, sanitized_query)
@@ -386,6 +398,10 @@ async def rag_chat(
     
     # Build context and prompt
     context = "\n\n---\n\n".join(chunks)
+    course_id = request.course_id or str(request.document_id)
+    memory_ctx = session_memory_service.get_session_memory_context(user.get("sub"), course_id)
+    if memory_ctx:
+        context = f"{memory_ctx}\n\n---\n\n{context}"
     
     # Import and use the prompt function
     from services.prompts import get_rag_chat_prompt
@@ -425,7 +441,13 @@ async def api_extract_clips(request: VideoExtractionRequest, user: dict = Depend
 
 @app.post("/premium/teaching/chat")
 async def api_teaching_chat(request: TeachingChatRequest, user: dict = Depends(verify_jwt)):
-    response_text = await premium_service.generate_teaching_chat(request.history, request.concept, request.difficulty, request.context)
+    course_id = request.course_id or request.concept
+    memory_ctx = session_memory_service.get_session_memory_context(user.get("sub"), course_id)
+    effective_context = request.context or ""
+    if memory_ctx:
+        effective_context = f"{memory_ctx}\n\n---\n\n{effective_context}".strip()
+    
+    response_text = await premium_service.generate_teaching_chat(request.history, request.concept, request.difficulty, effective_context)
     return {"response": response_text}
 
 @app.post("/premium/teaching/evaluate")
@@ -477,6 +499,17 @@ async def api_update_belief(request: BeliefUpdateRequest, user: dict = Depends(v
     except Exception as e:
         logger.error("Belief update failed: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Belief update failed")
+
+@app.post("/session/end")
+async def api_session_end(request: SessionEndRequest, user: dict = Depends(verify_jwt)):
+    if request.student_id != user.get("sub"):
+        raise HTTPException(status_code=403, detail="Cannot create session summary for another student")
+
+    return await session_memory_service.generate_and_save_session_summary(
+        student_id=request.student_id,
+        course_id=request.course_id,
+        session_transcript=request.session_transcript
+    )
 
 if __name__ == "__main__":
     import uvicorn

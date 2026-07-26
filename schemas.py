@@ -20,6 +20,7 @@ class QuizzesRequest(BaseModel):
     count: Optional[int] = 5
     difficulty: Optional[str] = "medium"  # easy, medium, hard
     force_refresh: Optional[bool] = False
+    course_id: Optional[str] = None
 
 class MindmapRequest(BaseModel):
     context: str
@@ -31,6 +32,7 @@ class VideosRequest(BaseModel):
 class ChatRequest(BaseModel):
     context: str
     query: str
+    course_id: Optional[str] = None
 
 class RoadmapRequest(BaseModel):
     context: str
@@ -82,6 +84,7 @@ class DocumentStatusResponse(BaseModel):
 class RAGChatRequest(BaseModel):
     document_id: str   # Reference to document for vector search
     query: str
+    course_id: Optional[str] = None
 
 # =============================================================================
 # Premium Features of Cherág 
@@ -115,6 +118,7 @@ class TeachingChatRequest(BaseModel):
     concept: str
     difficulty: str
     context: Optional[str] = None
+    course_id: Optional[str] = None
 
 class TeachingEvaluationRequest(BaseModel):
     concept: str
@@ -169,3 +173,13 @@ class BeliefNodeResponse(BaseModel):
     correctness: BeliefCorrectness = 'unknown'
     confidence: float = 0.0
     last_updated: Optional[str] = None
+
+# =============================================================================
+# Session Memory
+# =============================================================================
+
+class SessionEndRequest(BaseModel):
+    student_id: str
+    course_id: str
+    session_transcript: str = Field(min_length=1, max_length=20000)
+

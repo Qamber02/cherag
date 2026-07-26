@@ -19,6 +19,7 @@ import {
 import { usePremiumFeatures } from '../../hooks/usePremiumFeatures';
 import { saveTeachingSessionState, getLastTeachingSessionState, saveActivity } from '../../lib/activityService';
 import { updateBeliefInBackground, resolveConceptId } from '../../lib/beliefGraphService';
+import { endStudySession } from '../../lib/sessionMemoryService';
 
 function extractTopicsFromContext(text: string): string[] {
     if (!text || !text.trim()) return [];
@@ -234,7 +235,16 @@ export default function TeachAITab({
             const result = await evaluateSession(concept, messages);
             setEvaluation(result);
             setIsSessionActive(false);
-            // Saved by useEffect
+
+            // Generate session summary asynchronously in background
+            if (messages.length > 0) {
+                const transcript = messages
+                    .map(m => `${m.role === 'teacher' ? 'Teacher' : 'Student'}: ${m.content}`)
+                    .join('\n');
+                endStudySession(concept || 'General Study', transcript).catch(err => {
+                    console.error('Failed to save session memory summary:', err);
+                });
+            }
         } catch (error) {
             console.error('Failed to evaluate session:', error);
         } finally {
