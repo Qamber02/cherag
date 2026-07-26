@@ -22,8 +22,9 @@ University students spend hours re-reading notes and textbooks — one of the _l
 - **Active recall tools** tailored to _their specific_ material (not generic flashcard banks).
 - **Knowledge gap visibility** — they don't know what they don't know until the exam.
 - **A feedback loop** — no way to test understanding or get corrective feedback outside office hours.
+- **ADHD-friendly formats** — traditional long-form lectures and dense textbooks are overwhelming and difficult to focus on.
 
-**Cherág solves this** by turning any uploaded document (PDF, DOCX, or pasted text) into a full study toolkit — AI-generated quizzes, flashcards, summaries, mind maps, a belief graph that models _what the student actually understands_, and a Feynman-technique teaching mode where the AI plays a curious student asking follow-up questions.
+**Cherág solves this** by turning any uploaded document (PDF, DOCX, or pasted text) into a full study toolkit — AI-generated quizzes, flashcards, summaries, mind maps, a belief graph that models _what the student actually understands_, a Feynman-technique teaching mode, and **ADHD-friendly Study Shorts** that break long videos into bite-sized learning clips.
 
 **Who it's for:** University students preparing for exams — especially in technical subjects (CS, engineering, sciences) where conceptual understanding matters more than memorization.
 
@@ -75,7 +76,7 @@ University students spend hours re-reading notes and textbooks — one of the _l
 | **🔄 Concept Remix** | Select two concepts and the AI finds hidden connections, cross-domain insights, and practical applications. |
 | **🧩 Mental Models** | Apply thinking frameworks (First Principles, Second Order Thinking, Pareto Principle, Inversion, Opportunity Cost) to any study content. |
 | **📊 Activity Dashboard** | Study streak tracking, activity heatmap, session history, and quick-access stats. |
-| **🎬 Study Shorts** | YouTube video clips extracted by AI into short, focused learning segments. |
+| **🎬 Study Shorts (ADHD-Friendly)** | AI-extracted, bite-sized video clips (Reels/TikTok style) from long educational videos. Specifically designed for ADHD brains and short attention spans, delivering complex topics in fast, focused, and engaging bursts. |
 
 ---
 
