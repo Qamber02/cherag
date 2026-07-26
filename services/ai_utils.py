@@ -13,6 +13,7 @@ from config import (
     OPENROUTER_KEYS, OPENROUTER_MODEL,
     DEEPSEEK_API_KEY, FRONTEND_ORIGIN,
     GROQ_KEYS, GROQ_DEFAULT_MODEL,
+    HUGGINGFACE_API_KEY,
     logger
 )
 from services.prompts import get_deepseek_system_prompt
@@ -304,12 +305,47 @@ async def _execute_groq_request(
     return None
 
 
+async def call_huggingface(prompt: str) -> Optional[str]:
+    """Call Hugging Face Serverless API."""
+    if not HUGGINGFACE_API_KEY:
+        return None
+    
+    # We use a default fast model for inference fallback
+    model = "meta-llama/Llama-3.2-3B-Instruct"
+    api_url = f"https://api-inference.huggingface.co/models/{model}/v1/chat/completions"
+    
+    try:
+        async with get_client() as client:
+            response = await client.post(
+                api_url,
+                headers={
+                    "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1500
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content")
+                if content:
+                    return content
+    except Exception as e:
+        logger.error(f"Hugging Face call failed: {e}")
+    
+    return None
+
+
 async def call_ai_with_fallback(prompt: str, preferred_provider: Optional[str] = None) -> str:
-    """Call AI with multi-model fallback: Gemini -> DeepSeek -> Groq -> OpenRouter.
+    """Call AI with multi-model fallback: Gemini -> DeepSeek -> Groq -> HuggingFace -> OpenRouter.
     
     Args:
         prompt: The prompt text.
-        preferred_provider: One of 'gemini', 'deepseek', 'groq', 'openrouter',
+        preferred_provider: One of 'gemini', 'deepseek', 'groq', 'openrouter', 'huggingface',
                             or a specific Groq model ID (e.g. 'llama-3.3-70b-versatile').
                             If None/'auto', uses the default cascade.
     """
@@ -318,7 +354,7 @@ async def call_ai_with_fallback(prompt: str, preferred_provider: Optional[str] =
         raise HTTPException(status_code=400, detail="Invalid input provided")
 
     # --- Explicit model preference ---
-    if preferred_provider and preferred_provider not in ("auto", "gemini", "deepseek", "openrouter"):
+    if preferred_provider and preferred_provider not in ("auto", "gemini", "deepseek", "openrouter", "huggingface"):
         # Treat as a specific Groq model ID
         result = await call_groq(sanitized_prompt, model=preferred_provider)
         if result:
@@ -344,6 +380,12 @@ async def call_ai_with_fallback(prompt: str, preferred_provider: Optional[str] =
             return result
         logger.warning("Preferred OpenRouter failed, falling back to cascade")
 
+    elif preferred_provider == "huggingface":
+        result = await call_huggingface(sanitized_prompt)
+        if result:
+            return result
+        logger.warning("Preferred HuggingFace failed, falling back to cascade")
+
     # --- Default cascade ---
     # 1. Try Gemini first (primary)
     result = await call_gemini(sanitized_prompt)
@@ -360,7 +402,12 @@ async def call_ai_with_fallback(prompt: str, preferred_provider: Optional[str] =
     if result:
         return result
 
-    # 4. Try OpenRouter (final fallback)
+    # 4. Try Hugging Face (tertiary fallback)
+    result = await call_huggingface(sanitized_prompt)
+    if result:
+        return result
+
+    # 5. Try OpenRouter (final fallback)
     result = await call_openrouter(sanitized_prompt)
     if result:
         return result
