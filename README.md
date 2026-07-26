@@ -33,18 +33,18 @@ University students spend hours re-reading notes and textbooks — one of the _l
 ## Screenshots
 
 <p align="center">
-  <img src="uidesign/stitch/screen.png" alt="Knowledge Radar — Visualize concept mastery and identify gaps" width="800" />
-  <br /><em>Knowledge Radar — Visualize concept dependencies, mastery levels, and knowledge gaps</em>
+  <img src="screenshots/dashboard.png" alt="Dashboard — Activity Tracking and Study Streaks" width="800" />
+  <br /><em>Dashboard — Track your study streaks, latest activity, and extracted concepts</em>
 </p>
 
 <p align="center">
-  <img src="uidesign/stitch (1)/screen.png" alt="Feynman Teaching Mode — Teach the AI to learn" width="800" />
-  <br /><em>Feynman Mode — Teach a concept to the AI, which acts as a curious student asking probing questions</em>
+  <img src="screenshots/feynman_evaluation.png" alt="Feynman Mode Evaluation" width="800" />
+  <br /><em>Feynman Mode Evaluation — AI assesses your teaching for accuracy, clarity, and completeness</em>
 </p>
 
 <p align="center">
-  <img src="uidesign/stitch (2)/screen.png" alt="Exam Engine — AI-powered mock exams with predictive scoring" width="800" />
-  <br /><em>Exam Engine — Generate mock exams, track mastery by subject, and predict exam readiness</em>
+  <img src="screenshots/concept_remix_bridge.png" alt="Concept Remix — The Creative Bridge" width="800" />
+  <br /><em>Concept Remix — Finding deep connections and pedagogical value between unrelated concepts</em>
 </p>
 
 <p align="center">
