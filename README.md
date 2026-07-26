@@ -30,6 +30,12 @@
 | **Database Architecture** | [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md) | Relational database schema, ER diagrams, and Row-Level Security policies. |
 | **System Design Spec** | [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md) | End-to-end multi-provider AI cascade architecture documentation. |
 
+### Evaluator Demo Account
+
+| Email | Password | Access Level |
+|:---|:---|:---|
+| `demo@cherag.com` | `DemoUser123!` | Pre-configured demo account with instant access to all study features, belief graphs, and mock exams. |
+
 ---
 
 ## Executive Summary & Creator's Journey
@@ -241,6 +247,11 @@ Cherág uses a dual-engine parsing pipeline:
 ## Architecture & Database Design
 
 ### System Architecture Diagram
+
+<p align="center">
+  <img src="docs/system_design_diagram.png" alt="Cherág System Architecture Overview" width="95%" />
+  <br /><em>System Architecture — End-to-end component flow across React 19 SPA, FastAPI backend, Supabase BaaS, and multi-provider AI cascade.</em>
+</p>
 
 ```mermaid
 flowchart TB
