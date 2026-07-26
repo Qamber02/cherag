@@ -121,8 +121,17 @@ export default function BeliefGraphTab({ userId, courseId = 'recursion' }: Belie
             setNodes(graph.nodes);
             setEdges(graph.edges);
             setSelectedNode((current) => {
-                if (!current) return graph.nodes[0] || null;
-                return graph.nodes.find((node) => node.concept_id === current.concept_id) || graph.nodes[0] || null;
+                // On initial load (no prior selection), leave unselected
+                if (!current) return null;
+                // On refresh, try to preserve the user's existing selection
+                const preserved = graph.nodes.find((node) => node.concept_id === current.concept_id);
+                if (preserved) return preserved;
+                // If the previously selected node is gone, fall back to the most
+                // recently updated concept that actually has data (skip unknown/no-history nodes)
+                const candidates = graph.nodes
+                    .filter((n) => n.correctness !== 'unknown' && n.last_updated)
+                    .sort((a, b) => new Date(b.last_updated!).getTime() - new Date(a.last_updated!).getTime());
+                return candidates[0] || null;
             });
         } catch (err: any) {
             setError(err.message || 'Failed to load belief graph');
@@ -401,7 +410,14 @@ export default function BeliefGraphTab({ userId, courseId = 'recursion' }: Belie
                                 )}
                             </div>
                         </div>
-                    ) : null}
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                            <BrainCircuit className="w-10 h-10 text-muted-foreground/40 mb-4" />
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Click a node in the graph to view its belief details and history.
+                            </p>
+                        </div>
+                    )}
                 </aside>
             </div>
         </div>
