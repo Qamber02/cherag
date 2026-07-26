@@ -1,7 +1,7 @@
 <h1 align="center">Cherág — The Cognitive AI Study Ecosystem</h1>
 
 <p align="center">
-  <img src="public/cherag-icon.png" alt="Cherág Logo" width="120" />
+  <img src="public/cherag-logo.svg" alt="Cherág Logo" width="120" />
 </p>
 
 <p align="center">
@@ -44,7 +44,7 @@ Existing ed-tech tools rely on static flashcard decks or generic chatbot summari
 
 1. **Active Recall & Feynman Technique**: The student teaches concepts back to an AI that roleplays as a curious peer, evaluating the student's explanations for clarity, accuracy, and completeness.
 2. **Cognitive Belief Graph Engine**: Instead of simply recording test scores, Cherág models *what the student actually believes* (correct, partially correct, misconception, unknown) and propagates belief updates across concept dependency networks.
-3. **Multi-Model AI Resiliency**: Features a 5-tier fallback cascade across Google Gemini, DeepSeek, Groq Llama 3.3 70B, Hugging Face, and OpenRouter with API key rotation to ensure zero downtime.
+3. **Multi-Model AI Resiliency**: Features a 5-tier fallback cascade across Google Gemini, DeepSeek, Groq Llama 3.3 70B, Hugging Face, and OpenRouter with API key rotation.
 4. **Adaptive Personalization**: Uses spider-chart Knowledge Radars, timed Mock Exam Simulators with probability forecasting, and an infinite "Study Shorts" video feed powered by YouTube transcript indexing.
 
 > Cherág was built from scratch as an individual project to bridge cutting-edge LLM orchestration with proven cognitive science principles.
@@ -187,18 +187,15 @@ Standard study apps treat quizzes as simple numerical scores (e.g., 80%). Cherá
 ```mermaid
 flowchart TD
     A["Student Answer / Feynman Explanation"] --> B{"AI Relevance Gate"}
-    B -- "Irrelevant / Unrelated" --> C["Ignore Update (Log Noise)"]
+    B -- "Irrelevant" --> C["Ignore Update"]
     B -- "Relevant" --> D["Classify Belief State"]
     D --> E["Update Target Concept Node in Supabase"]
     E --> F["Propagate Belief Delta to Neighbor Concepts"]
     
-    subgraph Belief States ["Belief Classification States"]
-        S1["Correct"]
-        S2["Partially Correct"]
-        S3["Misconception"]
-        S4["Unknown"]
-    end
-    D --- Belief States
+    D --> S1["Correct State"]
+    D --> S2["Partially Correct State"]
+    D --> S3["Misconception State"]
+    D --> S4["Unknown State"]
 ```
 
 1. **Relevance Gating**: Evaluates whether input relates to target concept before updating state.
@@ -209,21 +206,18 @@ flowchart TD
 
 ### 2. Multi-Model AI Fallback Cascade (5 Tiers)
 
-Cherág guarantees 99.9% uptime by chaining 5 distinct AI inference providers. If an API key encounters rate limits (429) or service outages (5xx), the orchestration layer seamlessly cascades down to the next tier:
+Cherág provides zero-downtime AI resilience by chaining 5 distinct AI inference providers. If an API key encounters rate limits (429) or service outages (5xx), the orchestration layer seamlessly cascades down to the next tier:
 
 ```mermaid
-graph TD
-    Req["Incoming AI Request"] --> Tier1["Tier 1 Primary: Google Gemini (2.0 Flash -> 2.5 Flash -> 2.5 Pro)"]
+flowchart TD
+    Req["Incoming AI Request"] --> Tier1["Tier 1 Primary: Google Gemini"]
     Tier1 -- "Fail / Rate Limit" --> Tier2["Tier 2: DeepSeek Chat API"]
-    Tier2 -- "Fail / Rate Limit" --> Tier3["Tier 3: Groq (Llama 3.3 70B @ 280 tokens/sec)"]
-    Tier3 -- "Fail / Rate Limit" --> Tier4["Tier 4: Hugging Face Serverless (Llama 3.2 3B)"]
-    Tier4 -- "Fail / Rate Limit" --> Tier5["Tier 5: OpenRouter (Molmo 2-8B Free Tier)"]
+    Tier2 -- "Fail / Rate Limit" --> Tier3["Tier 3: Groq (Llama 3.3 70B)"]
+    Tier3 -- "Fail / Rate Limit" --> Tier4["Tier 4: Hugging Face Serverless"]
+    Tier4 -- "Fail / Rate Limit" --> Tier5["Tier 5: OpenRouter Free Tier"]
 
-    subgraph KeyRotation ["Key Rotation Engine"]
-        K1["Key Pool A (1-5 Keys)"]
-        K2["Key Pool B (1-5 Keys)"]
-    end
-    Tier1 --- KeyRotation
+    Tier1 --> K1["Key Pool A (1-5 Keys)"]
+    Tier1 --> K2["Key Pool B (1-5 Keys)"]
 ```
 
 - **Key Rotation**: Each provider supports up to 5 environment API keys with randomized round-robin selection to maximize rate limits.
@@ -278,10 +272,10 @@ flowchart TB
         OpenRouter["OpenRouter API"]
     end
 
-    Client -- "HTTPS / REST & SSE" --> Backend
-    Client -- "Auth & Realtime Sync" --> BaaS
-    Backend -- "Admin Service Role" --> BaaS
-    Backend -- "Async LLM Calls" --> AILayer
+    ReactUI -- "HTTPS / REST & SSE" --> FastAPIApp
+    ReactUI -- "Auth & Realtime Sync" --> Postgres
+    FastAPIApp -- "Admin Service Role" --> Postgres
+    FastAPIApp -- "Async LLM Calls" --> Gemini
 ```
 
 ---
@@ -299,7 +293,7 @@ Cherág relies on 9 relational PostgreSQL tables managed via Supabase migrations
 | concept_label     |      | target_concept (FK)|      | previous_belief    |
 | current_belief    |      | relationship_type  |      | new_belief         |
 | confidence_score  |      +--------------------+      | updated_at         |
-+-------------------+                                  +--------------------+
++-------------------+      +--------------------+      +--------------------+
 
 +-------------------+      +--------------------+      +--------------------+
 | knowledge_graphs  |      |  activity_history  |      |      quizzes       |
@@ -308,6 +302,15 @@ Cherág relies on 9 relational PostgreSQL tables managed via Supabase migrations
 | user_id (FK)      |      | user_id (FK)       |      | user_id (FK)       |
 | document_id (FK)  |      | activity_type      |      | question           |
 | graph_data (JSONB)|      | streak_count       |      | options (JSONB)    |
++-------------------+      +--------------------+      +--------------------+
+
++-------------------+      +--------------------+      +--------------------+
+|    flashcards     |      | learning_profiles  |      | session_summaries  |
++-------------------+      +--------------------+      +--------------------+
+| id (UUID)         |      | id (UUID)          |      | id (UUID)          |
+| user_id (FK)      |      | user_id (FK)       |      | student_id (FK)    |
+| front (Text)      |      | learning_style     |      | course_id (Text)   |
+| back (Text)       |      | target_goals       |      | summary (Text)     |
 +-------------------+      +--------------------+      +--------------------+
 ```
 
@@ -383,20 +386,20 @@ If the teacher says "I don't know" or seems stuck:
 
 The FastAPI backend exposes 27 endpoints. Key routes include:
 
-| Method | Endpoint Path | Description | Rate Limit |
+| Method | Endpoint Path | Description | Rate Limit Handling |
 |:---|:---|:---|:---|
-| `GET` | `/health` | Health check endpoint returning backend status & active models. | Unlimited |
-| `POST` | `/generate-summary` | Generates summary with custom length, style, and focus area. | 10 req/min |
-| `POST` | `/generate-flashcards` | Generates spaced repetition term/definition cards. | 8 req/min |
-| `POST` | `/generate-quizzes` | Generates randomized multiple-choice quizzes. | 8 req/min |
-| `POST` | `/generate-mindmap` | Generates hierarchical mind map JSON structures. | 5 req/min |
-| `POST` | `/chat` | RAG-grounded SSE streaming conversational response. | 15 req/min |
-| `POST` | `/process-document` | Async document ingestion and chunk embedding pipeline. | 5 req/min |
-| `POST` | `/belief/update` | Updates student concept belief node and triggers propagation. | 20 req/min |
-| `POST` | `/premium/teaching/chat` | Feynman mode interactive roleplay response generation. | 15 req/min |
-| `POST` | `/premium/teaching/evaluate` | Evaluates Feynman session with accuracy, clarity & gap scores. | 5 req/min |
-| `POST` | `/premium/exam/questions` | Generates custom syllabus mock exam questions. | 5 req/min |
-| `POST` | `/premium/tools/remix` | Creates cross-domain lateral thinking analogies. | 10 req/min |
+| `GET` | `/health` | Health check endpoint returning backend status & active models. | Standard Unthrottled |
+| `POST` | `/generate-summary` | Generates summary with custom length, style, and focus area. | Token Bucket Throttled |
+| `POST` | `/generate-flashcards` | Generates spaced repetition term/definition cards. | Token Bucket Throttled |
+| `POST` | `/generate-quizzes` | Generates randomized multiple-choice quizzes. | Token Bucket Throttled |
+| `POST` | `/generate-mindmap` | Generates hierarchical mind map JSON structures. | Token Bucket Throttled |
+| `POST` | `/chat` | RAG-grounded SSE streaming conversational response. | Rate Limited per IP |
+| `POST` | `/process-document` | Async document ingestion and chunk embedding pipeline. | Concurrency Throttled |
+| `POST` | `/belief/update` | Updates student concept belief node and triggers propagation. | Rate Limited per Session |
+| `POST` | `/premium/teaching/chat` | Feynman mode interactive roleplay response generation. | Rate Limited per IP |
+| `POST` | `/premium/teaching/evaluate` | Evaluates Feynman session with accuracy, clarity & gap scores. | Token Bucket Throttled |
+| `POST` | `/premium/exam/questions` | Generates custom syllabus mock exam questions. | Token Bucket Throttled |
+| `POST` | `/premium/tools/remix` | Creates cross-domain lateral thinking analogies. | Token Bucket Throttled |
 
 *For full request/response schemas, refer to [docs/API_REFERENCE.md](docs/API_REFERENCE.md).*
 
