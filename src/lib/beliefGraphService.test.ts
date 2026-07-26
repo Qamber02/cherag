@@ -39,8 +39,14 @@ describe('beliefGraphService', () => {
             expect(detectRecursionConceptId('What is the stop condition or base case?')).toBe('recursion.base_case');
         });
 
-        it('defaults to recursive call for general recursion query', () => {
+        it('maps "calls itself" to recursive_call', () => {
             expect(detectRecursionConceptId('What happens when a function calls itself?')).toBe('recursion.recursive_call');
+        });
+
+        it('does not map generic "recursion" to recursive_call', () => {
+            const result = resolveConceptId('Explain recursion in Python');
+            // Should go through dynamic resolution, not hardcode to recursive_call
+            expect(result.conceptId).not.toBe('recursion.recursive_call');
         });
     });
 

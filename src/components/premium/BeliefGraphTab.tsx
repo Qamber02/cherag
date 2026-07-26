@@ -295,6 +295,8 @@ export default function BeliefGraphTab({ userId, courseId = 'recursion' }: Belie
                                             fill={color}
                                             stroke={isSelected ? '#ffffff' : 'rgba(255,255,255,0.42)'}
                                             strokeWidth={isSelected ? 2.5 : 1.5}
+                                            strokeDasharray={node.last_updated ? undefined : '4 3'}
+                                            opacity={node.last_updated ? 1 : 0.5}
                                         />
                                         <text
                                             x={node.x}

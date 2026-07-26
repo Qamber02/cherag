@@ -180,7 +180,7 @@ export function resolveConceptId(text: string, contextTopic?: string): ResolvedC
     if (combined.includes('base case') || combined.includes('termination') || combined.includes('stop condition')) {
         return { courseId: 'recursion', conceptId: 'recursion.base_case' };
     }
-    if (combined.includes('recursive call') || combined.includes('calls itself') || combined.includes('recursion')) {
+    if (combined.includes('recursive call') || combined.includes('calls itself')) {
         return { courseId: 'recursion', conceptId: 'recursion.recursive_call' };
     }
 
