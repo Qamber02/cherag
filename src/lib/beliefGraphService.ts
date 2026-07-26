@@ -84,36 +84,32 @@ export async function fetchBeliefGraph(studentId: string, courseId = 'all') {
     if (edgesError) throw edgesError;
 
     const fetchedNodes = (nodes || []) as BeliefNode[];
-    const nodeByConcept = new Map(fetchedNodes.map((node: BeliefNode) => [node.concept_id, node]));
 
-    const allConceptMap = new Map<string, BeliefNode>();
-
-    if (!courseId || courseId === 'recursion' || courseId === 'all') {
-        RECURSION_CONCEPTS.forEach((concept) => {
-            const existing = nodeByConcept.get(concept.concept_id);
-            allConceptMap.set(concept.concept_id, {
-                student_id: studentId,
-                course_id: 'recursion',
-                belief_statement: null,
-                correctness: 'unknown' as BeliefCorrectness,
-                confidence: 0,
-                last_updated: null,
-                ...concept,
-                ...(existing || {}),
-            });
-        });
-    }
-
-    // Include all dynamically created belief nodes from quiz answers / Feynman sessions
-    fetchedNodes.forEach((node) => {
-        allConceptMap.set(node.concept_id, {
+    // If the student has real recorded belief nodes, display ONLY their actual concepts
+    if (fetchedNodes.length > 0) {
+        const processedNodes = fetchedNodes.map((node) => ({
             ...node,
             concept_label: node.concept_label || node.concept_id.split('.').pop()?.replace(/_/g, ' ') || node.concept_id,
-        });
-    });
+        }));
+        return {
+            nodes: processedNodes,
+            edges: (edges || []) as BeliefEdge[],
+        };
+    }
+
+    // Default template for brand new accounts with 0 recorded nodes
+    const defaultNodes = RECURSION_CONCEPTS.map((concept) => ({
+        student_id: studentId,
+        course_id: 'recursion',
+        belief_statement: null,
+        correctness: 'unknown' as BeliefCorrectness,
+        confidence: 0,
+        last_updated: null,
+        ...concept,
+    }));
 
     return {
-        nodes: Array.from(allConceptMap.values()),
+        nodes: defaultNodes,
         edges: (edges || []) as BeliefEdge[],
     };
 }
