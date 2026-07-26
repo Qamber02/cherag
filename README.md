@@ -36,20 +36,24 @@ University students spend hours re-reading notes and textbooks — one of the _l
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/chat_ui.jpg" alt="Chat UI — Ask questions grounded in your uploaded documents" width="800" />
-  <br /><em>Chat UI — Ask questions grounded in your uploaded documents</em>
+  <img src="screenshots/dashboard_new.png" alt="Dashboard — Track study streaks, history, and active roadmap" width="800" />
+  <br /><em>Dashboard — Track study streaks, session history, and active roadmap</em>
 </p>
 <p align="center">
-  <img src="screenshots/upload_docs.png" alt="Document Upload — Parse and process your syllabus" width="800" />
-  <br /><em>Document Upload — Parse and process your syllabus</em>
+  <img src="screenshots/mental_models.png" alt="Mental Models — Apply cognitive frameworks like First Principles to your notes" width="800" />
+  <br /><em>Mental Models — Apply cognitive frameworks like First Principles to your notes</em>
 </p>
 <p align="center">
-  <img src="screenshots/flashcards.png" alt="Flashcards — Auto-generated spaced-repetition cards" width="800" />
-  <br /><em>Flashcards — Auto-generated spaced-repetition cards</em>
+  <img src="screenshots/concept_remix.png" alt="Concept Remix — Find hidden connections and analogies between unrelated topics" width="800" />
+  <br /><em>Concept Remix — Find hidden connections and analogies between unrelated topics</em>
 </p>
 <p align="center">
-  <img src="screenshots/videos.png" alt="Study Shorts — AI-curated TikTok-style learning videos" width="800" />
-  <br /><em>Study Shorts — AI-curated TikTok-style learning videos</em>
+  <img src="screenshots/feynman_mode_new.png" alt="Feynman Mode — Teach the AI and get evaluated on clarity and accuracy" width="800" />
+  <br /><em>Feynman Mode — Teach the AI and get evaluated on clarity and accuracy</em>
+</p>
+<p align="center">
+  <img src="screenshots/study_shorts_new.png" alt="Study Shorts — AI-curated TikTok-style learning videos tailored to your syllabus" width="800" />
+  <br /><em>Study Shorts — AI-curated TikTok-style learning videos tailored to your syllabus</em>
 </p>
 
 ---
