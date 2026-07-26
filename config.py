@@ -21,31 +21,31 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 # Gemini Keys (Rotation)
-GEMINI_KEYS = [k for k in [
+GEMINI_KEYS = [k.strip() for k in [
     os.getenv("GEMINI_API_KEY"),
     os.getenv("GEMINI_API_KEY_2"),
     os.getenv("GEMINI_API_KEY_3"),
     os.getenv("GEMINI_API_KEY_4"),
     os.getenv("GEMINI_API_KEY_5")
-] if k]
+] if k and isinstance(k, str) and k.strip()]
 
 # OpenRouter Keys (Rotation)
-OPENROUTER_KEYS = [k for k in [
+OPENROUTER_KEYS = [k.strip() for k in [
     os.getenv("OPENROUTER_API_KEY"),
     os.getenv("OPENROUTER_API_KEY_2"),
     os.getenv("OPENROUTER_API_KEY_3"),
     os.getenv("OPENROUTER_API_KEY_4"),
     os.getenv("OPENROUTER_API_KEY_5")
-] if k]
+] if k and isinstance(k, str) and k.strip()]
 
 # Groq Keys (Rotation) — optional, but enables Groq model access
-GROQ_KEYS = [k for k in [
+GROQ_KEYS = [k.strip() for k in [
     os.getenv("GROQ_API_KEY"),
     os.getenv("GROQ_API_KEY_2"),
     os.getenv("GROQ_API_KEY_3"),
     os.getenv("GROQ_API_KEY_4"),
     os.getenv("GROQ_API_KEY_5")
-] if k]
+] if k and isinstance(k, str) and k.strip()]
 
 # Validate required API keys at startup
 if not GEMINI_KEYS:
@@ -60,9 +60,10 @@ if not OPENROUTER_KEYS:
         "Get a key from https://openrouter.ai/keys"
     )
 
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-HUGGINGFACE_API_KEY = os.getenv("VITE_HUGGINGFACE_API_KEY") or os.getenv("HUGGINGFACE_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY").strip() if os.getenv("DEEPSEEK_API_KEY") else None
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY").strip() if os.getenv("YOUTUBE_API_KEY") else None
+_hf_key = os.getenv("VITE_HUGGINGFACE_API_KEY") or os.getenv("HUGGINGFACE_API_KEY")
+HUGGINGFACE_API_KEY = _hf_key.strip() if _hf_key else None
 
 # Supabase
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
