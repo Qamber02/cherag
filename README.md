@@ -36,8 +36,12 @@ University students spend hours re-reading notes and textbooks — one of the _l
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/dashboard_new.png" alt="Dashboard — Track study streaks, history, and active roadmap" width="800" />
+  <img src="screenshots/dashboard.png" alt="Dashboard — Track study streaks, session history, and active roadmap" width="800" />
   <br /><em>Dashboard — Track study streaks, session history, and active roadmap</em>
+</p>
+<p align="center">
+  <img src="screenshots/chat_screen.png" alt="AI Chat — Ask questions grounded in your uploaded documents" width="800" />
+  <br /><em>AI Chat — Ask questions grounded in your uploaded documents</em>
 </p>
 <p align="center">
   <img src="screenshots/mental_models.png" alt="Mental Models — Apply cognitive frameworks like First Principles to your notes" width="800" />
@@ -48,11 +52,23 @@ University students spend hours re-reading notes and textbooks — one of the _l
   <br /><em>Concept Remix — Find hidden connections and analogies between unrelated topics</em>
 </p>
 <p align="center">
-  <img src="screenshots/feynman_mode_new.png" alt="Feynman Mode — Teach the AI and get evaluated on clarity and accuracy" width="800" />
+  <img src="screenshots/feynman_mode.png" alt="Feynman Mode — Teach the AI and get evaluated on clarity and accuracy" width="800" />
   <br /><em>Feynman Mode — Teach the AI and get evaluated on clarity and accuracy</em>
 </p>
 <p align="center">
-  <img src="screenshots/study_shorts_new.png" alt="Study Shorts — AI-curated TikTok-style learning videos tailored to your syllabus" width="800" />
+  <img src="screenshots/knowledge_radar.png" alt="Knowledge Radar — Visualizes your proficiency across different sub-topics" width="800" />
+  <br /><em>Knowledge Radar — Visualizes your proficiency across different sub-topics</em>
+</p>
+<p align="center">
+  <img src="screenshots/exam_simulation.png" alt="Exam Engine — Simulates full-length exams to prepare for real testing environments" width="800" />
+  <br /><em>Exam Engine — Simulates full-length exams to prepare for real testing environments</em>
+</p>
+<p align="center">
+  <img src="screenshots/exam_engine_probability_screen.png" alt="Exam Engine — Readiness probability prediction based on your performance" width="800" />
+  <br /><em>Exam Engine — Readiness probability prediction based on your performance</em>
+</p>
+<p align="center">
+  <img src="screenshots/study_shorts.png" alt="Study Shorts — AI-curated TikTok-style learning videos tailored to your syllabus" width="800" />
   <br /><em>Study Shorts — AI-curated TikTok-style learning videos tailored to your syllabus</em>
 </p>
 
