@@ -1,266 +1,104 @@
-<p align="center">
-  <img src="src/assets/logo.png" alt="Cherág Logo" width="80" />
-</p>
+# 🌟 Cherág: The ADHD-Friendly Study Companion
 
-<h1 align="center">Cherág — AI-Powered Study Companion</h1>
+**Cherág** is an AI-powered study platform designed to help neurodivergent students, particularly those with ADHD, overcome study paralysis and tackle long-form content. 
 
-<p align="center">
-  <strong>Upload your notes. Let AI teach you.</strong><br />
-  An end-to-end educational platform that transforms passive study materials into an active, personalized learning experience.
-</p>
+### The Problem
+Traditional learning systems assume a linear, sustained attention span. For students with ADHD, large textbooks, multi-hour lecture videos, and static PDF documents are overwhelming. This leads to "study paralysis"—the inability to start studying because the barrier to entry feels impossibly high. 
 
-<p align="center">
-  <a href="https://cherag.pages.dev"><strong>🌐 Live App → cherag.pages.dev</strong></a>
-</p>
+### The Solution (And For Whom)
+Cherág solves this by turning passive, long-form content into active, bite-sized, and highly interactive learning experiences. It breaks down dense syllabi into conversational chat, fast-paced quizzes, spaced-repetition flashcards, and algorithmically generated "Study Shorts" (TikTok-style educational videos). It is built for **students with ADHD**, high school/college students facing massive course loads, and anyone who struggles with standard, passive study methods.
 
 ---
 
-## The Problem
+## 🚀 Live Deployment
+**Live URL:** [https://cherag.pages.dev](https://cherag.pages.dev) *(Fully functional, click to open!)*
 
-University students spend hours re-reading notes and textbooks — one of the _least_ effective study methods according to cognitive science research. They lack:
-
-- **Active recall tools** tailored to _their specific_ material (not generic flashcard banks).
-- **Knowledge gap visibility** — they don't know what they don't know until the exam.
-- **A feedback loop** — no way to test understanding or get corrective feedback outside office hours.
-- **ADHD-friendly formats** — traditional long-form lectures and dense textbooks are overwhelming and difficult to focus on.
-
-**Cherág solves this** by turning any uploaded document (PDF, DOCX, or pasted text) into a full study toolkit — AI-generated quizzes, flashcards, summaries, mind maps, a belief graph that models _what the student actually understands_, a Feynman-technique teaching mode, and **ADHD-friendly Study Shorts** that break long videos into bite-sized learning clips.
-
-**Who it's for:** University students preparing for exams — especially in technical subjects (CS, engineering, sciences) where conceptual understanding matters more than memorization.
+*(Note: The backend is hosted live to support the frontend application. No local server is required to use the app at this URL).*
 
 ---
 
-## Screenshots
+## 📸 Screenshots in Action
 
-<p align="center">
-  <img src="screenshots/dashboard.png" alt="Dashboard — Activity Tracking and Study Streaks" width="800" />
-  <br /><em>Dashboard — Track your study streaks, latest activity, and extracted concepts</em>
-</p>
+| Chat & RAG Interaction | Document Uploads & Parsing |
+|:---:|:---:|
+| ![Chat UI](screenshots/chat_ui.jpg) | ![Document Upload](screenshots/upload_docs.png) |
 
-<p align="center">
-  <img src="screenshots/feynman_evaluation.png" alt="Feynman Mode Evaluation" width="800" />
-  <br /><em>Feynman Mode Evaluation — AI assesses your teaching for accuracy, clarity, and completeness</em>
-</p>
-
-<p align="center">
-  <img src="screenshots/concept_remix_bridge.png" alt="Concept Remix — The Creative Bridge" width="800" />
-  <br /><em>Concept Remix — Finding deep connections and pedagogical value between unrelated concepts</em>
-</p>
-
-<p align="center">
-  <img src="docs/system_design_diagram.png" alt="System Architecture" width="700" />
-  <br /><em>System Architecture — React frontend, FastAPI backend, Supabase BaaS, multi-model AI</em>
-</p>
+| Spaced Repetition Flashcards | AI-Generated Study Shorts |
+|:---:|:---:|
+| ![Flashcards](screenshots/flashcards.png) | ![Study Shorts](screenshots/videos.png) |
 
 ---
 
-## Features
+## 🛠️ Features List
 
-### Core Study Tools
-| Feature | Description |
-|---------|-------------|
-| **📄 Document Upload** | Upload PDF, DOCX, or paste text. Client-side parsing with PDF.js, Mammoth, and Tesseract.js OCR for scanned documents. |
-| **💬 AI Chat** | RAG-powered conversational Q&A grounded in your uploaded documents. Real-time streaming responses. |
-| **📝 Smart Summaries** | AI-generated summaries with configurable length, style (bullet points, paragraph, Cornell notes), and focus area. |
-| **🃏 Flashcards** | Auto-generated question/answer flashcards from your material. Swipe-based review interface. |
-| **❓ AI Quizzes** | Multiple-choice quizzes with configurable difficulty (easy/medium/hard), question count, and topic. Includes gamification with answer streaks. |
-| **🗺️ Mind Map / Roadmap** | Visual learning roadmaps auto-generated from content. Click any node for an AI-generated deep-dive explanation. |
+Everything Cherág can do, end-to-end:
 
-### Premium AI Features
-| Feature | Description |
-|---------|-------------|
-| **🧠 Belief Graph** | A cognitive model that tracks _what the student actually believes_ about each concept (correct, partially correct, misconception, unknown). Updates automatically from quiz answers and teaching sessions. Includes belief propagation to related concepts. |
-| **📡 Knowledge Radar** | Extracts concepts from content, maps prerequisites, identifies knowledge gaps, and generates interactive micro-lessons with quizzes to fill gaps. |
-| **🎓 Feynman Mode (Teach AI)** | The student teaches a concept to the AI, which acts as a curious student. The AI asks probing questions ("What happens if...?", "How is this different from...?") and evaluates the session with scores for accuracy, clarity, and completeness. |
-| **📋 Exam Engine** | Paste a syllabus → AI generates realistic mock exams (MCQ, short answer, essay) with timed simulation, rubric-based grading, and readiness probability prediction. |
-| **🔄 Concept Remix** | Select two concepts and the AI finds hidden connections, cross-domain insights, and practical applications. |
-| **🧩 Mental Models** | Apply thinking frameworks (First Principles, Second Order Thinking, Pareto Principle, Inversion, Opportunity Cost) to any study content. |
-| **📊 Activity Dashboard** | Study streak tracking, activity heatmap, session history, and quick-access stats. |
-| **🎬 Study Shorts (ADHD-Friendly)** | AI-extracted, bite-sized video clips (Reels/TikTok style) from long educational videos. Specifically designed for ADHD brains and short attention spans, delivering complex topics in fast, focused, and engaging bursts. |
+**Core Learning Tools:**
+- **RAG-Powered Chat**: Upload PDFs or DOCX files and instantly chat with them. The AI grounds its answers strictly in your uploaded syllabus.
+- **Study Shorts**: Automatically curates short-form YouTube educational videos matching your exact syllabus topics to keep ADHD brains engaged without losing focus.
+- **Auto-Generated Flashcards**: Extracts key terms and definitions from your documents into interactive flashcards.
+- **Interactive Quizzes**: Generates dynamic multiple-choice quizzes to test your knowledge immediately after reading.
+- **Session Memory**: The AI remembers your struggles, preferences, and progress across different study sessions (using a customized session summary engine).
+
+**Premium Cognitive Features:**
+- **Feynman Mode (Teach AI)**: Instead of the AI teaching you, *you* teach the AI. It acts as a skeptical 5th grader and grades your understanding.
+- **Belief Graph**: A real-time cognitive model that tracks your misconceptions and correctly held beliefs, automatically propagating updates when you learn something new.
+- **Concept Remix**: Merges two unrelated topics using the "Bridge Protocol" to force lateral thinking and deep neural connections.
 
 ---
 
-## AI Feature — Deep Dive
+## 🧠 The AI Feature & System Prompts
 
-Cherág uses AI across every feature. Here is the core system prompt architecture:
+Cherág doesn't just use AI as a wrapper; it uses AI as a cognitive engine. 
 
-### Chat Assistant (RAG-based)
-```
-You are Cherág, an AI study assistant. Answer the student's question based
-ONLY on the following document excerpts.
+### Feature: The Belief Graph & Session Memory
+As the student interacts with the app (e.g., answering quizzes or teaching the AI in Feynman Mode), the AI runs a background cognitive extraction. It evaluates the student's answer, identifies underlying beliefs, and maps them as `correct`, `partially_correct`, or `misconception`. 
 
-DOCUMENT EXCERPTS:
-{context}
+When a student starts a new session, the AI system prompt is dynamically injected with the student's unresolved misconceptions and previous session summaries, allowing the AI to organically course-correct the student.
 
-STUDENT QUESTION: {query}
+### The Instructions (System Prompt)
+*Here is the core system prompt used for the Belief Extraction Engine:*
 
-Provide a helpful, accurate answer. If the excerpts don't contain enough
-information, say so.
-```
+```text
+You are an expert cognitive psychologist and educational diagnostician.
+Analyze the student's answer to the question.
+Extract exactly ONE core belief or mental model the student is demonstrating.
+State the belief as a declarative sentence from the student's perspective.
+Evaluate if this belief is 'correct', 'partially_correct', or a 'misconception'.
+Rate your confidence in this assessment from 0.0 to 1.0.
 
-### Belief Graph — Cognitive Modeling Engine
-The most technically interesting AI feature. When a student answers a quiz or teaches a concept, the AI doesn't just grade it — it _models what the student believes_:
+CRITICAL INSTRUCTION: If the student's answer is completely irrelevant to the question 
+(e.g. they say "I don't know" or talk about video games), you MUST set "relevant": false. 
+Do not hallucinate a belief.
 
-```
-You are a cognitive modeling engine, not a grader. Your job is to infer what
-a student genuinely believes about a specific target concept based on their
-answer, including incorrect or partially-formed beliefs.
-
-Given:
-- Target concept being evaluated: {concept_label}
-- The student's previous belief (if any): {previous_belief}
-- The student's new answer/input: {student_answer}
-
-CRITICAL RELEVANCE RULE:
-- If the student's answer is about a completely DIFFERENT or UNRELATED topic,
-  set "relevant": false.
-
-Return JSON:
-{
-  "relevant": true/false,
-  "belief_statement": "what the student currently seems to think is true",
-  "correctness": "correct | partially_correct | misconception | unknown",
-  "confidence": 0.0-1.0,
-  "changed_from_previous": true/false,
-  "reasoning": "brief note on why you updated it this way"
-}
-```
-
-When a belief updates, it **propagates to neighboring concepts** in the graph via a second AI call, simulating how understanding one concept affects related ones.
-
-### Feynman Teaching Mode
-```
-You are a {difficulty} student learning about "{concept}".
-
-Your role:
-- Be genuinely curious and engaged
-- Ask probing questions that test the teacher's understanding
-- Challenge with edge cases when appropriate
-- Express confusion realistically when explanations are unclear
-
-CRITICAL - HANDLING KNOWLEDGE GAPS:
-If the teacher says "I don't know" or seems stuck:
-1. STOP asking questions immediately.
-2. Switch to supportive mode: explain the concept yourself using a simple analogy.
-3. Ask a simple check-in question to get them back on track.
-
-Question types:
-1. "Could you explain why...?" (tests depth)
-2. "What happens if...?" (tests edge cases)
-3. "How is this different from...?" (tests distinctions)
-4. "Can you give me an example?" (tests application)
-```
-
-### Multi-Model AI Fallback Chain
-The backend uses a **4-tier fallback cascade** with automatic key rotation:
-
-```
-Gemini (2.0 Flash Lite → 2.0 Flash → 2.5 Flash → 2.5 Pro)
-  ↓ fallback
-DeepSeek Chat
-  ↓ fallback
-Groq (Llama 3.3 70B at 280 tokens/sec)
-  ↓ fallback
-OpenRouter (Molmo 2-8B free tier)
-```
-
-Each provider supports up to 5 API keys with random rotation to avoid rate limits. Users can also manually select a specific model from the Settings page.
-
----
-
-## Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|------------|---------|
-| **React 19** + **TypeScript** | UI framework with strict type safety |
-| **Vite 5** | Build tool and dev server |
-| **Tailwind CSS 4** | Utility-first styling with dark/light mode |
-| **Framer Motion** | Animations and transitions |
-| **Supabase JS** | Client-side auth and real-time database |
-| **PDF.js** + **Mammoth** + **Tesseract.js** | Client-side document parsing (PDF, DOCX, OCR) |
-| **React Router 7** | Client-side routing |
-| **Zod** | Runtime schema validation |
-| **Vitest** + **Testing Library** | Unit and component testing |
-
-### Backend
-| Technology | Purpose |
-|------------|---------|
-| **FastAPI** (Python 3.11) | REST API server with async support |
-| **Supabase** (PostgreSQL) | Database, auth, and row-level security |
-| **Google Gemini API** | Primary AI model (multi-model rotation) |
-| **Groq API** | Fast inference fallback (Llama 3.3 70B) |
-| **DeepSeek API** | Secondary AI fallback |
-| **OpenRouter API** | Final fallback (free tier) |
-| **PyMuPDF** | Server-side PDF text extraction |
-| **YouTube Transcript API** | Study Shorts video clip extraction |
-
-### Infrastructure
-| Service | Purpose |
-|---------|---------|
-| **Cloudflare Pages** | Frontend hosting (global CDN) |
-| **Railway** | Backend hosting (FastAPI) |
-| **Hugging Face Spaces** | Backend mirror (Docker) |
-| **Supabase Cloud** | Managed PostgreSQL + Auth |
-| **GitHub Actions** | CI/CD pipelines |
-
----
-
-## Architecture
-
-```
-┌─────────────────────┐     HTTPS      ┌─────────────────────┐
-│   React Frontend    │ ──────────────► │   FastAPI Backend   │
-│  (Cloudflare Pages) │                 │     (Railway)       │
-│                     │ ◄────SSE────── │                     │
-└────────┬────────────┘                 └────────┬────────────┘
-         │                                       │
-         │  Supabase JS                          │  Supabase Admin
-         ▼                                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     Supabase Cloud                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐ │
-│  │   Auth   │  │PostgreSQL│  │   RLS    │  │  Storage   │ │
-│  │  (JWT)   │  │   (DB)   │  │ Policies │  │  (Files)   │ │
-│  └──────────┘  └──────────┘  └──────────┘  └────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                                       │
-                    ┌──────────────────┼──────────────────┐
-                    ▼                  ▼                  ▼
-             ┌───────────┐     ┌────────────┐     ┌───────────┐
-             │  Gemini   │     │   Groq     │     │ DeepSeek  │
-             │  (1°)     │     │   (2°)     │     │   (3°)    │
-             └───────────┘     └────────────┘     └───────────┘
+Respond ONLY with valid JSON.
 ```
 
 ---
 
-## Database Schema
+## ⚙️ Tools, Services, and AI Models
 
-8 migration files define the schema:
+**Frontend:**
+- **React 19 & Vite**: Lightning-fast UI framework.
+- **Tailwind CSS (v4) & Framer Motion**: For modern, smooth, distraction-free aesthetics.
+- **PDF.js & Tesseract.js**: For in-browser document parsing and OCR.
 
-| Table | Purpose |
-|-------|---------|
-| `belief_nodes` | Current belief state per student × concept |
-| `belief_edges` | Concept dependency relationships |
-| `belief_history` | Timestamped belief change log |
-| `knowledge_graphs` | Extracted concept maps per document |
-| `activity_history` | Study session logs for streak tracking |
-| `quizzes` | Generated quiz questions and user answers |
-| `flashcards` | Generated flashcard decks |
-| `learning_profiles` | User preferences and learning DNA |
+**Backend & Database:**
+- **FastAPI (Python)**: High-performance async backend.
+- **Supabase**: PostgreSQL database handling Auth, Row-Level Security (RLS), and `pgvector` for RAG embeddings.
 
-All tables use Row-Level Security (RLS) — students can only access their own data.
+**AI Models & Providers (Multi-Model Fallback Chain):**
+1. **Google Gemini (2.5 Flash / Pro)**: Primary workhorse for fast generation.
+2. **DeepSeek (deepseek-chat)**: Secondary fallback for complex reasoning.
+3. **Groq (Llama-3.1-8b)**: Ultra-low latency fallback.
+4. **Hugging Face (Llama-3.2-3B)**: Open-source serverless fallback.
+5. **OpenRouter (Molmo-2-8b)**: Final fallback layer.
 
 ---
 
-## How to Run Locally
+## 💻 How to Run the Project Locally
 
-### Prerequisites
-- **Node.js** ≥ 18 and **npm**
-- **Python** 3.11+
-- A [Supabase](https://supabase.com) project (free tier works)
-- At least one AI API key (Gemini recommended — [get one free](https://aistudio.google.com/apikey))
+If you wish to run the full stack locally instead of using the live URL:
 
 ### 1. Clone the repository
 ```bash
@@ -268,103 +106,34 @@ git clone https://github.com/Qamber02/cherag.git
 cd cherag
 ```
 
-### 2. Set up environment variables
-
-Copy the example file and fill in your keys:
+### 2. Backend Setup
 ```bash
-cp .env.example .env
-```
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-Required variables:
-```env
-# Frontend (safe to expose)
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_API_BASE_URL=http://localhost:8000
-
-# Backend (secret)
-SUPABASE_URL=your_supabase_url
-SUPABASE_JWT_SECRET=your_supabase_jwt_secret
-GEMINI_API_KEY=your_gemini_api_key
-OPENROUTER_API_KEY=your_openrouter_api_key
-```
-
-### 3. Start the backend
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Set up environment variables
+# Create a .env file based on the required keys in config.py
+# (GEMINI_API_KEY, SUPABASE_URL, SUPABASE_JWT_SECRET, etc.)
+
+# Run the FastAPI server
 uvicorn main:app --reload --port 8000
 ```
 
-### 4. Start the frontend
+### 3. Frontend Setup
 ```bash
+# Install dependencies
 npm install
+
+# Set up environment variables
+# Create a .env file with VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+# Run the Vite development server
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
-
-### 5. Run tests
-```bash
-# Frontend tests
-npm test
-
-# Backend tests
-pytest tests/
-```
-
----
-
-## Tools & AI Models Used to Build This App
-
-| Tool | Role |
-|------|------|
-| **Google Gemini** (2.0 Flash, 2.5 Flash, 2.5 Pro) | Primary AI for all generation tasks |
-| **Groq** (Llama 3.3 70B) | Fast-inference fallback with streaming |
-| **DeepSeek Chat** | Secondary AI fallback |
-| **OpenRouter** (Molmo 2-8B) | Free-tier final fallback |
-| **Supabase** | Authentication, database, row-level security |
-| **Cloudflare Pages** | Frontend deployment with global CDN |
-| **Railway** | Backend deployment |
-| **Vite** | Frontend build tooling |
-| **Vitest** | Test runner |
-
----
-
-## Repository Structure
-
-```
-cherag/
-├── src/                    # React frontend
-│   ├── components/         # UI components (16 tabs + layout)
-│   │   ├── premium/        # Advanced AI features (7 components)
-│   │   ├── layout/         # Sidebar, Header, AppLayout
-│   │   └── ...             # Core tabs (Chat, Quiz, Flashcards, etc.)
-│   ├── hooks/              # Custom React hooks
-│   ├── lib/                # Services, API clients, utilities
-│   └── assets/             # Static assets
-├── services/               # Python backend services
-│   ├── ai_utils.py         # Multi-model AI fallback engine
-│   ├── belief_service.py   # Cognitive belief graph engine
-│   ├── premium_service.py  # Premium feature orchestration
-│   ├── rag_service.py      # Document processing + RAG
-│   ├── prompts.py          # Core AI prompt templates
-│   └── premium_prompts.py  # Advanced AI prompt templates
-├── tests/                  # Backend unit tests
-├── supabase/migrations/    # Database schema (8 migrations)
-├── main.py                 # FastAPI application entry point
-├── config.py               # Environment config + model catalogue
-├── Dockerfile              # HF Spaces deployment
-└── docs/                   # Architecture diagrams + documentation
-```
-
----
-
-## License
-
-This project was built as an individual final project. All code is original work.
-
----
-
-<p align="center">
-  Built with ☕ and AI by <strong>Qamber Mohamed Hanif</strong>
-</p>
+### 4. Access the App
+Open your browser and navigate to `http://localhost:5173`.
