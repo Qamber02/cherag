@@ -338,7 +338,7 @@ export default function Dashboard({ session }: DashboardProps) {
                         <div className="glass-card rounded-2xl h-full overflow-hidden shadow-warm-glow">
                             <BeliefGraphTab
                                 userId={session.user.id}
-                                courseId="recursion"
+                                courseId="all"
                             />
                         </div>
                     </div>
