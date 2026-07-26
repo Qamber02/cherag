@@ -102,7 +102,7 @@ function buildLayout(nodes: BeliefNode[], edges: BeliefEdge[], width: number, he
     return layoutNodes;
 }
 
-export default function BeliefGraphTab({ userId, courseId = 'recursion' }: BeliefGraphTabProps) {
+export default function BeliefGraphTab({ userId, courseId = 'all' }: BeliefGraphTabProps) {
     const [nodes, setNodes] = useState<BeliefNode[]>([]);
     const [edges, setEdges] = useState<BeliefEdge[]>([]);
     const [selectedNode, setSelectedNode] = useState<BeliefNode | null>(null);
@@ -121,13 +121,9 @@ export default function BeliefGraphTab({ userId, courseId = 'recursion' }: Belie
             setNodes(graph.nodes);
             setEdges(graph.edges);
             setSelectedNode((current) => {
-                // On initial load (no prior selection), leave unselected
                 if (!current) return null;
-                // On refresh, try to preserve the user's existing selection
                 const preserved = graph.nodes.find((node) => node.concept_id === current.concept_id);
                 if (preserved) return preserved;
-                // If the previously selected node is gone, fall back to the most
-                // recently updated concept that actually has data (skip unknown/no-history nodes)
                 const candidates = graph.nodes
                     .filter((n) => n.correctness !== 'unknown' && n.last_updated)
                     .sort((a, b) => new Date(b.last_updated!).getTime() - new Date(a.last_updated!).getTime());
@@ -199,7 +195,7 @@ export default function BeliefGraphTab({ userId, courseId = 'recursion' }: Belie
                         <div className="min-w-0">
                             <div className="flex items-center gap-2 text-sm text-primary font-medium">
                                 <BrainCircuit className="w-4 h-4" />
-                                Recursion Module
+                                {courseId === 'all' ? 'Cognitive Belief Graph' : courseId.replaceAll('_', ' ')}
                             </div>
                             <h1 className="text-xl md:text-2xl font-bold mt-1">Belief Graph</h1>
                         </div>

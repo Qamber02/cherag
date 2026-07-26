@@ -66,36 +66,54 @@ async function getAuthHeaders(): Promise<Headers> {
     return headers;
 }
 
-export async function fetchBeliefGraph(studentId: string, courseId = 'recursion') {
+export async function fetchBeliefGraph(studentId: string, courseId = 'all') {
+    let nodesQuery = supabase.from('belief_nodes').select('*').eq('student_id', studentId);
+    let edgesQuery = supabase.from('belief_edges').select('*');
+
+    if (courseId && courseId !== 'all') {
+        nodesQuery = nodesQuery.eq('course_id', courseId);
+        edgesQuery = edgesQuery.eq('course_id', courseId);
+    }
+
     const [{ data: nodes, error: nodesError }, { data: edges, error: edgesError }] = await Promise.all([
-        supabase
-            .from('belief_nodes')
-            .select('*')
-            .eq('student_id', studentId)
-            .eq('course_id', courseId),
-        supabase
-            .from('belief_edges')
-            .select('*')
-            .eq('course_id', courseId),
+        nodesQuery,
+        edgesQuery,
     ]);
 
     if (nodesError) throw nodesError;
     if (edgesError) throw edgesError;
 
-    const nodeByConcept = new Map((nodes || []).map((node: BeliefNode) => [node.concept_id, node]));
-    const mergedNodes = RECURSION_CONCEPTS.map((concept) => ({
-        student_id: studentId,
-        course_id: courseId,
-        belief_statement: null,
-        correctness: 'unknown' as BeliefCorrectness,
-        confidence: 0,
-        last_updated: null,
-        ...concept,
-        ...(nodeByConcept.get(concept.concept_id) || {}),
-    }));
+    const fetchedNodes = (nodes || []) as BeliefNode[];
+    const nodeByConcept = new Map(fetchedNodes.map((node: BeliefNode) => [node.concept_id, node]));
+
+    const allConceptMap = new Map<string, BeliefNode>();
+
+    if (!courseId || courseId === 'recursion' || courseId === 'all') {
+        RECURSION_CONCEPTS.forEach((concept) => {
+            const existing = nodeByConcept.get(concept.concept_id);
+            allConceptMap.set(concept.concept_id, {
+                student_id: studentId,
+                course_id: 'recursion',
+                belief_statement: null,
+                correctness: 'unknown' as BeliefCorrectness,
+                confidence: 0,
+                last_updated: null,
+                ...concept,
+                ...(existing || {}),
+            });
+        });
+    }
+
+    // Include all dynamically created belief nodes from quiz answers / Feynman sessions
+    fetchedNodes.forEach((node) => {
+        allConceptMap.set(node.concept_id, {
+            ...node,
+            concept_label: node.concept_label || node.concept_id.split('.').pop()?.replace(/_/g, ' ') || node.concept_id,
+        });
+    });
 
     return {
-        nodes: mergedNodes,
+        nodes: Array.from(allConceptMap.values()),
         edges: (edges || []) as BeliefEdge[],
     };
 }
